@@ -277,7 +277,7 @@ export default function Assessment() {
     return (
         <div className="min-h-screen bg-[#F1F5F9] p-4 font-sans select-none">
             {/* Header */}
-            <header className="max-w-6xl mx-auto bg-white rounded-2xl shadow-sm border border-gray-200 p-4 mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
+            <header className="max-w-7xl mx-auto bg-white rounded-2xl shadow-sm border border-gray-200 p-4 mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
                 <div>
                     <h1 className="text-xl md:text-2xl font-black text-[#1F2937]">DigiCoders Assessment</h1>
                     <p className="text-[#0D9488] font-bold text-sm">Testing Support</p>
@@ -388,7 +388,7 @@ export default function Assessment() {
                 fixed lg:static top-0 right-0 h-full lg:h-auto w-[280px] lg:w-auto bg-white lg:bg-transparent shadow-2xl lg:shadow-none z-50 transform transition-transform duration-300 ease-in-out p-6 lg:p-0
                 ${isPaletteOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}
             `}>
-                    <div className="bg-white rounded-3xl shadow-lg border border-gray-200 p-6 h-full lg:h-auto overflow-y-auto">
+                    <div className="bg-white rounded-3xl shadow-lg border border-gray-200 p-6 h-full lg:min-h-[500px] overflow-y-auto flex flex-col">
                         <div className="mb-6">
                             <div className="flex justify-end lg:hidden mb-2">
                                 <button

@@ -3,6 +3,7 @@ import { User, Phone, GraduationCap, Calendar, BookOpen, Key, Sparkles, ArrowRig
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
+import { useUser } from '../context/UserContext';
 
 export default function DigiCodersPortal() {
     const [formData, setFormData] = useState({
@@ -12,11 +13,13 @@ export default function DigiCodersPortal() {
         college: '',
         year: '',
         course: '',
-        code: ''
+        code: '',
+        testName: ''
     });
 
     const digi = "{Coders}"
     const navigate = useNavigate();
+    const { login } = useUser();
 
     const [focusedField, setFocusedField] = useState(null);
 
@@ -64,16 +67,20 @@ export default function DigiCodersPortal() {
         // Code logic changed - if code is empty but implied "provided by team", we might just warn? 
         // But user asked to validate everything. Assuming code is required if field is there.
         if (!formData.code) return alertAndFocus('Please enter the Assessment Code.', 'code');
+        if (!formData.testName) return alertAndFocus('Please select the Test Name.', 'testName');
 
         // Simulating Login Success
         console.log('Form submitted:', formData);
 
-        // SAVE USER TO LOCAL STORAGE
-        localStorage.setItem('digi_user', JSON.stringify({
+        // SAVE USER TO CONTEXT
+        login({
             name: formData.name,
             mobile: formData.mobile,
+            code: formData.code,
+            testName: formData.testName,
+            submissionDate: new Date().toISOString(),
             isLoggedIn: true
-        }));
+        });
 
         toast.success('🎉 Assessment Started Successfully!');
         setTimeout(() => {
@@ -111,7 +118,7 @@ export default function DigiCodersPortal() {
                                     <img
                                         src="/icon.jpg"
                                         alt="DigiCoders Logo"
-                                        className="h-20 md:h-24 w-auto object-contain mix-blend-darken"
+                                        className="h-24 md:h-32 w-auto object-contain mix-blend-darken"
                                     />
 
                                 </div>
@@ -141,7 +148,7 @@ export default function DigiCodersPortal() {
                             {/* Row 1: Name and Mobile */}
                             <div className="grid md:grid-cols-2 gap-6">
                                 <div className="group">
-                                    <label className="flex items-center text-sm font-bold text-gray-300 mb-3 group-hover:text-gray-600 transition-colors">
+                                    <label className="flex items-center text-sm font-bold text-black mb-3">
 
                                         MOBILE NUMBER <span className="text-pink-500 ml-1">*</span>
                                     </label>
@@ -159,7 +166,7 @@ export default function DigiCodersPortal() {
                                 </div>
 
                                 <div className="group">
-                                    <label className="flex items-center text-sm font-bold text-gray-300 mb-3 group-hover:text-gray-600 transition-colors">
+                                    <label className="flex items-center text-sm font-bold text-black mb-3">
 
                                         YOUR NAME <span className="text-pink-500 ml-1">*</span>
                                     </label>
@@ -178,7 +185,7 @@ export default function DigiCodersPortal() {
 
                             {/* Row 2: Batch */}
                             <div className="group">
-                                <label className="flex items-center text-sm font-bold text-gray-300 mb-3 group-hover:text-gray-600 transition-colors">
+                                <label className="flex items-center text-sm font-bold text-black mb-3">
 
                                     SELECT YOUR BATCH <span className="text-pink-500 ml-1">*</span>
                                 </label>
@@ -199,7 +206,7 @@ export default function DigiCodersPortal() {
 
                             {/* Row 3: College Name */}
                             <div className="group">
-                                <label className="flex items-center text-sm font-bold text-gray-300 mb-3 group-hover:text-gray-600 transition-colors">
+                                <label className="flex items-center text-sm font-bold text-black mb-3">
 
                                     COLLEGE NAME <span className="text-pink-500 ml-1">*</span>
                                 </label>
@@ -220,7 +227,7 @@ export default function DigiCodersPortal() {
                             {/* Row 4: Year and Course */}
                             <div className="grid md:grid-cols-2 gap-6">
                                 <div className="group">
-                                    <label className="flex items-center text-sm font-bold text-gray-300 mb-3 group-hover:text-gray-600 transition-colors">
+                                    <label className="flex items-center text-sm font-bold text-black mb-3">
 
                                         CURRENT YEAR <span className="text-pink-500 ml-1">*</span>
                                     </label>
@@ -241,7 +248,7 @@ export default function DigiCodersPortal() {
                                 </div>
 
                                 <div className="group">
-                                    <label className="flex items-center text-sm font-bold text-gray-300 mb-3 group-hover:text-gray-600 transition-colors">
+                                    <label className="flex items-center text-sm font-bold text-black mb-3">
 
                                         COURSE <span className="text-pink-500 ml-1">*</span>
                                     </label>
@@ -262,9 +269,31 @@ export default function DigiCodersPortal() {
                                 </div>
                             </div>
 
+                            {/* Test Name */}
+                            <div className="group">
+                                <label className="flex items-center text-sm font-bold text-black mb-3">
+                                    TEST NAME <span className="text-pink-500 ml-1">*</span>
+                                </label>
+                                <select
+                                    name="testName"
+                                    value={formData.testName}
+                                    onChange={handleChange}
+                                    onFocus={() => setFocusedField('testName')}
+                                    onBlur={() => setFocusedField(null)}
+                                    className={`w-full px-4 py-2 md:px-4 md:py-3 bg-gray-50 border-2 ${focusedField === 'testName' ? 'border-[#0D9488]' : 'border-gray-200'} rounded-2xl text-[#1F2937] focus:outline-none transition-all duration-300 hover:border-gray-300 cursor-pointer text-sm md:text-base`}
+                                >
+                                    <option value="">-- Select Test --</option>
+                                    <option value="C Language">C Language</option>
+                                    <option value="Java">Java</option>
+                                    <option value="Python">Python</option>
+                                    <option value="JavaScript">JavaScript</option>
+                                    <option value="PHP">PHP</option>
+                                </select>
+                            </div>
+
                             {/* Assessment Code */}
                             <div className="group">
-                                <label className="flex items-center text-sm font-bold text-gray-300 mb-3">
+                                <label className="flex items-center text-sm font-bold text-black mb-3">
 
                                     ASSESSMENT CODE
                                     <span className="ml-2 md:ml-3 text-[8px] md:text-[10px] bg-slate-800 text-white px-2 py-1 rounded-full font-semibold border border-slate-700">PROVIDED BY TEAM</span>

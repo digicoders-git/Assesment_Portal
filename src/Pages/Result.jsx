@@ -4,8 +4,9 @@ import Confetti from 'react-confetti';
 import { useWindowSize } from 'react-use';
 import { Download, Home } from 'lucide-react';
 import { toast } from 'react-toastify';
-import html2canvas from 'html2canvas';
+import domtoimage from 'dom-to-image-more';
 import { useRef } from 'react';
+import { useUser } from '../context/UserContext';
 
 export default function Result() {
     const { width, height } = useWindowSize();
@@ -18,18 +19,19 @@ export default function Result() {
     const { total, attempted, correct, incorrect } = location.state || {};
 
     const [userName, setUserName] = useState('');
+    const [assessmentCode, setAssessmentCode] = useState('');
+    const { user } = useUser();
 
     useEffect(() => {
-        // 1. Check Login
-        const userStr = localStorage.getItem('digi_user');
-        if (!userStr) {
-            toast.error("Please Login first!");
+        // 1. Check Login and Assessment Code
+        if (!user || !user.code) {
+            toast.error("Assessment code not found! Please login first.");
             navigate('/');
             return;
         }
 
-        const user = JSON.parse(userStr);
         setUserName(user.name);
+        setAssessmentCode(user.code);
 
         // 2. Check if accessed directly without submission
         if (!location.state) {
@@ -37,9 +39,9 @@ export default function Result() {
             navigate('/assessment');
             return;
         }
-    }, [location.state, navigate]);
+    }, [user, location.state, navigate]);
 
-    if (!location.state) return null; // Prevent flicker
+    if (!user || !user.code || !location.state) return null; // Prevent flicker
 
     const digi = "{Coders}";
 
@@ -51,13 +53,72 @@ export default function Result() {
         return () => clearTimeout(timer);
     }, []);
 
+    // Screenshot and download result card as PNG
+    const handleSaveResult = async () => {
+        console.log("Save Result clicked!");
+
+        if (!resultRef.current) {
+            toast.error("Result card not found!");
+            return;
+        }
+
+        const toastId = toast.loading("Generating result image...");
+
+        try {
+            // Use dom-to-image-more which supports modern CSS colors
+            const dataUrl = await domtoimage.toPng(resultRef.current, {
+                quality: 0.95,
+                bgcolor: '#ffffff',
+                style: {
+                    transform: 'scale(1)',
+                    transformOrigin: 'top left'
+                },
+                filter: (node) => {
+                    // Remove borders from all elements during capture
+                    if (node.style) {
+                        node.style.border = 'none';
+                        node.style.outline = 'none';
+                        node.style.boxShadow = 'none';
+                    }
+                    return true;
+                }
+            });
+
+            // Create download link
+            const link = document.createElement('a');
+            const fileName = `DigiCoders_${userName.replace(/\s+/g, '_')}_Result.png`;
+            link.href = dataUrl;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            console.log("Download triggered!");
+
+            toast.update(toastId, {
+                render: "Result saved successfully!",
+                type: "success",
+                isLoading: false,
+                autoClose: 3000
+            });
+        } catch (error) {
+            console.error("Screenshot failed:", error);
+            toast.update(toastId, {
+                render: `Failed to save result: ${error.message}`,
+                type: "error",
+                isLoading: false,
+                autoClose: 3000
+            });
+        }
+    };
+
     return (
         <div id="result-screen">
 
             <div className="min-h-screen bg-[#F1F5F9] flex items-center justify-center p-4 font-sans select-none relative overflow-hidden">
                 {showConfetti && <Confetti width={width} height={height} numberOfPieces={300} recycle={false} style={{ zIndex: 50, pointerEvents: 'none' }} />}
 
-                <div id="result-card" className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl p-4 md:p-6 relative z-10 border border-gray-100 text-center animate-fade-in-up">
+                <div id="result-card" ref={resultRef} className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl p-4 md:p-6 relative z-10 border border-gray-100 text-center animate-fade-in-up">
 
                     {/* Header */}
                     <div className="mb-4">
@@ -65,19 +126,20 @@ export default function Result() {
                             <img
                                 src="/icon.jpg"
                                 alt="DigiCoders Logo"
-                                className="h-20 md:h-24 object-contain mix-blend-darken"
+                                className="h-24 md:h-32 object-contain mix-blend-darken"
                             />
                         </div>
                         <div className="flex flex-col justify-center items-center gap-2 mb-6">
-                            <div className="bg-teal-50 p-3 md:p-4 rounded-full">
-                                <span className="text-3xl md:text-4xl">🎉</span>
-                            </div>
+
                             <h2 className="text-2xl md:text-3xl font-bold text-[#0D9488] text-center">
                                 Congratulations, <span className='text-purple-500'>{userName.split(' ')[0]}!</span>
                             </h2>
                         </div>
 
                         <p className="text-gray-500 text-base">You have successfully completed the assessment.</p>
+                        <p className="text-gray-400 text-sm mt-2">Assessment Code: <span className="font-bold text-[#0D9488]">{assessmentCode}</span></p>
+                        <p className="text-gray-400 text-sm mt-1">Test Name: <span className="font-bold text-[#0D9488]">{user.testName || 'N/A'}</span></p>
+                        <p className="text-gray-400 text-sm mt-1">Date: <span className="font-bold text-[#0D9488]">{user.submissionDate ? new Date(user.submissionDate).toLocaleDateString() : new Date().toLocaleDateString()}</span></p>
                     </div>
 
                     <div className="flex flex-col items-center gap-2 mb-3">
@@ -112,17 +174,24 @@ export default function Result() {
                         {/* Actions */}
                         <div className="flex flex-col md:flex-row gap-4">
                             <button
-                                onClick={() => window.print()}
+                                onClick={() => {
+                                    const link = document.createElement('a');
+                                    link.href = '/certificate.jpg';
+                                    link.download = `DigiCoders_Certificate_${userName.replace(/\s+/g, '_')}.jpg`;
+                                    document.body.appendChild(link);
+                                    link.click();
+                                    document.body.removeChild(link);
+                                }}
                                 className="flex items-center gap-2 px-8 py-3 bg-[#a855f7] hover:bg-[#9333ea] text-white rounded-xl font-bold shadow-lg shadow-purple-200 transition-all hover:-translate-y-1"
                             >
                                 <Download size={20} /> DOWNLOAD CERTIFICATE
                             </button>
 
                             <button
-                                onClick={() => navigate('/')}
-                                className="flex items-center gap-2 px-8 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold transition-all"
+                                onClick={handleSaveResult}
+                                className="flex items-center gap-2 px-8 py-3 bg-[#0D9488] hover:bg-[#115E59] text-white rounded-xl font-bold shadow-lg transition-all hover:-translate-y-1"
                             >
-                                <Home size={20} /> Back to Home
+                                <Download size={20} /> SAVE RESULT
                             </button>
                         </div>
 
