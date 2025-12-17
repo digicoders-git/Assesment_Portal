@@ -12,11 +12,15 @@ import {
     X
 } from 'lucide-react';
 
+import { useUser } from '../../context/UserContext';
+
 export default function AdminDashboard() {
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const navigate = useNavigate();
     const location = useLocation();
+    const { user } = useUser();
 
+    // ... (menuItems and handleNavigation remain same - checking lines to skip them for brevity if possible, but replace_file_content needs contiguity if I don't use multi)
     const menuItems = [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard' },
         { id: 'topics', label: 'Manage Topics', icon: BookOpen, path: '/admin/topics' },
@@ -109,8 +113,15 @@ export default function AdminDashboard() {
                             </div>
                         </div>
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gradient-to-br from-teal-400 to-teal-500 rounded-full flex items-center justify-center">
-                                <Users className="h-5 w-5 text-white" />
+                            <span className="text-sm font-medium text-gray-700 hidden sm:block">
+                                {user?.name || "Admin"}
+                            </span>
+                            <div className="w-10 h-10 bg-gradient-to-br from-teal-400 to-teal-500 rounded-full flex items-center justify-center overflow-hidden border border-teal-100">
+                                {user?.image ? (
+                                    <img src={user.image} alt="Profile" className="w-full h-full object-cover" />
+                                ) : (
+                                    <Users className="h-5 w-5 text-white" />
+                                )}
                             </div>
                         </div>
                     </div>

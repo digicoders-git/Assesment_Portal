@@ -3,14 +3,23 @@ import { Mail, Lock, ArrowRight } from 'lucide-react';
 
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { useUser } from '../context/UserContext';
 
 export default function AdminLogin() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const navigate = useNavigate();
+    const { login } = useUser();
 
     const handleSubmit = () => {
         if (username && password) {
+            // Set default admin profile on login
+            login({
+                name: 'Admin User',
+                email: username,
+                image: null, // No image initially
+                role: 'admin'
+            });
             toast.success("Login Successful");
             navigate('/admin/dashboard');
         } else {

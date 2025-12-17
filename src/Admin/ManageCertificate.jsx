@@ -11,7 +11,7 @@ export function ManageCertificate() {
         {
             id: 1,
             name: "Skill Up Test by DigiCoders",
-            image: "https://via.placeholder.com/600x400",
+            image: "/certificate.jpg", // Changed from via.placeholder.com to local file to prevent timeout/network errors
             category: "Custom",
             studentName: { included: true, color: "#1e2a59", top: "40%", left: "50%" },
             assessmentName: { included: true, color: "#1e2a59", top: "30%", left: "50%" },
@@ -89,7 +89,7 @@ export function ManageCertificate() {
             setCertificates([...certificates, {
                 id: certificates.length + 1,
                 name: formData.name,
-                image: formData.image || "https://via.placeholder.com/600x400",
+                image: formData.image || "/certificate.jpg",
                 category: formData.category,
                 studentName: formData.studentName,
                 assessmentName: formData.assessmentName,
