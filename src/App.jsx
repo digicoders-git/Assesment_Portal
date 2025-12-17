@@ -49,7 +49,7 @@ function App() {
           <Route path="/admin/assessment/result/:id" element={<AssessmentResult />} />
         </Routes>
       </Router>
-      <ToastContainer position="top-right" autoClose={3000} />
+      <ToastContainer position="top-right" autoClose={2500} />
     </UserProvider>
   )
 }

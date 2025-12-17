@@ -138,6 +138,7 @@ export default function AdminDashboard() {
                         Copyright © 2025 <span className="text-teal-600 font-semibold">DigiCoders Assessment Portal</span> | All Rights Reserved.
                     </p>
                 </footer>
+                {/* hello */}
             </div>
         </div>
     );
