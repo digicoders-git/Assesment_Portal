@@ -6,7 +6,6 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { UserProvider } from "./context/UserContext";
 import AdminLogin from "./Admin/AdminLogin";
-import AdminDashboardLayout from "./components/adminComponents/AdminDashboard";
 import DashboardHome from "./Admin/DashboardHome";
 import {
   ManageTopics,
@@ -19,6 +18,7 @@ import {
 import PrintPaper from "./Admin/PrintPaper";
 import EditQuestions from "./Admin/EditQuestions";
 import AssessmentResult from "./Admin/AssessmentResult";
+import AdminDashboard from "./Comp/Admincomp/AdminDashboard";
 
 function App() {
   return (
@@ -31,7 +31,7 @@ function App() {
           <Route path="/admin/login" element={<AdminLogin />} />
 
           {/* Admin Nested Routes */}
-          <Route path="/admin" element={<AdminDashboardLayout />}>
+          <Route path="/admin" element={<AdminDashboard />}>
             <Route index element={<DashboardHome />} />
             <Route path="dashboard" element={<DashboardHome />} />
             <Route path="topics" element={<ManageTopics />} />
