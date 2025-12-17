@@ -1,5 +1,5 @@
 import { Clock, ChevronLeft, ChevronRight, SkipForward, Menu, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 import { useNavigate } from 'react-router-dom';
@@ -19,8 +19,39 @@ export default function Assessment() {
     const [skippedQuestions, setSkippedQuestions] = useState(new Set());
     const [isPaletteOpen, setIsPaletteOpen] = useState(false);
     const [timeLeft, setTimeLeft] = useState(2 * 60); // 30 minutes in seconds
+    const [visitedQuestions, setVisitedQuestions] = useState(new Set([0]));
+    const tabWarningsRef = useRef(0);
 
     const navigate = useNavigate();
+
+    // Initial Guidance Modal
+    useEffect(() => {
+        Swal.fire({
+            title: 'Assessment Started',
+            html: `
+            <div class="text-left">
+                <p class="mb-2">Please read the instructions carefully:</p>
+                <ul class="list-disc pl-5 space-y-1">
+                    <li><b>Do not switch tabs</b> or minimize the browser.</li>
+                    <li><b>Do not close</b> the test window.</li>
+                    <li>If you switch tabs, you will be <b>Out from the TEST</b>.</li>
+                </ul>
+            </div>
+        `,
+            icon: 'info',
+            iconColor: '#ef4444',
+            confirmButtonText: 'I Understand, Start Test',
+            confirmButtonColor: '#0D9488',
+            allowOutsideClick: false,
+            allowEscapeKey: false
+        });
+    }, []);
+
+
+    // Track Visited Questions
+    useEffect(() => {
+        setVisitedQuestions(prev => new Set(prev).add(currentQuestion));
+    }, [currentQuestion]);
 
     // Security & Timer Logic
     // Timer & Alerts Logic
@@ -98,9 +129,21 @@ export default function Assessment() {
         };
         const handleVisibilityChange = () => {
             if (document.hidden) {
-                localStorage.removeItem('digi_user');
-                toast.error("Tab switching detected! You have been logged out.", { autoClose: 5000, position: "top-center", theme: "colored" });
-                navigate('/');
+                if (tabWarningsRef.current === 0) {
+                    tabWarningsRef.current = 1;
+                    Swal.fire({
+                        title: 'Warning!',
+                        text: 'You switched tabs! This is your first and last warning. If you do it again, your test will be terminated.',
+                        icon: 'warning',
+                        confirmButtonColor: '#d33',
+                        confirmButtonText: 'I Understand',
+                        allowOutsideClick: false
+                    });
+                } else {
+                    localStorage.removeItem('digi_user');
+                    toast.error("Tab switching detected again! Test Terminated.", { autoClose: 5000, position: "top-center", theme: "colored" });
+                    navigate('/');
+                }
             }
         };
 
@@ -180,7 +223,9 @@ export default function Assessment() {
                 total: questions.length,
                 attempted: attemptedCount,
                 correct: correctCount,
-                incorrect: incorrectCount
+                correct: correctCount,
+                incorrect: incorrectCount,
+                submissionTime: new Date().toLocaleTimeString()
             }
         });
     };
@@ -415,6 +460,8 @@ export default function Assessment() {
                                     statusColor = "bg-[#0D9488] text-white border-[#0D9488]";
                                 } else if (status === 'skipped') {
                                     statusColor = "bg-yellow-100 text-yellow-600 border-yellow-200";
+                                } else if (!visitedQuestions.has(idx) && idx !== currentQuestion) {
+                                    statusColor = "bg-red-100 text-red-500 border-red-200"; // Unvisited
                                 }
 
                                 return (
@@ -442,6 +489,18 @@ export default function Assessment() {
                             <div className="flex items-center gap-3 text-sm font-medium text-gray-600">
                                 <span className="w-4 h-4 rounded bg-gray-100 border border-gray-200"></span> Unattempted
                             </div>
+                            <div className="flex items-center gap-3 text-sm font-medium text-gray-600">
+                                <span className="w-4 h-4 rounded bg-red-100 border border-red-200"></span> Unvisited
+                            </div>
+                        </div>
+
+                        <div className="p-6 mt-auto border-t border-gray-100">
+                            <button
+                                onClick={handleSubmit}
+                                className="w-full py-3 bg-[#0D9488] hover:bg-[#115E59] text-white rounded-xl font-bold shadow-lg shadow-teal-500/30 transition-all transform hover:scale-105"
+                            >
+                                Submit Assessment
+                            </button>
                         </div>
                     </div>
                 </aside>
@@ -450,6 +509,6 @@ export default function Assessment() {
             <footer className="text-center mt-8 text-gray-400 text-sm font-medium">
                 © 2025 DigiCoders Technologies. All Rights Reserved.
             </footer>
-        </div>
+        </div >
     );
 }

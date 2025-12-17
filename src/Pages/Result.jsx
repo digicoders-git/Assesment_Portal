@@ -140,6 +140,7 @@ export default function Result() {
                         <p className="text-gray-400 text-sm mt-2">Assessment Code: <span className="font-bold text-[#0D9488]">{assessmentCode}</span></p>
                         <p className="text-gray-400 text-sm mt-1">Test Name: <span className="font-bold text-[#0D9488]">{user.testName || 'N/A'}</span></p>
                         <p className="text-gray-400 text-sm mt-1">Date: <span className="font-bold text-[#0D9488]">{user.submissionDate ? new Date(user.submissionDate).toLocaleDateString() : new Date().toLocaleDateString()}</span></p>
+                        <p className="text-gray-400 text-sm mt-1">Time: <span className="font-bold text-[#0D9488]">{location.state.submissionTime || new Date().toLocaleTimeString()}</span></p>
                     </div>
 
                     <div className="flex flex-col items-center gap-2 mb-3">
