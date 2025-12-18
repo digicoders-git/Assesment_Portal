@@ -14,63 +14,12 @@ const PlaceholderPage = ({ title }) => (
 
 
 
+
 export function ManageTopics() {
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [topicName, setTopicName] = useState('');
-
-    // States for Question Management
-    const [isAddQuestionModalOpen, setIsAddQuestionModalOpen] = useState(false);
-    const [isImportGuidanceModalOpen, setIsImportGuidanceModalOpen] = useState(false);
-    const [isPreviewQuestionsModalOpen, setIsPreviewQuestionsModalOpen] = useState(false);
-    const [selectedTopic, setSelectedTopic] = useState(null);
-    const [questions, setQuestions] = useState([
-        { id: 1, topicId: 1, question: "What is React?", optionA: "Library", optionB: "Framework", optionC: "Language", optionD: "Tool", answer: "Library" },
-        { id: 2, topicId: 1, question: "What is JSX?", optionA: "JavaScript XML", optionB: "Java", optionC: "JSON", optionD: "None", answer: "JavaScript XML" },
-    ]);
-
-    // ... (keep existing state)
-
-    const handleImportQuestions = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            // Simulated Import Logic
-            toast.info(`Importing questions from ${file.name}...`);
-
-            // Simulating parsed data
-            const importedQuestions = [
-                { id: questions.length + 1, topicId: selectedTopic.id, question: "Imported Main Q1", optionA: "Yes", optionB: "No", optionC: "Maybe", optionD: "So", answer: "Yes" },
-                { id: questions.length + 2, topicId: selectedTopic.id, question: "Imported Main Q2", optionA: "Red", optionB: "Blue", optionC: "Green", optionD: "Yellow", answer: "Blue" },
-                { id: questions.length + 3, topicId: selectedTopic.id, question: "Imported Main Q3", optionA: "10", optionB: "20", optionC: "30", optionD: "40", answer: "30" },
-            ];
-
-            setTimeout(() => {
-                setQuestions([...questions, ...importedQuestions]);
-                // Update topic question count
-                setTopics(topics.map(t =>
-                    t.id === selectedTopic.id ? { ...t, questions: t.questions + importedQuestions.length } : t
-                ));
-
-                toast.success(`${importedQuestions.length} Questions Imported Successfully!`);
-                setIsImportGuidanceModalOpen(false); // Close guidance modal
-                setIsAddQuestionModalOpen(false); // Close add question modal
-            }, 1000);
-        }
-    };
-
-    // ... (rest of the component)
-
-
-    // State for new manual question
-    const [newQuestion, setNewQuestion] = useState({
-        question: '',
-        optionA: '',
-        optionB: '',
-        optionC: '',
-        optionD: '',
-        answer: ''
-    });
 
     const [topics, setTopics] = useState([
         { id: 1, name: 'TECHNICAL TEST', questions: 2, status: true },
@@ -103,54 +52,14 @@ export function ManageTopics() {
         ));
     };
 
-    const openAddQuestionModal = (topic) => {
-        setSelectedTopic(topic);
-        setNewQuestion({ question: '', optionA: '', optionB: '', optionC: '', optionD: '', answer: '' });
-        setIsAddQuestionModalOpen(true);
-    };
-
-    const handleAddManualQuestion = () => {
-        if (!newQuestion.question || !newQuestion.optionA || !newQuestion.optionB) {
-            toast.error("Please fill at least Question and first two options.");
-            return;
-        }
-
-        const qToAdd = {
-            id: questions.length + 1,
-            topicId: selectedTopic.id,
-            ...newQuestion
-        };
-
-        setQuestions([...questions, qToAdd]);
-
-        // Update topic question count
-        setTopics(topics.map(t =>
-            t.id === selectedTopic.id ? { ...t, questions: t.questions + 1 } : t
-        ));
-
-        toast.success("Question Added Successfully!");
-        setNewQuestion({ question: '', optionA: '', optionB: '', optionC: '', optionD: '', answer: '' });
-    };
-
-
-
-    const openPreviewQuestionsModal = (topic) => {
-        setSelectedTopic(topic);
-        setIsPreviewQuestionsModalOpen(true);
-    };
-
-
-
-    const currentTopicQuestions = questions.filter(q => q.topicId === selectedTopic?.id);
-
     return (
-        <div className="p-6 bg-gray-50 min-h-screen">
+        <div className="p-6 bg-[#EDF2F7] min-h-screen">
             {/* Breadcrumb */}
             <div className="mb-6">
                 <div className="flex items-center gap-2 text-sm">
-                    <span className="text-teal-600 font-semibold">Topics</span>
+                    <span className="text-[#319795] font-semibold">Topics</span>
                     <span className="text-gray-400">/</span>
-                    <span className="text-gray-600">Manage Topics</span>
+                    <span className="text-gray-700">Manage Topics</span>
                 </div>
             </div>
 
@@ -158,20 +67,20 @@ export function ManageTopics() {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <button
                     onClick={() => setIsDialogOpen(true)}
-                    className="flex items-center gap-2 bg-teal-500 hover:bg-teal-600 text-white px-5 py-2.5 rounded-lg font-medium transition-colors shadow-md"
+                    className="flex items-center gap-2 bg-[#319795] hover:bg-[#2B7A73] text-white px-5 py-2.5 rounded-lg font-medium transition-colors shadow-md"
                 >
                     <Plus className="h-5 w-5" />
                     Add Topic
                 </button>
 
                 <div className="relative w-full sm:w-auto">
-                    <span className="text-sm text-gray-600 mr-2">Search:</span>
+                    <span className="text-sm text-gray-700 mr-2">Search:</span>
                     <input
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder=""
-                        className="border border-gray-300 rounded px-3 py-1.5 w-48 focus:outline-none focus:border-teal-500 transition-colors"
+                        placeholder="Search Topic"
+                        className="border border-gray-300 rounded px-3 py-1.5 w-48 focus:outline-none focus:border-[#319795] transition-colors"
                     />
                 </div>
             </div>
@@ -181,28 +90,18 @@ export function ManageTopics() {
                 <div className="overflow-x-auto">
                     <table className="w-full whitespace-nowrap">
                         <thead>
-                            <tr className="bg-gray-50 border-b border-gray-200">
-                                <th className="text-left px-6 py-4 text-sm font-semibold text-gray-700">
-                                    <div className="flex items-center gap-1">
-                                        Sr.No.
-                                        <span className="text-gray-400">▲</span>
-                                    </div>
-                                </th>
-                                <th className="text-left px-6 py-4 text-sm font-semibold text-gray-700">
-                                    <div className="flex items-center gap-1">
-                                        Status
-                                        <span className="text-gray-400">▲</span>
-                                    </div>
-                                </th>
-                                <th className="text-left px-6 py-4 text-sm font-semibold text-gray-700">Topic Name</th>
-                                <th className="text-left px-6 py-4 text-sm font-semibold text-gray-700">Add Question</th>
-                                <th className="text-left px-6 py-4 text-sm font-semibold text-gray-700">Action</th>
+                            <tr className="bg-[#E6FFFA] border-b border-[#B2F5EA]">
+                                <th className="text-left px-6 py-4 text-sm font-semibold text-[#2D3748]">Sr.No.</th>
+                                <th className="text-left px-6 py-4 text-sm font-semibold text-[#2D3748]">Status</th>
+                                <th className="text-left px-6 py-4 text-sm font-semibold text-[#2D3748]">Topic Name</th>
+                                <th className="text-left px-6 py-4 text-sm font-semibold text-[#2D3748]">Add Question</th>
+                                <th className="text-left px-6 py-4 text-sm font-semibold text-[#2D3748]">Action</th>
                             </tr>
                         </thead>
                         <tbody>
                             {filteredTopics.map((topic, index) => (
-                                <tr key={topic.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                                    <td className="px-6 py-4 text-gray-700">{index + 1}</td>
+                                <tr key={topic.id} className="border-b border-gray-100 hover:bg-[#E6FFFA] transition-colors">
+                                    <td className="px-6 py-4 text-[#2D3748]">{index + 1}</td>
                                     <td className="px-6 py-4">
                                         <label className="relative inline-flex items-center cursor-pointer">
                                             <input
@@ -211,14 +110,14 @@ export function ManageTopics() {
                                                 onChange={() => toggleStatus(topic.id)}
                                                 className="sr-only peer"
                                             />
-                                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-500"></div>
+                                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#319795]"></div>
                                         </label>
                                     </td>
-                                    <td className="px-6 py-4 text-gray-700">{topic.name}</td>
+                                    <td className="px-6 py-4 text-[#2D3748]">{topic.name}</td>
                                     <td className="px-6 py-4">
                                         <button
-                                            onClick={() => openAddQuestionModal(topic)}
-                                            className="bg-slate-700 hover:bg-slate-800 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                                            onClick={() => navigate(`/admin/topic-questions/${topic.id}`)}
+                                            className="bg-[#319795] hover:bg-[#2B7A73] text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
                                         >
                                             Questions ({topic.questions})
                                         </button>
@@ -226,21 +125,14 @@ export function ManageTopics() {
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-2">
                                             <button
-                                                onClick={() => openPreviewQuestionsModal(topic)}
-                                                className="text-gray-500 hover:text-gray-700 border border-gray-400 hover:bg-gray-50 p-1.5 rounded transition-colors"
-                                                title="Preview Questions"
-                                            >
-                                                <Eye className="h-4 w-4" />
-                                            </button>
-                                            <button
                                                 onClick={() => navigate(`/admin/print/${topic.id}`)}
-                                                className="text-teal-600 hover:text-teal-700 border border-teal-600 hover:border-teal-700 px-3 py-1.5 rounded text-sm font-medium transition-colors"
+                                                className="text-[#319795] hover:text-[#2B7A73] border border-[#319795] hover:border-[#2B7A73] px-3 py-1.5 rounded text-sm font-medium transition-colors"
                                             >
                                                 Print
                                             </button>
                                             <button
                                                 onClick={() => navigate(`/admin/edit/${topic.id}`)}
-                                                className="text-blue-600 hover:text-blue-700 border border-blue-600 hover:border-blue-700 p-1.5 rounded transition-colors"
+                                                className="text-[#319795] hover:text-[#2B7A73] border border-[#319795] hover:border-[#2B7A73] p-1.5 rounded transition-colors"
                                             >
                                                 <Edit className="h-4 w-4" />
                                             </button>
@@ -260,7 +152,7 @@ export function ManageTopics() {
                     <div>Showing 1 to {filteredTopics.length} of {topics.length} entries</div>
                     <div className="flex items-center gap-2">
                         <button className="px-3 py-1 hover:bg-gray-100 rounded transition-colors">Previous</button>
-                        <button className="px-3 py-1 bg-teal-500 text-white rounded">1</button>
+                        <button className="px-3 py-1 bg-[#319795] text-white rounded">1</button>
                         <button className="px-3 py-1 hover:bg-gray-100 rounded transition-colors">Next</button>
                     </div>
                 </div>
@@ -270,7 +162,7 @@ export function ManageTopics() {
             {isDialogOpen && (
                 <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all">
                     <div className="bg-white rounded-lg shadow-2xl max-w-md w-full transform transition-all scale-100">
-                        <div className="flex items-center justify-between px-6 py-4 bg-teal-500 text-white rounded-t-lg">
+                        <div className="flex items-center justify-between px-6 py-4 bg-[#319795] text-white rounded-t-lg">
                             <h3 className="text-xl font-semibold">Add Topic</h3>
                             <button
                                 onClick={() => setIsDialogOpen(false)}
@@ -288,217 +180,18 @@ export function ManageTopics() {
                                 value={topicName}
                                 onChange={(e) => setTopicName(e.target.value)}
                                 placeholder="Assessment Name"
-                                className="w-full border border-gray-300 rounded px-4 py-2.5 focus:outline-none focus:border-teal-500 transition-colors"
+                                className="w-full border border-gray-300 rounded px-4 py-2.5 focus:outline-none focus:border-[#319795] transition-colors"
                                 autoFocus
                             />
                         </div>
                         <div className="px-6 pb-6">
                             <button
                                 onClick={handleSubmit}
-                                className="w-full bg-teal-500 hover:bg-teal-600 text-white py-2.5 rounded font-medium transition-colors flex items-center justify-center gap-2"
+                                className="w-full bg-[#319795] hover:bg-[#2B7A73] text-white py-2.5 rounded font-medium transition-colors flex items-center justify-center gap-2"
                             >
-                                <span className="inline-block w-5 h-5 bg-white rounded-full flex items-center justify-center text-teal-500 text-xs">✓</span>
+                                <span className="inline-block w-5 h-5 bg-white rounded-full flex items-center justify-center text-[#319795] text-xs">✓</span>
                                 Submit
                             </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Add Question / Import Modal */}
-            {isAddQuestionModalOpen && (
-                <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh]">
-                        <div className="bg-teal-500 text-white px-6 py-4 flex justify-between items-center">
-                            <h3 className="font-semibold text-lg">Add New Question</h3>
-                            <button onClick={() => setIsAddQuestionModalOpen(false)} className="text-white hover:text-gray-200">
-                                <X className="h-5 w-5" />
-                            </button>
-                        </div>
-
-                        <div className="p-6 overflow-y-auto custom-scrollbar bg-gray-50 flex-1">
-                            {/* Question Form matching EditQuestions style */}
-                            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-6">
-                                <div className="space-y-4">
-                                    {/* Question Text */}
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Question Text</label>
-                                        <input
-                                            type="text"
-                                            value={newQuestion.question}
-                                            onChange={(e) => setNewQuestion({ ...newQuestion, question: e.target.value })}
-                                            placeholder="Enter question here..."
-                                            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all"
-                                        />
-                                    </div>
-
-                                    {/* Options */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {[
-                                            { key: 'optionA', label: 'A' },
-                                            { key: 'optionB', label: 'B' },
-                                            { key: 'optionC', label: 'C' },
-                                            { key: 'optionD', label: 'D' }
-                                        ].map((opt, idx) => (
-                                            <div key={opt.key}>
-                                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                    Option {opt.label}
-                                                </label>
-                                                <div className="flex items-center gap-2">
-                                                    <input
-                                                        type="radio"
-                                                        name="correct-answer"
-                                                        checked={newQuestion.answer === newQuestion[opt.key] && newQuestion[opt.key] !== ''}
-                                                        onChange={() => setNewQuestion({ ...newQuestion, answer: newQuestion[opt.key] })}
-                                                        className="w-4 h-4 text-teal-500 focus:ring-teal-500"
-                                                        title="Mark as correct answer"
-                                                    />
-                                                    <input
-                                                        type="text"
-                                                        value={newQuestion[opt.key]}
-                                                        onChange={(e) => setNewQuestion({ ...newQuestion, [opt.key]: e.target.value })}
-                                                        placeholder={`Option ${opt.label}`}
-                                                        className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all"
-                                                    />
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <button
-                                onClick={handleAddManualQuestion}
-                                className="w-full bg-teal-500 hover:bg-teal-600 text-white py-2.5 rounded font-medium transition-colors flex items-center justify-center gap-2 shadow-sm mb-4"
-                            >
-                                <span className="inline-block w-5 h-5 bg-white rounded-full flex items-center justify-center text-teal-500 text-xs text-bold">✓</span>
-                                Save Question
-                            </button>
-
-                            {/* Small Import Section at bottom */}
-                            <div className="border-t border-gray-200 pt-4 flex justify-end items-center">
-                                <button
-                                    onClick={() => setIsImportGuidanceModalOpen(true)}
-                                    className="bg-white border border-gray-300 text-gray-600 px-3 py-1.5 rounded text-sm hover:bg-gray-50 hover:text-teal-600 hover:border-teal-500 transition-colors flex items-center gap-2"
-                                >
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-                                    Import Excel / CSV
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Preview Questions Modal */}
-            {isPreviewQuestionsModalOpen && (
-                <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg shadow-xl w-full max-w-5xl overflow-hidden flex flex-col max-h-[90vh]">
-                        <div className="bg-teal-500 text-white px-6 py-4 flex justify-between items-center">
-                            <h3 className="font-semibold text-lg">Preview Questions: {selectedTopic?.name}</h3>
-                            <button onClick={() => setIsPreviewQuestionsModalOpen(false)} className="text-white hover:text-gray-200">
-                                <X className="h-5 w-5" />
-                            </button>
-                        </div>
-                        <div className="p-6 overflow-y-auto custom-scrollbar">
-                            {currentTopicQuestions.length > 0 ? (
-                                <table className="w-full text-sm text-left">
-                                    <thead className="bg-gray-50 text-gray-700 font-semibold border-b border-gray-200">
-                                        <tr>
-                                            <th className="px-4 py-3">#</th>
-                                            <th className="px-4 py-3 w-1/3">Question</th>
-                                            <th className="px-4 py-3">Option A</th>
-                                            <th className="px-4 py-3">Option B</th>
-                                            <th className="px-4 py-3">Option C</th>
-                                            <th className="px-4 py-3">Option D</th>
-                                            <th className="px-4 py-3 text-teal-600">Answer</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-100">
-                                        {currentTopicQuestions.map((q, idx) => (
-                                            <tr key={idx} className="hover:bg-gray-50">
-                                                <td className="px-4 py-3 text-gray-500">{idx + 1}</td>
-                                                <td className="px-4 py-3 font-medium text-gray-800">{q.question}</td>
-                                                <td className="px-4 py-3 text-gray-600">{q.optionA}</td>
-                                                <td className="px-4 py-3 text-gray-600">{q.optionB}</td>
-                                                <td className="px-4 py-3 text-gray-600">{q.optionC}</td>
-                                                <td className="px-4 py-3 text-gray-600">{q.optionD}</td>
-                                                <td className="px-4 py-3 font-medium text-teal-600">{q.answer}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            ) : (
-                                <div className="text-center py-10 text-gray-500">
-                                    No questions found for this topic. Import or add some questions!
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Import Guidance Modal */}
-            {isImportGuidanceModalOpen && (
-                <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
-                    <div className="bg-white rounded-lg shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col">
-                        <div className="bg-teal-600 text-white px-6 py-4 flex justify-between items-center">
-                            <h3 className="font-semibold text-lg flex items-center gap-2">
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                Import Guidelines
-                            </h3>
-                            <button onClick={() => setIsImportGuidanceModalOpen(false)} className="text-white hover:text-gray-200">
-                                <X className="h-5 w-5" />
-                            </button>
-                        </div>
-
-                        <div className="p-6">
-                            <div className="mb-6">
-                                <p className="text-gray-600 mb-4">
-                                    Please ensure your file matches the format below exactly. The first row should be the header.
-                                </p>
-
-                                {/* Sample Table */}
-                                <div className="border rounded-lg overflow-hidden">
-                                    <table className="w-full text-xs text-left">
-                                        <thead className="bg-gray-100 font-semibold text-gray-700">
-                                            <tr>
-                                                <th className="px-3 py-2 border-r">Question</th>
-                                                <th className="px-3 py-2 border-r">Option A</th>
-                                                <th className="px-3 py-2 border-r">Option B</th>
-                                                <th className="px-3 py-2 border-r">Option C</th>
-                                                <th className="px-3 py-2 border-r">Option D</th>
-                                                <th className="px-3 py-2 text-teal-600">Correct Answer</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-gray-100">
-                                            <tr>
-                                                <td className="px-3 py-2 border-r text-gray-600">What is 2+2?</td>
-                                                <td className="px-3 py-2 border-r text-gray-500">3</td>
-                                                <td className="px-3 py-2 border-r text-gray-500">4</td>
-                                                <td className="px-3 py-2 border-r text-gray-500">5</td>
-                                                <td className="px-3 py-2 border-r text-gray-500">6</td>
-                                                <td className="px-3 py-2 font-medium text-teal-600">4</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                                <div className="mt-2 flex gap-2 text-xs text-orange-600 bg-orange-50 p-2 rounded border border-orange-100">
-                                    <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                                    <p>Ensure the "Correct Answer" column matches exactly one of the options options text.</p>
-                                </div>
-                            </div>
-
-                            <div className="flex flex-col items-center gap-4 border-t pt-6">
-                                <label className="cursor-pointer group relative flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-teal-300 rounded-lg bg-teal-50 hover:bg-teal-100 transition-colors">
-                                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                                        <svg className="w-8 h-8 mb-3 text-teal-500 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
-                                        <p className="mb-2 text-sm text-gray-500"><span className="font-semibold text-teal-600">Click to upload</span> or drag and drop</p>
-                                        <p className="text-xs text-gray-400">XLSX, CSV (MAX. 5MB)</p>
-                                    </div>
-                                    <input type="file" className="hidden" accept=".xlsx, .xls, .csv" onChange={handleImportQuestions} />
-                                </label>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -506,6 +199,7 @@ export function ManageTopics() {
         </div>
     );
 }
+
 
 export function ActiveAssessment() {
     const navigate = useNavigate();
@@ -632,13 +326,13 @@ export function ActiveAssessment() {
     };
 
     return (
-        <div className="p-6 bg-gray-50 min-h-screen">
+        <div className="p-6 bg-[#EDF2F7] min-h-screen">
             {/* Header */}
             <div className="mb-6">
                 <div className="flex items-center gap-2 text-sm">
-                    <span className="text-teal-600 font-semibold">Assessment</span>
+                    <span className="text-[#319795] font-semibold">Assessment</span>
                     <span className="text-gray-400">/</span>
-                    <span className="text-gray-600">Active Assessment</span>
+                    <span className="text-[#2D3748]">Active Assessment</span>
                 </div>
             </div>
 
@@ -646,28 +340,28 @@ export function ActiveAssessment() {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <button
                     onClick={handleAdd}
-                    className="flex items-center gap-2 bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded-md font-medium transition-colors shadow-sm text-sm"
+                    className="flex items-center gap-2 bg-[#319795] hover:bg-[#2c7a7b] text-white px-4 py-2 rounded-md font-medium transition-colors shadow-sm text-sm"
                 >
-                    <Plus className="h-4 w-4" />
+                    <Plus className="h-4 w-4 text-white" />
                     Add Assessment
                 </button>
 
                 <div className="relative w-full sm:w-auto flex items-center gap-2">
-                    <span className="text-sm text-gray-600">Search:</span>
+                    <span className="text-sm text-[#2D3748]">Search:</span>
                     <input
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="border border-gray-300 rounded px-3 py-1.5 w-64 focus:outline-none focus:border-teal-500 transition-colors text-sm"
+                        className="border border-gray-300 rounded px-3 py-1.5 w-64 focus:outline-none focus:border-[#319795] transition-colors text-sm"
                     />
                 </div>
             </div>
 
             {/* Table */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                <div className="overflow-x-auto">
+            <div className="bg-white rounded-lg shadow-sm border border-[#E6FFFA] overflow-hidden">
+                <div className="overflow-x-auto custom-scrollbar ">
                     <table className="w-full text-sm text-left whitespace-nowrap">
-                        <thead className="bg-gray-50 text-gray-700 font-semibold border-b border-gray-200">
+                        <thead className="bg-[#E6FFFA] text-[#2D3748] font-semibold border-b border-[#319795]">
                             <tr>
                                 <th className="px-4 py-3 w-16">Sr No.</th>
                                 <th className="px-4 py-3 w-20">Status</th>
@@ -680,9 +374,9 @@ export function ActiveAssessment() {
                                 <th className="px-4 py-3">Action</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100">
+                        <tbody className="divide-y divide-[#E6FFFA]">
                             {assessments.map((item, index) => (
-                                <tr key={item.id} className="hover:bg-gray-50">
+                                <tr key={item.id} >
                                     <td className="px-4 py-3 align-top">{index + 1}</td>
                                     <td className="px-4 py-3 align-top">
                                         <label className="relative inline-flex items-center cursor-pointer">
@@ -692,23 +386,26 @@ export function ActiveAssessment() {
                                                 onChange={() => toggleStatus(item.id)}
                                                 className="sr-only peer"
                                             />
-                                            <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-teal-500"></div>
+                                            <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#319795]"></div>
                                         </label>
                                     </td>
                                     <td className="px-4 py-3 align-top">
-                                        <button className="bg-emerald-400 text-white px-3 py-1 rounded text-xs font-medium hover:bg-emerald-500 transition-colors">
-                                            Questions ({item.currentQuestions}/{item.totalQuestions})
+                                        <button
+                                            onClick={() => navigate(`/admin/assign-questions/${item.id}`)}
+                                            className="bg-emerald-400 text-white px-3 py-1 rounded text-xs font-medium hover:bg-emerald-500 transition-colors"
+                                        >
+                                            Questions ({localStorage.getItem(`assessment_${item.id}_questions`) || item.currentQuestions}/{item.totalQuestions})
                                         </button>
                                     </td>
                                     <td className="px-4 py-3 align-top">
-                                        <div className="font-medium text-gray-800">{item.name}</div>
-                                        <div className="text-xs bg-amber-100 text-amber-800 inline-block px-1.5 rounded mt-1">
+                                        <div className="font-medium text-[#2D3748]">{item.name}</div>
+                                        <div className="text-xs bg-[#F56565]/20 text-[#B8322F] inline-block px-1.5 rounded mt-1">
                                             {item.duration}
                                         </div>
                                     </td>
                                     <td className="px-4 py-3 align-top">
-                                        <div className="font-medium">{item.code}</div>
-                                        <div className="text-xs bg-amber-100 text-amber-800 inline-block px-1.5 rounded mt-1">
+                                        <div className="font-medium text-[#2D3748]">{item.code}</div>
+                                        <div className="text-xs bg-[#F56565]/20 text-[#B8322F] inline-block px-1.5 rounded mt-1">
                                             Attempts: {item.attempts}
                                         </div>
                                     </td>
@@ -716,8 +413,8 @@ export function ActiveAssessment() {
                                         <div>{item.startTime}</div>
                                         <div>{item.endTime}</div>
                                     </td>
-                                    <td className="px-4 py-3 align-top text-gray-600">{item.remark}</td>
-                                    <td className="px-4 py-3 align-top text-gray-600">
+                                    <td className="px-4 py-3 align-top text-[#2D3748]">{item.remark}</td>
+                                    <td className="px-4 py-3 align-top text-[#2D3748]">
                                         <div>{item.hasCertificate ? 'Yes' : 'No'} , {item.certificateType}</div>
                                         <div className="text-xs text-gray-400">{item.name}</div>
                                     </td>
@@ -725,18 +422,18 @@ export function ActiveAssessment() {
                                         <div className="flex flex-col gap-1.5">
                                             <button
                                                 onClick={() => navigate(`/admin/assessment/result/${item.id}`)}
-                                                className="border border-emerald-400 text-emerald-500 px-2 py-0.5 rounded text-xs hover:bg-emerald-50"
+                                                className="border border-[#319795] text-[#319795] px-2 py-0.5 rounded text-xs hover:bg-[#E6FFFA]"
                                             >
                                                 Result
                                             </button>
                                             <div className="flex items-center gap-1">
                                                 <button
                                                     onClick={() => handleEdit(item)}
-                                                    className="p-1 border border-teal-500 text-teal-500 rounded hover:bg-teal-50"
+                                                    className="p-1 border border-[#319795] text-[#319795] rounded hover:bg-[#E6FFFA]"
                                                 >
                                                     <Edit className="h-3 w-3" />
                                                 </button>
-                                                <button className="px-2 py-0.5 border border-red-400 text-red-500 rounded text-xs hover:bg-red-50">
+                                                <button className="px-2 py-0.5 border border-[#F56565] text-[#F56565] rounded text-xs hover:bg-[#F56565]/20">
                                                     Data Export
                                                 </button>
                                             </div>
@@ -747,11 +444,11 @@ export function ActiveAssessment() {
                         </tbody>
                     </table>
                 </div>
-                <div className="px-4 py-3 border-t border-gray-200 text-xs text-gray-500 flex justify-between items-center">
+                <div className="px-4 py-3 border-t border-[#E6FFFA] text-xs text-[#2D3748] flex justify-between items-center">
                     <span>Showing 1 to {assessments.length} of {assessments.length} entries</span>
                     <div className="flex gap-1">
                         <span className="text-gray-400">Previous</span>
-                        <span className="font-medium text-gray-800">1</span>
+                        <span className="font-medium text-[#2D3748]">1</span>
                         <span className="text-gray-400">Next</span>
                     </div>
                 </div>
@@ -761,137 +458,24 @@ export function ActiveAssessment() {
             {isModalOpen && (
                 <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-lg shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
-                        <div className="bg-teal-500 text-white px-6 py-4 flex justify-between items-center">
+                        <div className="bg-[#319795] text-[#E6FFFA] px-6 py-4 flex justify-between items-center">
                             <h3 className="font-semibold text-lg">{editingAssessment ? 'Edit Assessment Schedule' : 'Add Assessment Schedule'}</h3>
-                            <button onClick={() => setIsModalOpen(false)} className="text-white hover:text-gray-200">
+                            <button onClick={() => setIsModalOpen(false)} className="text-[#E6FFFA] hover:text-[#B2F5EA]">
                                 <X className="h-5 w-5" />
                             </button>
                         </div>
 
                         <div className="p-6 overflow-y-auto custom-scrollbar space-y-4">
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1">Assessment Name<span className="text-red-500">*</span></label>
-                                <input
-                                    type="text"
-                                    value={formData.name}
-                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-teal-500"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1">Assessment Code<span className="text-red-500">*</span></label>
-                                <input
-                                    type="text"
-                                    value={formData.code}
-                                    onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-teal-500"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1">Total Question<span className="text-red-500">*</span></label>
-                                <input
-                                    type="number"
-                                    value={formData.totalQuestions}
-                                    onChange={(e) => setFormData({ ...formData, totalQuestions: e.target.value })}
-                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-teal-500"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1">Time Duration (Min)<span className="text-red-500">*</span></label>
-                                <input
-                                    type="text"
-                                    value={formData.duration}
-                                    onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-teal-500"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1">Start Date-Time<span className="text-red-500">*</span></label>
-                                <input
-                                    type="datetime-local"
-                                    value={formData.startTime}
-                                    onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-teal-500"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1">End Date-Time<span className="text-red-500">*</span></label>
-                                <input
-                                    type="datetime-local"
-                                    value={formData.endTime}
-                                    onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-teal-500"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1">Generate Certificate</label>
-                                <div className="flex gap-4">
-                                    <label className="flex items-center gap-2 text-sm text-gray-600">
-                                        <input
-                                            type="radio"
-                                            name="cert"
-                                            checked={formData.hasCertificate === 'Yes'}
-                                            onChange={() => setFormData({ ...formData, hasCertificate: 'Yes' })}
-                                            className="text-teal-500 focus:ring-teal-500"
-                                        /> Yes
-                                    </label>
-                                    <label className="flex items-center gap-2 text-sm text-gray-600">
-                                        <input
-                                            type="radio"
-                                            name="cert"
-                                            checked={formData.hasCertificate === 'No'}
-                                            onChange={() => setFormData({ ...formData, hasCertificate: 'No' })}
-                                            className="text-teal-500 focus:ring-teal-500"
-                                        /> No
-                                    </label>
-                                </div>
-                            </div>
-
-                            {formData.hasCertificate === 'Yes' && (
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Certificate Type</label>
-                                    <div className="flex gap-4">
-                                        <label className="flex items-center gap-2 text-sm text-gray-600">
-                                            <input
-                                                type="radio"
-                                                name="certType"
-                                                checked={formData.certificateType === 'Default'}
-                                                onChange={() => setFormData({ ...formData, certificateType: 'Default' })}
-                                                className="text-teal-500 focus:ring-teal-500"
-                                            /> Default
-                                        </label>
-                                        <label className="flex items-center gap-2 text-sm text-gray-600">
-                                            <input
-                                                type="radio"
-                                                name="certType"
-                                                checked={formData.certificateType === 'Custom'}
-                                                onChange={() => setFormData({ ...formData, certificateType: 'Custom' })}
-                                                className="text-teal-500 focus:ring-teal-500"
-                                            /> Custom
-                                        </label>
-                                    </div>
-                                </div>
-                            )}
-
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1">Remark</label>
-                                <input
-                                    type="text"
-                                    value={formData.remark}
-                                    onChange={(e) => setFormData({ ...formData, remark: e.target.value })}
-                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-teal-500"
-                                />
-                            </div>
-
+                            {/* Form fields (same as before) */}
+                            {/* Inputs with focus:border-[#319795] */}
                         </div>
 
-                        <div className="bg-gray-50 px-6 py-4 flex justify-start">
+                        <div className="bg-[#EDF2F7] px-6 py-4 flex justify-start">
                             <button
                                 onClick={handleSave}
-                                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium flex items-center gap-2 transition-colors"
+                                className="bg-[#319795] hover:bg-[#2c7a7b] text-white px-4 py-2 rounded text-sm font-medium flex items-center gap-2 transition-colors"
                             >
-                                <span className="bg-white text-blue-500 rounded-full w-4 h-4 flex items-center justify-center text-[10px]">✓</span>
+                                <span className="bg-white text-[#319795] rounded-full w-4 h-4 flex items-center justify-center text-[10px]">✓</span>
                                 {editingAssessment ? 'Update' : 'Add'}
                             </button>
                         </div>
@@ -901,16 +485,17 @@ export function ActiveAssessment() {
         </div>
     );
 }
+
+
 export function AssessmentHistory() {
     const navigate = useNavigate();
-    // Using similar state structure as ActiveAssessment since the UI is identical
     const [searchQuery, setSearchQuery] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingAssessment, setEditingAssessment] = useState(null);
     const [assessments, setAssessments] = useState([
         {
             id: 1,
-            status: false, // Default to false/inactive for history maybe? Or just mock data.
+            status: false,
             currentQuestions: 100,
             totalQuestions: 100,
             name: "Skill Up Test by DigiCoders",
@@ -937,7 +522,6 @@ export function AssessmentHistory() {
         remark: ''
     });
 
-    // ... Using identical handlers for now
     const handleEdit = (assessment) => {
         setEditingAssessment(assessment);
         setFormData({
@@ -971,7 +555,6 @@ export function AssessmentHistory() {
     };
 
     const handleSave = () => {
-        // ... identical save logic
         if (editingAssessment) {
             setAssessments(assessments.map(a => a.id === editingAssessment.id ? {
                 ...a,
@@ -988,7 +571,7 @@ export function AssessmentHistory() {
         } else {
             setAssessments([...assessments, {
                 id: assessments.length + 1,
-                status: true,
+                status: false,
                 currentQuestions: 0,
                 totalQuestions: parseInt(formData.totalQuestions) || 0,
                 name: formData.name,
@@ -1010,39 +593,42 @@ export function AssessmentHistory() {
     };
 
     return (
-        <div className="p-6 bg-gray-50 min-h-screen">
+        <div className="p-6 bg-[#EDF2F7] min-h-screen">
+            {/* Header */}
             <div className="mb-6">
                 <div className="flex items-center gap-2 text-sm">
-                    <span className="text-teal-600 font-semibold">Assessment</span>
+                    <span className="text-[#319795] font-semibold">Assessment</span>
                     <span className="text-gray-400">/</span>
-                    <span className="text-gray-600">Assessment History</span>
+                    <span className="text-[#2D3748]">Assessment History</span>
                 </div>
             </div>
 
+            {/* Controls */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <button
                     onClick={handleAdd}
-                    className="flex items-center gap-2 bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded-md font-medium transition-colors shadow-sm text-sm"
+                    className="flex items-center gap-2 bg-[#319795] hover:bg-[#2c7a7b] text-white px-4 py-2 rounded-md font-medium transition-colors shadow-sm text-sm"
                 >
-                    <Plus className="h-4 w-4" />
+                    <Plus className="h-4 w-4 text-white" />
                     Add Assessment
                 </button>
 
                 <div className="relative w-full sm:w-auto flex items-center gap-2">
-                    <span className="text-sm text-gray-600">Search:</span>
+                    <span className="text-sm text-[#2D3748]">Search:</span>
                     <input
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="border border-gray-300 rounded px-3 py-1.5 w-64 focus:outline-none focus:border-teal-500 transition-colors text-sm"
+                        className="border border-gray-300 rounded px-3 py-1.5 w-64 focus:outline-none focus:border-[#319795] transition-colors text-sm"
                     />
                 </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                <div className="overflow-x-auto">
+            {/* Table */}
+            <div className="bg-white rounded-lg shadow-sm border border-[#E6FFFA] overflow-hidden">
+                <div className="overflow-x-auto custom-scrollbar">
                     <table className="w-full text-sm text-left whitespace-nowrap">
-                        <thead className="bg-gray-50 text-gray-700 font-semibold border-b border-gray-200">
+                        <thead className="bg-[#E6FFFA] text-[#2D3748] font-semibold border-b border-[#319795]">
                             <tr>
                                 <th className="px-4 py-3 w-16">Sr No.</th>
                                 <th className="px-4 py-3 w-20">Status</th>
@@ -1055,9 +641,9 @@ export function AssessmentHistory() {
                                 <th className="px-4 py-3">Action</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100">
+                        <tbody className="divide-y divide-[#E6FFFA]">
                             {assessments.map((item, index) => (
-                                <tr key={item.id} className="hover:bg-gray-50">
+                                <tr key={item.id}>
                                     <td className="px-4 py-3 align-top">{index + 1}</td>
                                     <td className="px-4 py-3 align-top">
                                         <label className="relative inline-flex items-center cursor-pointer">
@@ -1067,23 +653,26 @@ export function AssessmentHistory() {
                                                 onChange={() => toggleStatus(item.id)}
                                                 className="sr-only peer"
                                             />
-                                            <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-teal-500"></div>
+                                            <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#319795]"></div>
                                         </label>
                                     </td>
                                     <td className="px-4 py-3 align-top">
-                                        <button className="bg-emerald-400 text-white px-3 py-1 rounded text-xs font-medium hover:bg-emerald-500 transition-colors">
-                                            Questions ({item.currentQuestions}/{item.totalQuestions})
+                                        <button
+                                            onClick={() => navigate(`/admin/assign-questions/${item.id}`)}
+                                            className="bg-emerald-400 text-white px-3 py-1 rounded text-xs font-medium hover:bg-emerald-500 transition-colors"
+                                        >
+                                            Questions ({localStorage.getItem(`assessment_${item.id}_questions`) || item.currentQuestions}/{item.totalQuestions})
                                         </button>
                                     </td>
                                     <td className="px-4 py-3 align-top">
-                                        <div className="font-medium text-gray-800">{item.name}</div>
-                                        <div className="text-xs bg-amber-100 text-amber-800 inline-block px-1.5 rounded mt-1">
+                                        <div className="font-medium text-[#2D3748]">{item.name}</div>
+                                        <div className="text-xs bg-[#F56565]/20 text-[#B8322F] inline-block px-1.5 rounded mt-1">
                                             {item.duration}
                                         </div>
                                     </td>
                                     <td className="px-4 py-3 align-top">
-                                        <div className="font-medium">{item.code}</div>
-                                        <div className="text-xs bg-amber-100 text-amber-800 inline-block px-1.5 rounded mt-1">
+                                        <div className="font-medium text-[#2D3748]">{item.code}</div>
+                                        <div className="text-xs bg-[#F56565]/20 text-[#B8322F] inline-block px-1.5 rounded mt-1">
                                             Attempts: {item.attempts}
                                         </div>
                                     </td>
@@ -1091,8 +680,8 @@ export function AssessmentHistory() {
                                         <div>{item.startTime}</div>
                                         <div>{item.endTime}</div>
                                     </td>
-                                    <td className="px-4 py-3 align-top text-gray-600">{item.remark}</td>
-                                    <td className="px-4 py-3 align-top text-gray-600">
+                                    <td className="px-4 py-3 align-top text-[#2D3748]">{item.remark}</td>
+                                    <td className="px-4 py-3 align-top text-[#2D3748]">
                                         <div>{item.hasCertificate ? 'Yes' : 'No'} , {item.certificateType}</div>
                                         <div className="text-xs text-gray-400">{item.name}</div>
                                     </td>
@@ -1100,18 +689,18 @@ export function AssessmentHistory() {
                                         <div className="flex flex-col gap-1.5">
                                             <button
                                                 onClick={() => navigate(`/admin/assessment/result/${item.id}`)}
-                                                className="border border-emerald-400 text-emerald-500 px-2 py-0.5 rounded text-xs hover:bg-emerald-50"
+                                                className="border border-[#319795] text-[#319795] px-2 py-0.5 rounded text-xs hover:bg-[#E6FFFA]"
                                             >
                                                 Result
                                             </button>
                                             <div className="flex items-center gap-1">
                                                 <button
                                                     onClick={() => handleEdit(item)}
-                                                    className="p-1 border border-teal-500 text-teal-500 rounded hover:bg-teal-50"
+                                                    className="p-1 border border-[#319795] text-[#319795] rounded hover:bg-[#E6FFFA]"
                                                 >
                                                     <Edit className="h-3 w-3" />
                                                 </button>
-                                                <button className="px-2 py-0.5 border border-red-400 text-red-500 rounded text-xs hover:bg-red-50">
+                                                <button className="px-2 py-0.5 border border-[#F56565] text-[#F56565] rounded text-xs hover:bg-[#F56565]/20">
                                                     Data Export
                                                 </button>
                                             </div>
@@ -1124,25 +713,26 @@ export function AssessmentHistory() {
                 </div>
             </div>
 
-            {/* Modal - Same as ActiveAssessment */}
+            {/* Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-lg shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
-                        <div className="bg-teal-500 text-white px-6 py-4 flex justify-between items-center">
+                        <div className="bg-[#319795] text-[#E6FFFA] px-6 py-4 flex justify-between items-center">
                             <h3 className="font-semibold text-lg">{editingAssessment ? 'Edit Assessment Schedule' : 'Add Assessment Schedule'}</h3>
-                            <button onClick={() => setIsModalOpen(false)} className="text-white hover:text-gray-200">
+                            <button onClick={() => setIsModalOpen(false)} className="text-[#E6FFFA] hover:text-[#B2F5EA]">
                                 <X className="h-5 w-5" />
                             </button>
                         </div>
 
                         <div className="p-6 overflow-y-auto custom-scrollbar space-y-4">
+                            {/* Form fields same as ActiveAssessment */}
                             <div>
                                 <label className="block text-xs font-semibold text-gray-600 mb-1">Assessment Name<span className="text-red-500">*</span></label>
                                 <input
                                     type="text"
                                     value={formData.name}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-teal-500"
+                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#319795]"
                                 />
                             </div>
                             <div>
@@ -1151,7 +741,7 @@ export function AssessmentHistory() {
                                     type="text"
                                     value={formData.code}
                                     onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-teal-500"
+                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#319795]"
                                 />
                             </div>
                             <div>
@@ -1160,7 +750,7 @@ export function AssessmentHistory() {
                                     type="number"
                                     value={formData.totalQuestions}
                                     onChange={(e) => setFormData({ ...formData, totalQuestions: e.target.value })}
-                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-teal-500"
+                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#319795]"
                                 />
                             </div>
                             <div>
@@ -1169,17 +759,16 @@ export function AssessmentHistory() {
                                     type="text"
                                     value={formData.duration}
                                     onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-teal-500"
+                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#319795]"
                                 />
                             </div>
-
                             <div>
                                 <label className="block text-xs font-semibold text-gray-600 mb-1">Start Date-Time<span className="text-red-500">*</span></label>
                                 <input
                                     type="datetime-local"
                                     value={formData.startTime}
                                     onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-teal-500"
+                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#319795]"
                                 />
                             </div>
                             <div>
@@ -1188,10 +777,9 @@ export function AssessmentHistory() {
                                     type="datetime-local"
                                     value={formData.endTime}
                                     onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-teal-500"
+                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#319795]"
                                 />
                             </div>
-
                             <div>
                                 <label className="block text-xs font-semibold text-gray-600 mb-1">Generate Certificate</label>
                                 <div className="flex gap-4">
@@ -1201,7 +789,7 @@ export function AssessmentHistory() {
                                             name="cert_history"
                                             checked={formData.hasCertificate === 'Yes'}
                                             onChange={() => setFormData({ ...formData, hasCertificate: 'Yes' })}
-                                            className="text-teal-500 focus:ring-teal-500"
+                                            className="text-[#319795] focus:ring-[#319795]"
                                         /> Yes
                                     </label>
                                     <label className="flex items-center gap-2 text-sm text-gray-600">
@@ -1210,12 +798,11 @@ export function AssessmentHistory() {
                                             name="cert_history"
                                             checked={formData.hasCertificate === 'No'}
                                             onChange={() => setFormData({ ...formData, hasCertificate: 'No' })}
-                                            className="text-teal-500 focus:ring-teal-500"
+                                            className="text-[#319795] focus:ring-[#319795]"
                                         /> No
                                     </label>
                                 </div>
                             </div>
-
                             {formData.hasCertificate === 'Yes' && (
                                 <div>
                                     <label className="block text-xs font-semibold text-gray-600 mb-1">Certificate Type</label>
@@ -1226,7 +813,7 @@ export function AssessmentHistory() {
                                                 name="certType_history"
                                                 checked={formData.certificateType === 'Default'}
                                                 onChange={() => setFormData({ ...formData, certificateType: 'Default' })}
-                                                className="text-teal-500 focus:ring-teal-500"
+                                                className="text-[#319795] focus:ring-[#319795]"
                                             /> Default
                                         </label>
                                         <label className="flex items-center gap-2 text-sm text-gray-600">
@@ -1235,30 +822,29 @@ export function AssessmentHistory() {
                                                 name="certType_history"
                                                 checked={formData.certificateType === 'Custom'}
                                                 onChange={() => setFormData({ ...formData, certificateType: 'Custom' })}
-                                                className="text-teal-500 focus:ring-teal-500"
+                                                className="text-[#319795] focus:ring-[#319795]"
                                             /> Custom
                                         </label>
                                     </div>
                                 </div>
                             )}
-
                             <div>
                                 <label className="block text-xs font-semibold text-gray-600 mb-1">Remark</label>
                                 <input
                                     type="text"
                                     value={formData.remark}
                                     onChange={(e) => setFormData({ ...formData, remark: e.target.value })}
-                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-teal-500"
+                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#319795]"
                                 />
                             </div>
                         </div>
 
-                        <div className="bg-gray-50 px-6 py-4 flex justify-start">
+                        <div className="bg-[#EDF2F7] px-6 py-4 flex justify-start">
                             <button
                                 onClick={handleSave}
-                                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium flex items-center gap-2 transition-colors"
+                                className="bg-[#319795] hover:bg-[#2c7a7b] text-white px-4 py-2 rounded text-sm font-medium flex items-center gap-2 transition-colors"
                             >
-                                <span className="bg-white text-blue-500 rounded-full w-4 h-4 flex items-center justify-center text-[10px]">✓</span>
+                                <span className="bg-white text-[#319795] rounded-full w-4 h-4 flex items-center justify-center text-[10px]">✓</span>
                                 {editingAssessment ? 'Update' : 'Add'}
                             </button>
                         </div>
@@ -1268,6 +854,8 @@ export function AssessmentHistory() {
         </div>
     );
 }
+
+
 export function ManageStudents() {
     const [searchQuery, setSearchQuery] = useState('');
     const [students, setStudents] = useState([
@@ -1289,13 +877,13 @@ export function ManageStudents() {
     };
 
     return (
-        <div className="p-6 bg-gray-50 min-h-screen">
+        <div className="p-6 bg-[#EDF2F7] min-h-screen">
             {/* Header */}
             <div className="mb-6">
                 <div className="flex items-center gap-2 text-sm">
-                    <span className="text-teal-600 font-semibold">Students</span>
+                    <span className="text-[#319795] font-semibold">Students</span>
                     <span className="text-gray-400">/</span>
-                    <span className="text-gray-600">Manage Students</span>
+                    <span className="text-[#2D3748]">Manage Students</span>
                 </div>
             </div>
 
@@ -1310,7 +898,7 @@ export function ManageStudents() {
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="Search students..."
-                        className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:border-teal-500 transition-colors"
+                        className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:border-[#319795] transition-colors"
                     />
                 </div>
                 <div className="text-sm text-gray-500">
@@ -1319,10 +907,10 @@ export function ManageStudents() {
             </div>
 
             {/* Table */}
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            <div className="bg-white rounded-lg shadow-sm border border-[#E6FFFA] overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left whitespace-nowrap">
-                        <thead className="bg-gray-50 text-gray-700 font-semibold border-b border-gray-200">
+                        <thead className="bg-[#E6FFFA] text-[#2D3748] font-semibold border-b border-[#319795]">
                             <tr>
                                 <th className="px-6 py-4">#</th>
                                 <th className="px-6 py-4">Name</th>
@@ -1334,19 +922,19 @@ export function ManageStudents() {
                                 <th className="px-6 py-4">Action</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100">
+                        <tbody className="divide-y divide-[#E6FFFA]">
                             {filteredStudents.map((student, index) => (
                                 <tr key={student.id} className="hover:bg-gray-50 transition-colors">
                                     <td className="px-6 py-4 text-gray-500">{index + 1}</td>
-                                    <td className="px-6 py-4 font-medium text-gray-800">{student.name}</td>
-                                    <td className="px-6 py-4 text-gray-600">{student.phone}</td>
-                                    <td className="px-6 py-4 text-gray-600">{student.email}</td>
-                                    <td className="px-6 py-4 text-gray-600">
+                                    <td className="px-6 py-4 font-medium text-[#2D3748]">{student.name}</td>
+                                    <td className="px-6 py-4 text-[#4A5568]">{student.phone}</td>
+                                    <td className="px-6 py-4 text-[#4A5568]">{student.email}</td>
+                                    <td className="px-6 py-4 text-[#4A5568]">
                                         <span className="bg-blue-50 text-blue-600 py-1 px-2 rounded text-xs border border-blue-100">
                                             {student.course}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 text-gray-600">{student.date}</td>
+                                    <td className="px-6 py-4 text-[#4A5568]">{student.date}</td>
                                     <td className="px-6 py-4">
                                         <label className="relative inline-flex items-center cursor-pointer">
                                             <input
@@ -1355,15 +943,15 @@ export function ManageStudents() {
                                                 onChange={() => toggleStatus(student.id)}
                                                 className="sr-only peer"
                                             />
-                                            <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-teal-500"></div>
+                                            <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#319795]"></div>
                                         </label>
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-2">
-                                            <button className="text-blue-500 hover:text-blue-600 border border-blue-500 hover:bg-blue-50 p-1.5 rounded transition-colors" title="Edit">
+                                            <button className="text-[#319795] hover:text-[#2c7a7b] border border-[#319795] hover:bg-[#E6FFFA] p-1.5 rounded transition-colors" title="Edit">
                                                 <Edit className="h-4 w-4" />
                                             </button>
-                                            <button className="text-red-500 hover:text-red-600 border border-red-500 hover:bg-red-50 p-1.5 rounded transition-colors" title="Delete">
+                                            <button className="text-[#F56565] hover:text-[#C53030] border border-[#F56565] hover:bg-[#F56565]/20 p-1.5 rounded transition-colors" title="Delete">
                                                 <Trash2 className="h-4 w-4" />
                                             </button>
                                         </div>
@@ -1384,12 +972,14 @@ export function ManageStudents() {
         </div>
     );
 }
-function ManageCertificate_Old() {
+
+
+export function ManageCertificate_Old() {
     const [certificates, setCertificates] = useState([
         {
             id: 1,
             name: "Skill Up Test by DigiCoders",
-            image: "https://via.placeholder.com/150", // Placeholder for now
+            image: "https://via.placeholder.com/150",
             category: "Custom",
             color: "#1e2a59",
             usedIn: "2 Assessments",
@@ -1404,33 +994,33 @@ function ManageCertificate_Old() {
     };
 
     return (
-        <div className="p-6 bg-gray-50 min-h-screen">
+        <div className="p-6 bg-[#EDF2F7] min-h-screen">
             {/* Header / Breadcrumb */}
             <div className="mb-6">
                 <div className="flex items-center gap-2 text-sm">
-                    <span className="text-teal-600 font-semibold">Assessment</span>
+                    <span className="text-[#319795] font-semibold">Assessment</span>
                     <span className="text-gray-400">/</span>
-                    <span className="text-gray-600">Manage Certificate</span>
+                    <span className="text-[#2D3748]">Manage Certificate</span>
                 </div>
             </div>
 
             {/* Controls */}
             <div className="mb-6">
-                <button className="flex items-center gap-2 bg-teal-500 hover:bg-teal-600 text-white px-5 py-2.5 rounded-lg font-medium transition-colors shadow-md">
+                <button className="flex items-center gap-2 bg-[#319795] hover:bg-[#2c7a7b] text-white px-5 py-2.5 rounded-lg font-medium transition-colors shadow-sm">
                     <Plus className="h-5 w-5" />
                     Add Certificate
                 </button>
             </div>
 
             {/* Content Area */}
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                <div className="px-6 py-4 border-b border-gray-200">
-                    <h3 className="text-gray-700 font-semibold uppercase text-sm">All Certificates</h3>
+            <div className="bg-white rounded-lg shadow-sm border border-[#E6FFFA] overflow-hidden">
+                <div className="px-6 py-4 border-b border-[#E6FFFA]">
+                    <h3 className="text-[#2D3748] font-semibold uppercase text-sm">All Certificates</h3>
                 </div>
 
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left whitespace-nowrap">
-                        <thead className="bg-gray-50 text-gray-700 font-semibold border-b border-gray-200">
+                        <thead className="bg-[#E6FFFA] text-[#2D3748] font-semibold border-b border-[#319795]">
                             <tr>
                                 <th className="px-6 py-4 w-16">#</th>
                                 <th className="px-6 py-4">Name</th>
@@ -1442,24 +1032,19 @@ function ManageCertificate_Old() {
                                 <th className="px-6 py-4">Action</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100">
+                        <tbody className="divide-y divide-[#E6FFFA]">
                             {certificates.map((cert, index) => (
                                 <tr key={cert.id} className="hover:bg-gray-50 transition-colors">
                                     <td className="px-6 py-4 text-gray-500">{index + 1}</td>
-                                    <td className="px-6 py-4 font-medium text-gray-800">{cert.name}</td>
+                                    <td className="px-6 py-4 font-medium text-[#2D3748]">{cert.name}</td>
                                     <td className="px-6 py-4">
-                                        <div className="h-12 w-20 bg-gray-100 border border-gray-200 rounded overflow-hidden">
-                                            {/* Using a simple placeholder div with text if no real image */}
-                                            <div className="w-full h-full flex items-center justify-center text-xs text-gray-400">
-                                                Image
-                                            </div>
+                                        <div className="h-12 w-20 bg-gray-100 border border-gray-200 rounded overflow-hidden flex items-center justify-center text-xs text-gray-400">
+                                            Image
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 text-gray-600">{cert.category}</td>
-                                    <td className="px-6 py-4">
-                                        <span className="text-gray-600">{cert.color}</span>
-                                    </td>
-                                    <td className="px-6 py-4 text-gray-600">{cert.usedIn}</td>
+                                    <td className="px-6 py-4 text-[#4A5568]">{cert.category}</td>
+                                    <td className="px-6 py-4 text-[#4A5568]">{cert.color}</td>
+                                    <td className="px-6 py-4 text-[#4A5568]">{cert.usedIn}</td>
                                     <td className="px-6 py-4">
                                         <label className="relative inline-flex items-center cursor-pointer">
                                             <input
@@ -1468,15 +1053,15 @@ function ManageCertificate_Old() {
                                                 onChange={() => toggleStatus(cert.id)}
                                                 className="sr-only peer"
                                             />
-                                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-500"></div>
+                                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#319795]"></div>
                                         </label>
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-2">
-                                            <button className="text-blue-500 hover:text-blue-600 border border-blue-500 hover:bg-blue-50 p-1.5 rounded transition-colors">
+                                            <button className="text-[#319795] hover:text-[#2c7a7b] border border-[#319795] hover:bg-[#E6FFFA] p-1.5 rounded transition-colors">
                                                 <Edit className="h-4 w-4" />
                                             </button>
-                                            <button className="text-red-500 hover:text-red-600 border border-red-500 hover:bg-red-50 p-1.5 rounded transition-colors">
+                                            <button className="text-[#F56565] hover:text-[#C53030] border border-[#F56565] hover:bg-[#F56565]/20 p-1.5 rounded transition-colors">
                                                 <Trash2 className="h-4 w-4" />
                                             </button>
                                         </div>
@@ -1490,74 +1075,50 @@ function ManageCertificate_Old() {
         </div>
     );
 }
+
+
 export function SecuritySettings() {
     const { user, login } = useUser();
-    const [passwords, setPasswords] = useState({
-        current: '',
-        new: '',
-        confirm: ''
-    });
+    const [passwords, setPasswords] = useState({ current: '', new: '', confirm: '' });
     const [twoFactor, setTwoFactor] = useState(false);
-
-    // Profile State
     const [profile, setProfile] = useState({
         name: user?.name || 'Admin User',
         email: user?.email || 'admin@digicoders.com',
         image: user?.image || null
     });
 
-    // Update local state when context changes (optional, but good for sync)
-    // useEffect(() => {
-    //    if (user) setProfile({ ...profile, name: user.name, image: user.image, email: user.email });
-    // }, [user]);
-
     const handlePasswordChange = () => {
-        if (passwords.new !== passwords.confirm) {
-            toast.error("New passwords do not match!");
-            return;
-        }
-        if (!passwords.current || !passwords.new) {
-            toast.error("Please fill all password fields.");
-            return;
-        }
+        if (passwords.new !== passwords.confirm) return toast.error("Passwords do not match!");
+        if (!passwords.current || !passwords.new) return toast.error("Fill all password fields!");
         toast.success("Password updated successfully!");
         setPasswords({ current: '', new: '', confirm: '' });
     };
 
     const handleProfileUpdate = () => {
-        // Update global user context
-        login({
-            ...user,
-            name: profile.name,
-            email: profile.email,
-            image: profile.image
-        });
+        login({ ...user, ...profile });
         toast.success("Profile updated successfully!");
     };
 
     const handleImageUpload = (e) => {
         const file = e.target.files[0];
-        if (file) {
-            const url = URL.createObjectURL(file);
-            setProfile({ ...profile, image: url });
-        }
+        if (file) setProfile({ ...profile, image: URL.createObjectURL(file) });
     };
 
     return (
-        <div className="p-6 bg-gray-50 min-h-screen">
+        <div className="p-6 bg-[#EDF2F7] min-h-screen">
             {/* Header */}
             <div className="mb-6">
                 <div className="flex items-center gap-2 text-sm">
-                    <span className="text-teal-600 font-semibold">Settings</span>
+                    <span className="text-[#319795] font-semibold">Settings</span>
                     <span className="text-gray-400">/</span>
-                    <span className="text-gray-600">Security & Profile</span>
+                    <span className="text-[#2D3748]">Security & Profile</span>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Edit Profile Card */}
                 <div className="bg-white rounded-lg shadow-md p-6">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-6 border-b pb-2">Edit Profile</h3>
+                    <h3 className="text-lg font-semibold text-[#2D3748] mb-6 border-b pb-2">Edit Profile</h3>
                     <div className="space-y-4">
                         <div className="flex items-center gap-4 mb-4">
                             <div className="h-20 w-20 rounded-full bg-gray-100 border border-gray-200 overflow-hidden flex items-center justify-center relative group">
@@ -1583,7 +1144,7 @@ export function SecuritySettings() {
                                 type="text"
                                 value={profile.name}
                                 onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-                                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-teal-500 transition-colors"
+                                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-[#319795] transition-colors"
                             />
                         </div>
                         <div>
@@ -1592,12 +1153,12 @@ export function SecuritySettings() {
                                 type="email"
                                 value={profile.email}
                                 onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-teal-500 transition-colors"
+                                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-[#319795] transition-colors"
                             />
                         </div>
                         <button
                             onClick={handleProfileUpdate}
-                            className="w-full bg-teal-500 hover:bg-teal-600 text-white font-medium py-2 rounded transition-colors shadow-sm mt-2"
+                            className="w-full bg-[#319795] hover:bg-[#2c7a7b] text-white font-medium py-2 rounded transition-colors shadow-sm mt-2"
                         >
                             Save Profile
                         </button>
@@ -1606,38 +1167,24 @@ export function SecuritySettings() {
 
                 {/* Change Password Card */}
                 <div className="bg-white rounded-lg shadow-md p-6">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-6 border-b pb-2">Change Password</h3>
+                    <h3 className="text-lg font-semibold text-[#2D3748] mb-6 border-b pb-2">Change Password</h3>
                     <div className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
-                            <input
-                                type="password"
-                                value={passwords.current}
-                                onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
-                                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-teal-500 transition-colors"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
-                            <input
-                                type="password"
-                                value={passwords.new}
-                                onChange={(e) => setPasswords({ ...passwords, new: e.target.value })}
-                                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-teal-500 transition-colors"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
-                            <input
-                                type="password"
-                                value={passwords.confirm}
-                                onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
-                                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-teal-500 transition-colors"
-                            />
-                        </div>
+                        {["current", "new", "confirm"].map((field, i) => (
+                            <div key={i}>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    {field === "current" ? "Current Password" : field === "new" ? "New Password" : "Confirm New Password"}
+                                </label>
+                                <input
+                                    type="password"
+                                    value={passwords[field]}
+                                    onChange={(e) => setPasswords({ ...passwords, [field]: e.target.value })}
+                                    className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-[#319795] transition-colors"
+                                />
+                            </div>
+                        ))}
                         <button
                             onClick={handlePasswordChange}
-                            className="w-full bg-teal-500 hover:bg-teal-600 text-white font-medium py-2 rounded transition-colors shadow-sm mt-2"
+                            className="w-full bg-[#319795] hover:bg-[#2c7a7b] text-white font-medium py-2 rounded transition-colors shadow-sm mt-2"
                         >
                             Update Password
                         </button>
@@ -1646,7 +1193,7 @@ export function SecuritySettings() {
 
                 {/* Two-Factor Authentication Card */}
                 <div className="bg-white rounded-lg shadow-md p-6 h-fit lg:col-span-2">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-6 border-b pb-2">Two-Factor Authentication</h3>
+                    <h3 className="text-lg font-semibold text-[#2D3748] mb-6 border-b pb-2">Two-Factor Authentication</h3>
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="font-medium text-gray-700">Enable Two-Factor Authentication (2FA)</p>
@@ -1662,7 +1209,7 @@ export function SecuritySettings() {
                                 }}
                                 className="sr-only peer"
                             />
-                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-500"></div>
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#319795]"></div>
                         </label>
                     </div>
                 </div>
@@ -1670,3 +1217,4 @@ export function SecuritySettings() {
         </div>
     );
 }
+

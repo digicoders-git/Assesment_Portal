@@ -18,6 +18,8 @@ import {
 import PrintPaper from "./Admin/PrintPaper";
 import EditQuestions from "./Admin/EditQuestions";
 import AssessmentResult from "./Admin/AssessmentResult";
+import TopicQuestions from "./Admin/TopicQuestions";
+import AssignQuestions from "./Admin/AssignQuestions";
 import AdminDashboard from "./Comp/Admincomp/AdminDashboard";
 
 function App() {
@@ -40,13 +42,14 @@ function App() {
             <Route path="students" element={<ManageStudents />} />
             <Route path="certificate" element={<ManageCertificate />} />
             <Route path="security" element={<SecuritySettings />} />
-            <Route path="security" element={<SecuritySettings />} />
+            <Route path="topic-questions/:topicId" element={<TopicQuestions />} />
+            <Route path="assessment/result/:id" element={<AssessmentResult />} />
+            <Route path="assign-questions/:id" element={<AssignQuestions />} />
           </Route>
 
-          {/* Admin Evaluation Routes - Full Screen */}
+          {/* External Full Screen Routes */}
           <Route path="/admin/print/:topicId" element={<PrintPaper />} />
           <Route path="/admin/edit/:topicId" element={<EditQuestions />} />
-          <Route path="/admin/assessment/result/:id" element={<AssessmentResult />} />
         </Routes>
       </Router>
       <ToastContainer position="top-right" autoClose={2500} />

@@ -26,14 +26,7 @@ export default function PrintPaper() {
     return (
         <div className="min-h-screen bg-white text-gray-800 p-8 print:p-0">
             {/* Print Button & Navigation - Hidden when printing */}
-            <div className="max-w-4xl mx-auto mb-8 print:hidden flex justify-between items-center">
-                <button
-                    onClick={() => window.history.back()}
-                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900 px-4 py-2 rounded-lg font-medium transition-colors border border-gray-300 hover:bg-gray-50"
-                >
-                    &larr; Go Back
-                </button>
-
+            <div className="max-w-4xl mx-auto mb-8 print:hidden flex justify-end items-center">
                 <button
                     onClick={handlePrint}
                     className="flex items-center gap-2 bg-teal-500 hover:bg-teal-600 text-white px-6 py-2 rounded-lg font-medium transition-colors shadow-sm"

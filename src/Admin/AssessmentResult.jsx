@@ -48,28 +48,53 @@ export default function AssessmentResult() {
     };
 
     const downloadStudentResult = (student) => {
-        const headers = ["ID", "Student Name", "Phone/Branch", "Course", "Phone No.", "College", "Marks", "Date Time"];
-        const row = [
-            student.id,
-            `"${student.name}"`,
-            `"${student.phone}"`,
-            `"${student.course}"`,
-            `"${student.year}"`,
-            `"${student.college}"`,
-            `"${student.marks}"`,
-            `"${student.time}"`
-        ];
+        try {
+            const doc = new jsPDF();
 
-        const csvContent = [headers.join(","), row.join(",")].join("\n");
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.setAttribute("href", url);
-        link.setAttribute("download", `${student.name.replace(/\s+/g, '_')}_result.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+            // Header
+            doc.setFontSize(20);
+            doc.setTextColor(20, 184, 166); // Teal-500
+            doc.text("Assessment Result", 105, 20, { align: 'center' });
+
+            doc.setDrawColor(20, 184, 166);
+            doc.line(20, 25, 190, 25);
+
+            doc.setFontSize(12);
+            doc.setTextColor(100);
+            doc.text(`Generated on: ${new Date().toLocaleString()}`, 190, 32, { align: 'right' });
+
+            // Student Info Table
+            const data = [
+                ["Student ID", student.id.toString()],
+                ["Student Name", student.name],
+                ["Phone/Branch", student.phone],
+                ["Course Status", student.course],
+                ["Mobile Number", student.year],
+                ["College/Institute", student.college],
+                ["Obtained Marks", student.marks],
+                ["Submission Date", student.time]
+            ];
+
+            autoTable(doc, {
+                startY: 40,
+                head: [["Field", "Information"]],
+                body: data,
+                theme: 'striped',
+                headStyles: { fillColor: [20, 184, 166], textColor: 255 }, // teal
+                styles: { fontSize: 11, cellPadding: 5 },
+                columnStyles: {
+                    0: { fontStyle: 'bold', width: 60 },
+                    1: { cellWidth: 'auto' }
+                }
+            });
+
+            const fileName = `${student.name.replace(/\s+/g, '_')}_result.pdf`;
+            doc.save(fileName);
+            toast.success("Student PDF Downloaded successfully!");
+        } catch (error) {
+            console.error("Single PDF Error:", error);
+            toast.error("Failed to generate PDF");
+        }
     };
 
     const handleDownloadPDF = () => {
@@ -182,13 +207,6 @@ export default function AssessmentResult() {
                     <span className="text-gray-400">/</span>
                     <div className="text-gray-600">ResultListExport</div>
                 </div>
-                <button
-                    onClick={() => navigate(-1)}
-                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900 px-4 py-2 rounded-lg font-medium transition-colors border border-gray-300 hover:bg-white bg-white shadow-sm"
-                >
-                    <ChevronLeft className="h-4 w-4" />
-                    Go Back
-                </button>
             </div>
 
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 print-content">

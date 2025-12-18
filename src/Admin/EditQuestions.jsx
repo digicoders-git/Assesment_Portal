@@ -53,12 +53,6 @@ export default function EditQuestions() {
                 {/* Header */}
                 <div className="flex items-center justify-between mb-8">
                     <div className="flex items-center gap-4">
-                        <button
-                            onClick={() => navigate(-1)}
-                            className="p-2 hover:bg-white rounded-full transition-colors text-gray-600"
-                        >
-                            <ArrowLeft className="h-6 w-6" />
-                        </button>
                         <div>
                             <h1 className="text-2xl font-bold text-gray-800">Edit Questions</h1>
                             <p className="text-gray-500">Topic ID: {topicId}</p>

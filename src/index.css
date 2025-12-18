@@ -1,1 +1,14 @@
 @import "tailwindcss";
+
+/* global.css ya component ke style me */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 0px;
+    background: transparent;
+}
+
+.custom-scrollbar {
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
+}

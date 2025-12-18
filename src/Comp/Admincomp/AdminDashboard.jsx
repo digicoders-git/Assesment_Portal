@@ -20,9 +20,8 @@ export default function AdminDashboard() {
     const location = useLocation();
     const { user } = useUser();
 
-    // ... (menuItems and handleNavigation remain same - checking lines to skip them for brevity if possible, but replace_file_content needs contiguity if I don't use multi)
     const menuItems = [
-        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard' },
+        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
         { id: 'topics', label: 'Manage Topics', icon: BookOpen, path: '/admin/topics' },
         { id: 'assessment', label: 'Active Assessment', icon: Clock, path: '/admin/assessment' },
         { id: 'history', label: 'Assessment History', icon: History, path: '/admin/history' },
@@ -33,50 +32,54 @@ export default function AdminDashboard() {
 
     const handleNavigation = (path) => {
         navigate(path);
-        // On mobile, close sidebar after navigation
-        if (window.innerWidth < 1024) {
-            setSidebarOpen(false);
-        }
+        if (window.innerWidth < 768) setSidebarOpen(false);
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 flex">
+        <div className="min-h-screen flex" style={{ backgroundColor: '#EDF2F7' }}> {/* Soft Gray Background */}
             {/* Sidebar */}
-            <aside className={`fixed lg:sticky top-0 left-0 h-screen bg-gradient-to-b from-slate-700 to-slate-800 text-white transition-all duration-300 z-50 ${sidebarOpen ? 'w-64' : 'w-0 lg:w-20'} overflow-hidden`}>
-                {/* Logo and Mobile Close Button */}
-                <div className="p-6 border-b border-slate-600 flex items-center justify-between">
-                    <h1 className={`text-2xl font-bold flex items-center gap-2 transition-opacity duration-300 whitespace-nowrap ${sidebarOpen ? 'opacity-100' : 'opacity-0 lg:opacity-0'}`}>
+            <aside
+                className={`fixed lg:sticky top-0 left-0 h-screen transition-all duration-300 z-50 overflow-hidden flex-shrink-0`}
+                style={{
+                    width: sidebarOpen ? '16rem' : '0',
+                    backgroundColor: '#319795', // Teal Sidebar
+                    color: '#E6FFFA' // Light text/icons
+                }}
+            >
+                {/* Logo */}
+                <div className="p-6 flex items-center justify-between border-b" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
+                    <h1 className={`text-2xl font-black flex items-center gap-2 transition-opacity ${sidebarOpen ? 'opacity-100' : 'opacity-0'}`}>
                         <span className="text-white">Digi</span>
-                        <span className="text-teal-400">{'{Coders}'}</span>
+                        <span style={{ color: '#4FD1C5' }}>{'{Coders}'}</span>
                     </h1>
 
-                    {/* Mobile Close Button - Only visible on mobile when sidebar is open */}
                     {sidebarOpen && (
-                        <button
-                            onClick={() => setSidebarOpen(false)}
-                            className="lg:hidden p-2 hover:bg-slate-600 rounded-lg transition-colors"
-                        >
+                        <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-2 rounded-lg hover:bg-white/10">
                             <X className="h-5 w-5" />
                         </button>
                     )}
                 </div>
 
-                {/* Menu Items */}
-                <nav className="mt-4">
+                {/* Menu */}
+                <nav className="mt-6 px-3 space-y-2">
                     {menuItems.map((item) => {
                         const Icon = item.icon;
-                        const isActive = location.pathname === item.path;
+                        const isActive = location.pathname === item.path || (item.id === 'dashboard' && location.pathname === '/admin/dashboard');
+
                         return (
                             <button
                                 key={item.id}
                                 onClick={() => handleNavigation(item.path)}
-                                className={`w-full flex items-center gap-3 px-6 py-3 transition-all ${isActive
-                                    ? 'bg-teal-500 text-white border-l-4 border-teal-300'
-                                    : 'text-gray-300 hover:bg-slate-600 hover:text-white'
-                                    }`}
+                                className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all duration-300 group`}
+                                style={{
+                                    backgroundColor: isActive ? '#287D80' : 'transparent',
+                                    color: isActive ? '#FFFFFF' : '#E6FFFA',
+                                }}
                             >
-                                <Icon className="h-5 w-5 flex-shrink-0" />
-                                <span className={`text-sm transition-opacity duration-300 whitespace-nowrap ${sidebarOpen ? 'opacity-100' : 'opacity-0 lg:opacity-0'}`}>{item.label}</span>
+                                <Icon className={`h-6 w-6 transition-colors ${isActive ? 'text-white' : 'text-[#4FD1C5] group-hover:text-white'}`} />
+                                <span className={`text-[15px] whitespace-nowrap font-medium tracking-wide ${isActive ? 'font-bold' : ''}`}>
+                                    {item.label}
+                                </span>
                             </button>
                         );
                     })}
@@ -85,60 +88,50 @@ export default function AdminDashboard() {
 
             {/* Mobile Overlay */}
             {sidebarOpen && (
-                <div
-                    className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-                    onClick={() => setSidebarOpen(false)}
-                />
+                <div className="fixed inset-0 z-40 lg:hidden" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }} onClick={() => setSidebarOpen(false)} />
             )}
 
-            {/* Main Content */}
-            <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
+            {/* Main */}
+            <div className="flex-1 flex flex-col min-h-screen min-w-0">
                 {/* Header */}
-                <header className="bg-white shadow-sm sticky top-0 z-30">
+                <header className="sticky top-0 z-30 border-b" style={{ backgroundColor: '#FFFFFF', borderColor: '#2D3748' }}>
                     <div className="flex items-center justify-between px-6 py-4">
                         <div className="flex items-center gap-4">
-                            {/* Toggle Button - Shows X when open, Menu when closed */}
-                            <button
-                                onClick={() => setSidebarOpen(!sidebarOpen)}
-                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                            >
-                                {sidebarOpen ? (
-                                    <X className="h-6 w-6 text-gray-700" />
-                                ) : (
-                                    <Menu className="h-6 w-6 text-gray-700" />
-                                )}
+                            <button onClick={() => setSidebarOpen(prev => !prev)} className="p-2 rounded-lg hover:bg-[#FF7F50]/20">
+                                {sidebarOpen ? <X className="h-6 w-6" style={{ color: '#319795' }} /> : <Menu className="h-6 w-6" style={{ color: '#319795' }} />}
                             </button>
-                            <div>
-                                <h2 className="text-xl font-semibold text-gray-800">DigiCoders Assessment Portal</h2>
-                            </div>
+                            <h2 className="text-xl font-semibold" style={{ color: '#2D3748' }}>
+                                DigiCoders Assessment Portal
+                            </h2>
                         </div>
+
                         <div className="flex items-center gap-3">
-                            <span className="text-sm font-medium text-gray-700 hidden sm:block">
-                                {user?.name || "Admin"}
+                            <span className="text-sm font-medium hidden sm:block" style={{ color: '#2D3748' }}>
+                                {user?.name || 'Admin'}
                             </span>
-                            <div className="w-10 h-10 bg-gradient-to-br from-teal-400 to-teal-500 rounded-full flex items-center justify-center overflow-hidden border border-teal-100">
+
+                            <div className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" style={{ backgroundColor: '#FF7F50' }}>
                                 {user?.image ? (
                                     <img src={user.image} alt="Profile" className="w-full h-full object-cover" />
                                 ) : (
-                                    <Users className="h-5 w-5 text-white" />
+                                    <Users className="h-5 w-5 text-[#E6FFFA]" />
                                 )}
                             </div>
                         </div>
                     </div>
                 </header>
 
-                {/* Content Area */}
-                <main className="flex-1">
+                {/* Content */}
+                <main className="flex-1 overflow-y-auto min-w-0" style={{ backgroundColor: '#EDF2F7' }}>
                     <Outlet />
                 </main>
 
                 {/* Footer */}
-                <footer className="bg-white border-t px-6 py-4 text-center">
-                    <p className="text-sm text-gray-600">
-                        Copyright © 2025 <span className="text-teal-600 font-semibold">DigiCoders Assessment Portal</span> | All Rights Reserved.
+                <footer className="px-6 py-4 text-center border-t" style={{ backgroundColor: '#EDF2F7', borderColor: '#2D3748' }}>
+                    <p className="text-sm" style={{ color: '#2D3748' }}>
+                        © 2025 <span style={{ color: '#FF7F50', fontWeight: '600' }}>DigiCoders Assessment Portal</span>
                     </p>
                 </footer>
-                {/* hello */}
             </div>
         </div>
     );

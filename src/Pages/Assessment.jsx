@@ -223,7 +223,6 @@ export default function Assessment() {
                 total: questions.length,
                 attempted: attemptedCount,
                 correct: correctCount,
-                correct: correctCount,
                 incorrect: incorrectCount,
                 submissionTime: new Date().toLocaleTimeString()
             }
