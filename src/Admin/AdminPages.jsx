@@ -4,6 +4,8 @@ import Swal from 'sweetalert2';
 import { Plus, Search, Edit, Trash2, Printer, X, Eye, Download } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useUser } from '../context/UserContext';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 export { ManageCertificate } from './ManageCertificate';
 
 const PlaceholderPage = ({ title }) => (
@@ -228,11 +230,8 @@ export function ActiveAssessment() {
         const saved = localStorage.getItem('all_assessments');
         if (saved) {
             const parsed = JSON.parse(saved);
-            // Filter: active status OR has assigned questions
-            const activeOnes = parsed.filter(item =>
-                item.status === true ||
-                localStorage.getItem(`assessment_${item.id}_questions`)
-            );
+            // Filter: ONLY active status
+            const activeOnes = parsed.filter(item => item.status === true);
             setAssessments(activeOnes);
         } else {
             const initial = [
@@ -262,11 +261,34 @@ export function ActiveAssessment() {
 
     const updateGlobalAssessments = (newList) => {
         localStorage.setItem('all_assessments', JSON.stringify(newList));
-        const activeOnes = newList.filter(item =>
-            item.status === true ||
-            localStorage.getItem(`assessment_${item.id}_questions`)
-        );
+        const activeOnes = newList.filter(item => item.status === true);
         setAssessments(activeOnes);
+    };
+
+    const handleExport = (assessment) => {
+        const headers = ["Name", "Code", "Total Questions", "Duration", "Start Time", "End Time", "Status", "Remark"];
+        const row = [
+            assessment.name,
+            assessment.code,
+            assessment.totalQuestions,
+            assessment.duration,
+            assessment.startTime,
+            assessment.endTime,
+            assessment.status ? "Active" : "Inactive",
+            assessment.remark
+        ];
+
+        const csvContent = "data:text/csv;charset=utf-8,"
+            + headers.join(",") + "\n"
+            + row.join(",");
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `${assessment.name.replace(/ /g, "_")}_results.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     };
 
     // Form State
@@ -345,7 +367,7 @@ export function ActiveAssessment() {
         } else {
             const newList = [...saved, {
                 id: Date.now(),
-                status: true,
+                status: true, // Auto-activate
                 currentQuestions: 0,
                 totalQuestions: parseInt(formData.totalQuestions) || 0,
                 name: formData.name,
@@ -511,9 +533,6 @@ export function ActiveAssessment() {
                                                 >
                                                     <Trash2 className="h-3 w-3" />
                                                 </button>
-                                                <button className="px-1.5 py-0.5 border border-gray-400 text-gray-500 rounded text-[10px] hover:bg-gray-100">
-                                                    Export
-                                                </button>
                                             </div>
                                         </div>
                                     </td>
@@ -544,8 +563,92 @@ export function ActiveAssessment() {
                         </div>
 
                         <div className="p-6 overflow-y-auto custom-scrollbar space-y-4">
-                            {/* Form fields (same as before) */}
-                            {/* Inputs with focus:border-[#319795] */}
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-600 mb-1">Assessment Name<span className="text-red-500">*</span></label>
+                                <input
+                                    type="text"
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#319795]"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-600 mb-1">Assessment Code<span className="text-red-500">*</span></label>
+                                <input
+                                    type="text"
+                                    value={formData.code}
+                                    onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#319795]"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-600 mb-1">Total Question<span className="text-red-500">*</span></label>
+                                <input
+                                    type="number"
+                                    value={formData.totalQuestions}
+                                    onChange={(e) => setFormData({ ...formData, totalQuestions: e.target.value })}
+                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#319795]"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-600 mb-1">Time Duration (Min)<span className="text-red-500">*</span></label>
+                                <input
+                                    type="text"
+                                    value={formData.duration}
+                                    onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#319795]"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-600 mb-1">Start Date-Time<span className="text-red-500">*</span></label>
+                                <input
+                                    type="datetime-local"
+                                    value={formData.startTime}
+                                    onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#319795]"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-600 mb-1">End Date-Time<span className="text-red-500">*</span></label>
+                                <input
+                                    type="datetime-local"
+                                    value={formData.endTime}
+                                    onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#319795]"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-600 mb-1">Generate Certificate</label>
+                                <div className="flex gap-4">
+                                    <label className="flex items-center gap-2 text-sm text-gray-600">
+                                        <input
+                                            type="radio"
+                                            name="cert_active"
+                                            checked={formData.hasCertificate === 'Yes'}
+                                            onChange={() => setFormData({ ...formData, hasCertificate: 'Yes' })}
+                                            className="text-[#319795] focus:ring-[#319795]"
+                                        /> Yes
+                                    </label>
+                                    <label className="flex items-center gap-2 text-sm text-gray-600">
+                                        <input
+                                            type="radio"
+                                            name="cert_active"
+                                            checked={formData.hasCertificate === 'No'}
+                                            onChange={() => setFormData({ ...formData, hasCertificate: 'No' })}
+                                            className="text-[#319795] focus:ring-[#319795]"
+                                        /> No
+                                    </label>
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-600 mb-1">Remark</label>
+                                <input
+                                    type="text"
+                                    value={formData.remark}
+                                    onChange={(e) => setFormData({ ...formData, remark: e.target.value })}
+                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#319795]"
+                                />
+                            </div>
                         </div>
 
                         <div className="bg-[#EDF2F7] px-6 py-4 flex justify-start">
@@ -582,6 +685,32 @@ export function AssessmentHistory() {
     const updateGlobalAssessments = (newList) => {
         localStorage.setItem('all_assessments', JSON.stringify(newList));
         setAssessments(newList);
+    };
+
+    const handleExport = (assessment) => {
+        const headers = ["Name", "Code", "Total Questions", "Duration", "Start Time", "End Time", "Status", "Remark"];
+        const row = [
+            assessment.name,
+            assessment.code,
+            assessment.totalQuestions,
+            assessment.duration,
+            assessment.startTime,
+            assessment.endTime,
+            assessment.status ? "Active" : "Inactive",
+            assessment.remark
+        ];
+
+        const csvContent = "data:text/csv;charset=utf-8,"
+            + headers.join(",") + "\n"
+            + row.join(",");
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `${assessment.name.replace(/ /g, "_")}_results.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     };
 
     const [formData, setFormData] = useState({
@@ -647,7 +776,7 @@ export function AssessmentHistory() {
         } else {
             const newList = [...saved, {
                 id: Date.now(),
-                status: false,
+                status: true, // Auto-activate
                 currentQuestions: 0,
                 totalQuestions: parseInt(formData.totalQuestions) || 0,
                 name: formData.name,
@@ -800,9 +929,6 @@ export function AssessmentHistory() {
                                                 >
                                                     <Trash2 className="h-3 w-3" />
                                                 </button>
-                                                <button className="px-1.5 py-0.5 border border-gray-400 text-gray-500 rounded text-[10px] hover:bg-gray-100">
-                                                    Export
-                                                </button>
                                             </div>
                                         </div>
                                     </td>
@@ -951,6 +1077,74 @@ export function ManageStudents() {
         setStudents(students.map(s => s.id === id ? { ...s, status: !s.status } : s));
     };
 
+    // Edit Modal Logic
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editingStudent, setEditingStudent] = useState(null);
+
+    const handleEditStudent = (student) => {
+        setEditingStudent({ ...student });
+        setIsEditModalOpen(true);
+    };
+
+    const handleSaveStudent = () => {
+        if (!editingStudent.name || !editingStudent.phone || !editingStudent.email || !editingStudent.course) {
+            toast.error("All fields are required!");
+            return;
+        }
+        setStudents(students.map(s => s.id === editingStudent.id ? editingStudent : s));
+        setIsEditModalOpen(false);
+        toast.success("Student updated successfully!");
+    };
+
+    const downloadStudentPDF = (student) => {
+        try {
+            const doc = new jsPDF();
+
+            // Header
+            doc.setFontSize(20);
+            doc.setTextColor(49, 151, 149); // Teal color
+            doc.text("Student Information", 105, 20, { align: 'center' });
+
+            doc.setDrawColor(49, 151, 149);
+            doc.line(20, 25, 190, 25);
+
+            doc.setFontSize(12);
+            doc.setTextColor(100);
+            doc.text(`Generated on: ${new Date().toLocaleString()}`, 190, 32, { align: 'right' });
+
+            // Student Info Table
+            const data = [
+                ["Student ID", student.id.toString()],
+                ["Full Name", student.name],
+                ["Phone Number", student.phone],
+                ["Email Address", student.email],
+                ["Course", student.course],
+                ["Registration Date", student.date],
+                ["Status", student.status ? "Active" : "Inactive"]
+            ];
+
+            autoTable(doc, {
+                startY: 40,
+                head: [["Field", "Information"]],
+                body: data,
+                theme: 'striped',
+                headStyles: { fillColor: [49, 151, 149], textColor: 255 },
+                styles: { fontSize: 11, cellPadding: 5 },
+                columnStyles: {
+                    0: { fontStyle: 'bold', width: 60 },
+                    1: { cellWidth: 'auto' }
+                }
+            });
+
+            const fileName = `${student.name.replace(/\s+/g, '_')}_info.pdf`;
+            doc.save(fileName);
+            toast.success("Student PDF downloaded successfully!");
+        } catch (error) {
+            console.error("PDF Error:", error);
+            toast.error("Failed to generate PDF");
+        }
+    };
+
     return (
         <div className="p-6 bg-[#EDF2F7] min-h-screen">
             {/* Header */}
@@ -1023,10 +1217,18 @@ export function ManageStudents() {
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-2">
-                                            <button className="text-[#319795] hover:text-[#2c7a7b] border border-[#319795] hover:bg-[#E6FFFA] p-1.5 rounded transition-colors" title="Download">
+                                            <button 
+                                                onClick={() => downloadStudentPDF(student)}
+                                                className="text-[#319795] hover:text-[#2c7a7b] border border-[#319795] hover:bg-[#E6FFFA] p-1.5 rounded transition-colors" 
+                                                title="Download"
+                                            >
                                                 <Download className="h-4 w-4" />
                                             </button>
-                                            <button className="text-[#319795] hover:text-[#2c7a7b] border border-[#319795] hover:bg-[#E6FFFA] p-1.5 rounded transition-colors" title="Edit">
+                                            <button
+                                                onClick={() => handleEditStudent(student)}
+                                                className="text-[#319795] hover:text-[#2c7a7b] border border-[#319795] hover:bg-[#E6FFFA] p-1.5 rounded transition-colors"
+                                                title="Edit"
+                                            >
                                                 <Edit className="h-4 w-4" />
                                             </button>
                                             <button className="text-[#F56565] hover:text-[#C53030] border border-[#F56565] hover:bg-[#F56565]/20 p-1.5 rounded transition-colors" title="Delete">
@@ -1047,6 +1249,84 @@ export function ManageStudents() {
                     </table>
                 </div>
             </div>
+            {/* Edit Student Modal */}
+            {isEditModalOpen && (
+                <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl w-full max-w-md overflow-hidden shadow-2xl transform scale-100 transition-all">
+                        <div className="bg-[#319795] text-white px-6 py-4 flex justify-between items-center bg-gradient-to-r from-teal-600 to-teal-500">
+                            <h3 className="font-bold text-lg flex items-center gap-2">
+                                <Edit className="h-5 w-5" />
+                                Edit Student Details
+                            </h3>
+                            <button onClick={() => setIsEditModalOpen(false)} className="text-white/80 hover:text-white transition-colors">
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Full Name</label>
+                                <input
+                                    type="text"
+                                    value={editingStudent?.name || ''}
+                                    onChange={(e) => setEditingStudent({ ...editingStudent, name: e.target.value })}
+                                    className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition-all placeholder-gray-300"
+                                    placeholder="Enter student name"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Phone Number</label>
+                                    <input
+                                        type="text"
+                                        value={editingStudent?.phone || ''}
+                                        onChange={(e) => setEditingStudent({ ...editingStudent, phone: e.target.value })}
+                                        className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition-all placeholder-gray-300"
+                                        placeholder="Enter phone"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Course</label>
+                                    <input
+                                        type="text"
+                                        value={editingStudent?.course || ''}
+                                        onChange={(e) => setEditingStudent({ ...editingStudent, course: e.target.value })}
+                                        className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition-all placeholder-gray-300"
+                                        placeholder="Enter course"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Email Address</label>
+                                <input
+                                    type="email"
+                                    value={editingStudent?.email || ''}
+                                    onChange={(e) => setEditingStudent({ ...editingStudent, email: e.target.value })}
+                                    className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition-all placeholder-gray-300"
+                                    placeholder="Enter email address"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t border-gray-100">
+                            <button
+                                onClick={() => setIsEditModalOpen(false)}
+                                className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-200 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleSaveStudent}
+                                className="px-6 py-2 rounded-lg text-sm font-medium bg-[#319795] text-white hover:bg-teal-700 shadow-lg shadow-teal-500/20 transition-all transform active:scale-95"
+                            >
+                                Save Changes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Confetti from 'react-confetti';
 import { useWindowSize } from 'react-use';
-import { Download, Home } from 'lucide-react';
+import { Download, Home, FileText } from 'lucide-react';
 import { toast } from 'react-toastify';
 import domtoimage from 'dom-to-image-more';
 import { useRef } from 'react';
@@ -16,7 +16,7 @@ export default function Result() {
     const resultRef = useRef(null);
 
     // Get data passed from Assessment page
-    const { total, attempted, correct, incorrect } = location.state || {};
+    const { total, attempted, correct, incorrect, duration } = location.state || {};
 
     const [userName, setUserName] = useState('');
     const [assessmentCode, setAssessmentCode] = useState('');
@@ -65,6 +65,10 @@ export default function Result() {
         const toastId = toast.loading("Generating result image...");
 
         try {
+            // Hide action buttons during screenshot
+            const actionButtons = document.getElementById('action-buttons');
+            if (actionButtons) actionButtons.style.display = 'none';
+
             // Use dom-to-image-more which supports modern CSS colors
             const dataUrl = await domtoimage.toPng(resultRef.current, {
                 quality: 0.95,
@@ -84,6 +88,9 @@ export default function Result() {
                 }
             });
 
+            // Show action buttons again
+            if (actionButtons) actionButtons.style.display = 'flex';
+
             // Create download link
             const link = document.createElement('a');
             const fileName = `DigiCoders_${userName.replace(/\s+/g, '_')}_Result.png`;
@@ -102,6 +109,10 @@ export default function Result() {
                 autoClose: 3000
             });
         } catch (error) {
+            // Show action buttons again in case of error
+            const actionButtons = document.getElementById('action-buttons');
+            if (actionButtons) actionButtons.style.display = 'flex';
+            
             console.error("Screenshot failed:", error);
             toast.update(toastId, {
                 render: `Failed to save result: ${error.message}`,
@@ -137,10 +148,51 @@ export default function Result() {
                         </div>
 
                         <p className="text-gray-500 text-base">You have successfully completed the assessment.</p>
-                        <p className="text-gray-400 text-sm mt-2">Assessment Code: <span className="font-bold text-[#0D9488]">{assessmentCode}</span></p>
-                        <p className="text-gray-400 text-sm mt-1">Test Name: <span className="font-bold text-[#0D9488]">{user.testName || 'N/A'}</span></p>
-                        <p className="text-gray-400 text-sm mt-1">Date: <span className="font-bold text-[#0D9488]">{user.submissionDate ? new Date(user.submissionDate).toLocaleDateString() : new Date().toLocaleDateString()}</span></p>
-                        <p className="text-gray-400 text-sm mt-1">Time: <span className="font-bold text-[#0D9488]">{location.state.submissionTime || new Date().toLocaleTimeString()}</span></p>
+                        
+                        {/* Assessment Details Table */}
+                        <div className="mt-4 mb-6">
+                            {/* Desktop Table */}
+                            <div className="hidden md:block border border-gray-300 rounded-lg overflow-hidden">
+                                <table className="w-full">
+                                    <thead>
+                                        <tr className="border-b border-gray-300">
+                                            <th className="py-3 px-4 text-center font-bold text-gray-700">Assessment Code</th>
+                                            <th className="py-3 px-4 text-center font-bold text-gray-700">Date</th>
+                                            <th className="py-3 px-4 text-center font-bold text-gray-700">Time</th>
+                                            <th className="py-3 px-4 text-center font-bold text-gray-700">Duration</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td className="py-3 px-4 text-center font-medium text-gray-600">{assessmentCode}</td>
+                                            <td className="py-3 px-4 text-center font-medium text-gray-600">{user.submissionDate ? new Date(user.submissionDate).toLocaleDateString() : new Date().toLocaleDateString()}</td>
+                                            <td className="py-3 px-4 text-center font-medium text-gray-600">{location.state.submissionTime || new Date().toLocaleTimeString()}</td>
+                                            <td className="py-3 px-4 text-center font-medium text-gray-600">{duration || 'N/A'}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            {/* Mobile Column Layout */}
+                            <div className="md:hidden space-y-3">
+                                <div className="border border-gray-300 rounded-lg p-3">
+                                    <div className="font-bold text-gray-700 text-sm mb-1">Assessment Code</div>
+                                    <div className="font-medium text-gray-600">{assessmentCode}</div>
+                                </div>
+                                <div className="border border-gray-300 rounded-lg p-3">
+                                    <div className="font-bold text-gray-700 text-sm mb-1">Date</div>
+                                    <div className="font-medium text-gray-600">{user.submissionDate ? new Date(user.submissionDate).toLocaleDateString() : new Date().toLocaleDateString()}</div>
+                                </div>
+                                <div className="border border-gray-300 rounded-lg p-3">
+                                    <div className="font-bold text-gray-700 text-sm mb-1">Time</div>
+                                    <div className="font-medium text-gray-600">{location.state.submissionTime || new Date().toLocaleTimeString()}</div>
+                                </div>
+                                <div className="border border-gray-300 rounded-lg p-3">
+                                    <div className="font-bold text-gray-700 text-sm mb-1">Duration</div>
+                                    <div className="font-medium text-gray-600">{duration || 'N/A'}</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div className="flex flex-col items-center gap-2 mb-3">
@@ -173,7 +225,7 @@ export default function Result() {
                         </div>
 
                         {/* Actions */}
-                        <div className="flex flex-col md:flex-row gap-4">
+                        <div id="action-buttons" className="flex flex-col md:flex-row gap-4">
                             <button
                                 onClick={() => {
                                     const link = document.createElement('a');

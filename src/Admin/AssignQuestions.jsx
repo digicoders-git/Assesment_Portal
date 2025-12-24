@@ -54,7 +54,14 @@ export default function AssignQuestions() {
         const storageKey = `assessment_${id}_questions`;
         localStorage.setItem(storageKey, selectedQuestions.length);
 
-        toast.success(`${selectedQuestions.length} Questions successfully added!`);
+        // Activates the assessment when questions are assigned
+        const allAssessments = JSON.parse(localStorage.getItem('all_assessments') || '[]');
+        const updatedAssessments = allAssessments.map(a =>
+            a.id == id ? { ...a, status: true } : a
+        );
+        localStorage.setItem('all_assessments', JSON.stringify(updatedAssessments));
+
+        toast.success(`${selectedQuestions.length} Questions successfully added & Assessment Activated!`);
         setTimeout(() => navigate(-1), 1500);
     };
 
@@ -157,8 +164,8 @@ export default function AssignQuestions() {
                             key={q.id}
                             onClick={() => toggleQuestion(q.id)}
                             className={`p-5 rounded-xl border-2 transition-all cursor-pointer flex items-center justify-between group ${selectedQuestions.includes(q.id)
-                                    ? 'border-[#319795] bg-teal-50'
-                                    : 'border-white bg-white hover:border-gray-100'
+                                ? 'border-[#319795] bg-teal-50'
+                                : 'border-white bg-white hover:border-gray-100'
                                 }`}
                         >
                             <div className="flex items-center gap-4">

@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import React, { useState } from 'react';
-import { Download, Search, ChevronLeft, Printer, FileText } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Download, Search, ChevronLeft, Printer, FileText, FileSpreadsheet, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
@@ -9,7 +9,23 @@ export default function AssessmentResult() {
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
+    const [showExportMenu, setShowExportMenu] = useState(false);
+    const exportMenuRef = useRef(null);
     const itemsPerPage = 10;
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (exportMenuRef.current && !exportMenuRef.current.contains(event.target)) {
+                setShowExportMenu(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
 
     // ... (keep existing results data) ... 
     // Mock Data based on screenshot
@@ -144,12 +160,11 @@ export default function AssessmentResult() {
         window.print();
     };
 
-    const downloadExcel = () => {
-        // Simple CSV generation
+    const downloadCSV = () => {
         const headers = ["ID", "Student Name", "Phone/Branch", "Course", "Phone No.", "College", "Marks", "Date Time"];
         const rows = filteredResults.map(item => [
             item.id,
-            `"${item.name}"`, // Quote strings to handle commas
+            `"${item.name}"`,
             `"${item.phone}"`,
             `"${item.course}"`,
             `"${item.year}"`,
@@ -167,11 +182,79 @@ export default function AssessmentResult() {
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.setAttribute("href", url);
-        link.setAttribute("download", "assessment_result.csv");
+        link.setAttribute("download", `assessment_results_${new Date().toISOString().split('T')[0]}.csv`);
         link.style.visibility = 'hidden';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        toast.success("CSV file downloaded successfully!");
+        setShowExportMenu(false);
+    };
+
+    const downloadExcel = () => {
+        // Create Excel-like format with better structure
+        const headers = ["S.No", "Student Name", "Branch/Course Type", "Course Status", "Mobile Number", "College/Institute", "Obtained Marks", "Submission Date & Time"];
+        const rows = filteredResults.map((item, index) => [
+            index + 1,
+            `"${item.name}"`,
+            `"${item.phone}"`,
+            `"${item.course}"`,
+            `"${item.year}"`,
+            `"${item.college}"`,
+            `"${item.marks}"`,
+            `"${item.time}"`
+        ]);
+
+        const csvContent = [
+            `"Assessment Results Report - Generated on ${new Date().toLocaleString()}",,,,,,,`,
+            `"Total Records: ${filteredResults.length}",,,,,,,`,
+            "",
+            headers.join(","),
+            ...rows.map(row => row.join(","))
+        ].join("\n");
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `assessment_results_detailed_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast.success("Excel file downloaded successfully!");
+        setShowExportMenu(false);
+    };
+
+    const downloadJSON = () => {
+        const jsonData = {
+            exportDate: new Date().toISOString(),
+            totalRecords: filteredResults.length,
+            searchQuery: searchQuery || "All Records",
+            results: filteredResults.map((item, index) => ({
+                serialNumber: index + 1,
+                studentId: item.id,
+                studentName: item.name,
+                branchCourse: item.phone,
+                courseStatus: item.course,
+                mobileNumber: item.year,
+                college: item.college,
+                obtainedMarks: item.marks,
+                submissionDateTime: item.time
+            }))
+        };
+
+        const blob = new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `assessment_results_${new Date().toISOString().split('T')[0]}.json`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast.success("JSON file downloaded successfully!");
+        setShowExportMenu(false);
     };
 
     return (
@@ -209,22 +292,53 @@ export default function AssessmentResult() {
                 </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 print-content">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 print-content flex flex-col h-[calc(100vh-200px)]">
                 {/* Card Header */}
-                <div className="p-4 border-b border-gray-200">
+                <div className="p-4 border-b border-gray-200 flex-shrink-0">
                     <h2 className="text-lg font-semibold text-gray-700 uppercase">All Result</h2>
                 </div>
 
-                {/* Toolbar */}
-                <div className="p-4 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 no-print">
+                {/* Toolbar - Fixed */}
+                <div className="p-4 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 no-print border-b border-gray-200 flex-shrink-0">
                     <div className="flex flex-wrap gap-2">
-                        <button
-                            onClick={downloadExcel}
-                            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded border border-transparent transition-colors text-sm font-medium shadow-sm"
-                        >
-                            <Download className="h-4 w-4" />
-                            Download Excel
-                        </button>
+                        {/* Export Dropdown */}
+                        <div className="relative" ref={exportMenuRef}>
+                            <button
+                                onClick={() => setShowExportMenu(!showExportMenu)}
+                                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded border border-transparent transition-colors text-sm font-medium shadow-sm"
+                            >
+                                <Download className="h-4 w-4" />
+                                Export Data
+                                <ChevronDown className="h-4 w-4" />
+                            </button>
+                            
+                            {showExportMenu && (
+                                <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[180px]">
+                                    <button
+                                        onClick={downloadExcel}
+                                        className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm text-gray-700 border-b border-gray-100"
+                                    >
+                                        <FileSpreadsheet className="h-4 w-4 text-green-600" />
+                                        Excel Format
+                                    </button>
+                                    <button
+                                        onClick={downloadCSV}
+                                        className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm text-gray-700 border-b border-gray-100"
+                                    >
+                                        <FileText className="h-4 w-4 text-blue-600" />
+                                        CSV Format
+                                    </button>
+                                    <button
+                                        onClick={downloadJSON}
+                                        className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm text-gray-700 rounded-b-lg"
+                                    >
+                                        <FileText className="h-4 w-4 text-purple-600" />
+                                        JSON Format
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                        
                         <button
                             onClick={handleDownloadPDF}
                             className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded border border-transparent transition-colors text-sm font-medium shadow-sm"
@@ -253,9 +367,9 @@ export default function AssessmentResult() {
                 </div>
 
                 {/* Scrollable Table Container */}
-                <div className="overflow-x-auto w-full">
+                <div className="flex-1 overflow-auto">
                     <table className="w-full text-sm text-left whitespace-nowrap">
-                        <thead className="bg-gray-50 text-gray-700 font-semibold border-y border-gray-200">
+                        <thead className="bg-gray-50 text-gray-700 font-semibold border-b border-gray-200 sticky top-0">
                             <tr>
                                 <th className="px-4 py-3 w-12 text-center">#</th>
                                 <th className="px-4 py-3 min-w-[200px]">Student Name</th>
@@ -294,8 +408,8 @@ export default function AssessmentResult() {
                     </table>
                 </div>
 
-                {/* Pagination */}
-                <div className="p-4 border-t border-gray-200 text-sm text-gray-500 flex flex-col sm:flex-row justify-between items-center gap-4">
+                {/* Pagination - Fixed */}
+                <div className="p-4 border-t border-gray-200 text-sm text-gray-500 flex flex-col sm:flex-row justify-between items-center gap-4 flex-shrink-0">
                     <div>Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredResults.length)} of {filteredResults.length} entries</div>
                     <div className="flex gap-1 items-center">
                         <button

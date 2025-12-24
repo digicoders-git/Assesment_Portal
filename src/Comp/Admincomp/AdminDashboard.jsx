@@ -66,13 +66,14 @@ export default function AdminDashboard() {
                             />
                         </div>
                     </div>
-
-                    {sidebarOpen && (
-                        <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-2 rounded-lg hover:bg-white/10 transition-colors">
-                            <X className="h-5 w-5" />
-                        </button>
-                    )}
                 </div>
+
+                {sidebarOpen && (
+                    <button onClick={() => setSidebarOpen(false)} className="fixed top-2 left-56 lg:hidden p-2 rounded-lg hover:bg-white/10 transition-colors">
+                        <X className="h-8 w-8" />
+                    </button>
+                )}
+
 
                 {/* Menu */}
                 <nav className="mt-6 px-3 space-y-2">

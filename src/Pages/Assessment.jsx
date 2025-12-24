@@ -20,6 +20,7 @@ export default function Assessment() {
     const [isPaletteOpen, setIsPaletteOpen] = useState(false);
     const [timeLeft, setTimeLeft] = useState(2 * 60); // 30 minutes in seconds
     const [visitedQuestions, setVisitedQuestions] = useState(new Set([0]));
+    const [testStarted, setTestStarted] = useState(false);
     const tabWarningsRef = useRef(0);
 
     const navigate = useNavigate();
@@ -44,6 +45,10 @@ export default function Assessment() {
             confirmButtonColor: '#0D9488',
             allowOutsideClick: false,
             allowEscapeKey: false
+        }).then((result) => {
+            if (result.isConfirmed) {
+                setTestStarted(true);
+            }
         });
     }, []);
 
@@ -56,6 +61,8 @@ export default function Assessment() {
     // Security & Timer Logic
     // Timer & Alerts Logic
     useEffect(() => {
+        if (!testStarted) return; // Don't start timer until test is started
+        
         const totalTime = 2 * 60; // 1800 seconds
         const ninetyPercentTime = totalTime * 0.1; // 10% remaining = 180s
         const ninetyFivePercentTime = totalTime * 0.05; // 5% remaining = 90s
@@ -106,7 +113,7 @@ export default function Assessment() {
         if (timeLeft === 0) {
             handleAutoSubmit();
         }
-    }, [timeLeft]);
+    }, [timeLeft, testStarted]);
 
     useEffect(() => {
         // Protect Route & Security Logic
@@ -128,7 +135,7 @@ export default function Assessment() {
             }
         };
         const handleVisibilityChange = () => {
-            if (document.hidden) {
+            if (document.hidden && testStarted) { // Only check tab switching after test starts
                 if (tabWarningsRef.current === 0) {
                     tabWarningsRef.current = 1;
                     Swal.fire({
@@ -154,18 +161,21 @@ export default function Assessment() {
         document.addEventListener("keydown", handleKeyDown);
         document.addEventListener("visibilitychange", handleVisibilityChange);
 
-        const timer = setInterval(() => {
-            setTimeLeft((prev) => {
-                if (prev <= 0) {
-                    clearInterval(timer);
-                    return 0;
-                }
-                return prev - 1;
-            });
-        }, 1000);
+        let timer;
+        if (testStarted) { // Only start timer after test is started
+            timer = setInterval(() => {
+                setTimeLeft((prev) => {
+                    if (prev <= 0) {
+                        clearInterval(timer);
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+        }
 
         return () => {
-            clearInterval(timer);
+            if (timer) clearInterval(timer);
             document.removeEventListener("contextmenu", handleContextMenu);
             document.removeEventListener("copy", handleCopyCutPaste);
             document.removeEventListener("cut", handleCopyCutPaste);
@@ -173,7 +183,7 @@ export default function Assessment() {
             document.removeEventListener("keydown", handleKeyDown);
             document.removeEventListener("visibilitychange", handleVisibilityChange);
         };
-    }, []);
+    }, [testStarted]);
 
     const formatTime = (seconds) => {
         const m = Math.floor(seconds / 60);
@@ -195,6 +205,10 @@ export default function Assessment() {
     };
 
     const handleNext = () => {
+        if (!selectedAnswers[currentQuestion]) {
+            toast.error("Please select an option before proceeding!");
+            return;
+        }
         if (currentQuestion < questions.length - 1) {
             setCurrentQuestion(currentQuestion + 1);
         } else {
@@ -202,14 +216,23 @@ export default function Assessment() {
         }
     };
 
+    const handleSkip = () => {
+        // Always add to skipped, keep selected answers intact
+        setSkippedQuestions(prev => new Set(prev).add(currentQuestion));
+        if (currentQuestion < questions.length - 1) {
+            setCurrentQuestion(currentQuestion + 1);
+        }
+    };
+
     const finalizeSubmission = () => {
         let correctCount = 0;
         let incorrectCount = 0;
-        let attemptedCount = Object.keys(selectedAnswers).length;
+        let attemptedCount = 0;
 
-        questions.forEach((q) => {
-            const userAnswer = selectedAnswers[q.id - 1]; // Adjustment if q.id is 1-based index
-            if (userAnswer) {
+        questions.forEach((q, index) => {
+            const userAnswer = selectedAnswers[index];
+            if (userAnswer && !skippedQuestions.has(index)) {
+                attemptedCount++;
                 if (userAnswer === q.correct) {
                     correctCount++;
                 } else {
@@ -218,13 +241,18 @@ export default function Assessment() {
             }
         });
 
+        const totalTime = 2 * 60; // 2 minutes in seconds
+        const timeTaken = totalTime - timeLeft;
+        const duration = `${Math.floor(timeTaken / 60)}:${(timeTaken % 60).toString().padStart(2, '0')}`;
+
         navigate('/result', {
             state: {
                 total: questions.length,
                 attempted: attemptedCount,
                 correct: correctCount,
                 incorrect: incorrectCount,
-                submissionTime: new Date().toLocaleTimeString()
+                submissionTime: new Date().toLocaleTimeString(),
+                duration: duration
             }
         });
     };
@@ -298,13 +326,6 @@ export default function Assessment() {
         }
     };
 
-    const handleSkip = () => {
-        if (currentQuestion < questions.length - 1) {
-            setSkippedQuestions(prev => new Set(prev).add(currentQuestion));
-            setCurrentQuestion(currentQuestion + 1);
-        }
-    };
-
     const jumpToQuestion = (index) => {
         setCurrentQuestion(index);
         setIsPaletteOpen(false); // Close on mobile after selection
@@ -325,6 +346,10 @@ export default function Assessment() {
                 <div>
                     <h1 className="text-xl md:text-2xl font-black text-[#1F2937]">DigiCoders Assessment</h1>
                     <p className="text-[#0D9488] font-bold text-sm">Testing Support</p>
+                </div>
+
+                <div>
+                    <img className='h-22 w-22' src="/icon.jpg" alt="" />
                 </div>
 
                 <div className="flex items-center gap-4">
@@ -406,9 +431,8 @@ export default function Assessment() {
                                 <ChevronLeft size={16} className="md:w-5 md:h-5" /> <span className="md:hidden">PREV</span><span className="hidden md:inline">PREVIOUS</span>
                             </button>
 
-                            {/* Hide Skip if Answered */}
-                            {/* Hide Skip if Answered OR if Last Question */}
-                            {!selectedAnswers[currentQuestion] && currentQuestion !== questions.length - 1 && (
+                            {/* Skip button - always visible except on last question */}
+                            {currentQuestion !== questions.length - 1 && (
                                 <button
                                     onClick={handleSkip}
                                     className="flex items-center justify-center gap-1 md:gap-2 px-3 py-2 md:px-6 md:py-3 rounded-xl font-bold text-gray-500 hover:text-[#0D9488] transition-colors text-xs md:text-base flex-1 md:flex-none border-2 border-transparent hover:border-gray-100"
@@ -421,7 +445,7 @@ export default function Assessment() {
                                 onClick={handleNext}
                                 className="flex items-center justify-center gap-1 md:gap-2 px-3 py-2 md:px-8 md:py-3 bg-[#0D9488] hover:bg-[#115E59] text-white rounded-xl font-bold shadow-lg shadow-teal-500/30 transform hover:scale-105 transition-all text-xs md:text-base flex-1 md:flex-none"
                             >
-                                {currentQuestion === questions.length - 1 ? 'SUBMIT' : 'NEXT'} <ChevronRight size={16} className="md:w-5 md:h-5" />
+                                {currentQuestion === questions.length - 1 ? 'SUBMIT' : 'Save&Next'} <ChevronRight size={16} className="md:w-5 md:h-5" />
                             </button>
                         </div>
                     </div>

@@ -237,8 +237,8 @@ export function ManageCertificate() {
                                 </div>
 
                                 {formData[layer.id].included && (
-                                    <div className="grid grid-cols-2 gap-x-4 gap-y-4 pt-2">
-                                        <div className="col-span-2">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-4 pt-2">
+                                        <div className="col-span-1 sm:col-span-2">
                                             <label className="block text-[10px] font-bold text-gray-400 mb-1 uppercase">Font Family</label>
                                             <select
                                                 value={formData[layer.id].fontFamily}
@@ -278,30 +278,30 @@ export function ManageCertificate() {
                                         </div>
                                         <div>
                                             <label className="block text-[10px] font-bold text-gray-400 mb-1 uppercase font-serif">Vertical Position (%)</label>
-                                            <div className="flex items-center gap-3">
+                                            <div className="flex items-center gap-2">
                                                 <input
-                                                    type="range"
+                                                    type="number"
                                                     min="0"
                                                     max="100"
                                                     value={formData[layer.id].top}
                                                     onChange={(e) => updateNestedState(layer.id, 'top', e.target.value)}
-                                                    className="flex-1 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-teal-500"
+                                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 outline-none"
                                                 />
-                                                <span className="text-xs font-medium text-gray-600 min-w-[30px]">{formData[layer.id].top}%</span>
+                                                <span className="text-xs font-medium text-gray-600">%</span>
                                             </div>
                                         </div>
                                         <div>
                                             <label className="block text-[10px] font-bold text-gray-400 mb-1 uppercase">Horizontal Position (%)</label>
-                                            <div className="flex items-center gap-3">
+                                            <div className="flex items-center gap-2">
                                                 <input
-                                                    type="range"
+                                                    type="number"
                                                     min="0"
                                                     max="100"
                                                     value={formData[layer.id].left}
                                                     onChange={(e) => updateNestedState(layer.id, 'left', e.target.value)}
-                                                    className="flex-1 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-teal-500"
+                                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 outline-none"
                                                 />
-                                                <span className="text-xs font-medium text-gray-600 min-w-[30px]">{formData[layer.id].left}%</span>
+                                                <span className="text-xs font-medium text-gray-600">%</span>
                                             </div>
                                         </div>
                                     </div>
