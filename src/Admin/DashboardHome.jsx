@@ -27,7 +27,7 @@ export default function DashboardHome() {
                 </div>
             </div>
 
-            {/* Cards - Simplified with no shadows */}
+            {/* Cards - Exact match to reference */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {cards.map((card, index) => {
                     const Icon = card.icon;
@@ -35,20 +35,25 @@ export default function DashboardHome() {
                         <div
                             key={index}
                             onClick={() => navigate(card.link)}
-                            className="bg-white rounded-xl p-6 border border-gray-200 hover:border-[#319795] transition-all cursor-pointer relative"
+                            className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-all cursor-pointer relative overflow-hidden h-[150px] flex flex-col justify-between"
                         >
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400">
-                                    {card.title}
-                                </h3>
-                                <div className="bg-gray-50 p-2.5 rounded-lg border border-gray-100">
-                                    <Icon className="h-5 w-5 text-[#319795]" />
-                                </div>
-                            </div>
+                            {/* Pink corner decoration */}
+                            <div className="absolute -top-3 -right-3 w-10 h-10 bg-red-200 rounded-full opacity-60 z-0"></div>
 
-                            <p className="text-2xl font-bold text-[#2D3748]">
-                                {card.value}
-                            </p>
+                            <div className="relative z-10 w-full">
+                                <div className="flex items-start justify-between">
+                                    <h3 className="text-[11px] font-bold text-gray-500 uppercase tracking-wide mt-1">
+                                        {card.title}
+                                    </h3>
+                                    <div className="bg-[#319795] w-10 h-10 rounded-full flex items-center justify-center shadow-sm">
+                                        <Icon className="h-5 w-5 text-white" />
+                                    </div>
+                                </div>
+
+                                <p className="text-4xl font-bold text-[#2D3748] mt-2">
+                                    {card.value}
+                                </p>
+                            </div>
                         </div>
                     );
                 })}
