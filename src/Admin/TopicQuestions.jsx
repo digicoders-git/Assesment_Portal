@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import Swal from 'sweetalert2';
 import {
-    ArrowLeft, Plus, Trash2, Edit, Save, X, Search,
-    FileSpreadsheet, List, HelpCircle, CheckCircle2, AlertCircle,
-    LayoutGrid, ChevronRight, BookOpen
+    Plus, Trash2, Edit, Save, X, Search,
+    FileSpreadsheet, CheckCircle2, AlertCircle,
+    LayoutGrid, ChevronRight, BookOpen, HelpCircle
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 
@@ -96,20 +97,65 @@ export default function TopicQuestions() {
     };
 
     const handleDelete = (id) => {
-        if (window.confirm("Are you sure you want to delete this question?")) {
-            setQuestions(questions.filter(q => q.id !== id));
-            toast.info("Question deleted");
-        }
+        Swal.fire({
+            title: "Are you sure?",
+            text: "You won't be able to revert this!",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#319795",
+            cancelButtonColor: "#f56565",
+            confirmButtonText: "Yes, delete it!"
+        }).then((result) => {
+            if (result.isConfirmed) {
+                setQuestions(questions.filter(q => q.id !== id));
+                toast.success("Question deleted successfully");
+            }
+        });
     };
 
     const handleImportFile = (e) => {
         const file = e.target.files[0];
         if (file) {
-            toast.info(`Importing ${file.name}...`);
-            setTimeout(() => {
-                toast.success("Questions imported successfully!");
-                setIsGuidanceOpen(false);
-            }, 1000);
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const text = event.target.result;
+                const rows = text.split('\n');
+                const headers = rows[0].split(',').map(h => h.trim().toLowerCase());
+
+                // Validate headers
+                const required = ['question', 'optiona', 'optionb', 'optionc', 'optiond', 'answer'];
+                const isValid = required.every(h => headers.includes(h));
+
+                if (!isValid) {
+                    toast.error("Invalid CSV Format! Use the provided template.");
+                    return;
+                }
+
+                const newQuestions = [];
+                for (let i = 1; i < rows.length; i++) {
+                    const columns = rows[i].split(',').map(c => c.trim());
+                    if (columns.length >= 6) {
+                        newQuestions.push({
+                            id: Date.now() + i,
+                            question: columns[headers.indexOf('question')],
+                            optionA: columns[headers.indexOf('optiona')],
+                            optionB: columns[headers.indexOf('optionb')],
+                            optionC: columns[headers.indexOf('optionc')],
+                            optionD: columns[headers.indexOf('optiond')],
+                            answer: columns[headers.indexOf('answer')].toUpperCase()
+                        });
+                    }
+                }
+
+                if (newQuestions.length > 0) {
+                    setQuestions(prev => [...prev, ...newQuestions]);
+                    toast.success(`${newQuestions.length} Questions imported successfully!`);
+                    setIsGuidanceOpen(false);
+                } else {
+                    toast.error("No valid questions found in CSV.");
+                }
+            };
+            reader.readAsText(file);
         }
     };
 
@@ -118,231 +164,212 @@ export default function TopicQuestions() {
     );
 
     return (
-        <div className="p-6 bg-[#EDF2F7] min-h-screen">
+        <div className="p-6 bg-[#F7FAFC] min-h-screen">
             {/* Breadcrumb & Header Sections */}
             <div className="mb-8">
-                <div className="flex items-center gap-2 text-sm text-slate-400 font-medium mb-4">
+                <div className="flex items-center gap-2 text-sm text-slate-500 font-medium mb-4">
                     <button onClick={() => navigate('/admin/topics')} className="hover:text-[#319795] transition-colors">Topics</button>
                     <ChevronRight className="h-3 w-3" />
                     <span className="text-[#2D3748] font-bold">{topicName}</span>
                 </div>
 
-                <div className="bg-white rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-[#E6FFFA] flex flex-col md:flex-row md:items-center justify-between gap-8 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-[#319795]/5 rounded-full -mr-32 -mt-32 blur-3xl"></div>
-
+                <div className="bg-white rounded-xl p-8 border border-gray-200 flex flex-col md:flex-row md:items-center justify-between gap-8 relative overflow-hidden">
                     <div className="flex items-center gap-6 relative z-10">
-                        <div className="w-20 h-20 bg-gradient-to-br from-[#319795] to-[#4FD1C5] rounded-[2rem] flex items-center justify-center shadow-xl shadow-[#319795]/20 text-white transform rotate-3">
-                            <BookOpen className="h-10 w-10" />
+                        <div className="w-16 h-16 bg-[#319795] rounded-xl flex items-center justify-center text-white">
+                            <BookOpen className="h-8 w-8" />
                         </div>
                         <div>
-                            <h1 className="text-3xl font-black text-[#2D3748] tracking-tight">{topicName}</h1>
+                            <h1 className="text-2xl font-bold text-[#2D3748] tracking-tight">{topicName}</h1>
                             <div className="flex items-center gap-4 mt-2">
-                                <span className="px-3 py-1 bg-teal-50 text-[#319795] text-[10px] font-black uppercase tracking-widest rounded-lg border border-teal-100">
+                                <span className="px-2 py-0.5 bg-gray-100 text-[#4A5568] text-[10px] font-bold uppercase tracking-widest rounded border border-gray-200">
                                     ID: {topicId}
                                 </span>
                                 <div className="h-4 w-[1px] bg-slate-200"></div>
-                                <span className="text-slate-400 text-sm font-bold flex items-center gap-1.5">
-                                    <HelpCircle className="h-4 w-4" />
+                                <span className="text-slate-500 text-sm font-medium flex items-center gap-1.5">
                                     {questions.length} Questions
                                 </span>
                             </div>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-4 relative z-10">
+                    <div className="flex items-center gap-3 relative z-10">
                         <button
                             onClick={() => setIsGuidanceOpen(true)}
-                            className="flex items-center gap-2 bg-white border border-slate-200 hover:border-[#319795] hover:bg-[#E6FFFA]/30 text-slate-600 px-6 py-3.5 rounded-2xl font-bold text-sm transition-all shadow-sm active:scale-95"
+                            className="flex items-center gap-2 bg-white border border-gray-300 hover:border-[#319795] text-[#2D3748] px-5 py-2.5 rounded-lg font-bold text-sm transition-all active:scale-95"
                         >
-                            <FileSpreadsheet className="h-5 w-5 text-[#319795]" />
+                            <FileSpreadsheet className="h-4 w-4 text-[#319795]" />
                             Import CSV
                         </button>
                         <button
                             onClick={handleOpenAdd}
-                            className="flex items-center gap-2 bg-[#319795] hover:bg-[#2B7A73] text-white px-8 py-3.5 rounded-2xl font-black text-sm transition-all shadow-xl shadow-[#319795]/20 active:scale-95"
+                            className="flex items-center gap-2 bg-[#319795] hover:bg-[#2B7A73] text-white px-6 py-2.5 rounded-lg font-bold text-sm transition-all active:scale-95"
                         >
-                            <Plus className="h-5 w-5" />
+                            <Plus className="h-4 w-4" />
                             Add Question
                         </button>
                     </div>
                 </div>
             </div>
 
-            {/* Search and Filters Row */}
-            <div className="mb-8 flex flex-col md:flex-row gap-4 items-center">
-                <div className="relative flex-1 w-full">
-                    <Search className="h-5 w-5 absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" />
+            {/* Search Row */}
+            <div className="mb-6">
+                <div className="relative w-full max-w-2xl">
+                    <Search className="h-5 w-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input
                         type="text"
                         placeholder="Search questions by keywords..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-14 pr-6 py-4 bg-white border border-[#E6FFFA] rounded-2xl text-[15px] font-bold text-slate-700 focus:border-[#319795] focus:ring-4 focus:ring-[#319795]/5 outline-none transition-all shadow-sm"
+                        className="w-full pl-12 pr-6 py-3.5 bg-white border border-gray-200 rounded-xl text-[15px] text-[#2D3748] focus:border-[#319795] outline-none transition-all"
                     />
-                </div>
-                <div className="flex items-center gap-3 bg-white px-6 py-4 rounded-2xl border border-[#E6FFFA] shadow-sm">
-                    <LayoutGrid className="h-5 w-5 text-[#319795]" />
-                    <span className="text-xs font-black text-[#2D3748] uppercase tracking-widest">Visual View</span>
                 </div>
             </div>
 
-            {/* Questions Grid/List */}
-            <div className="space-y-6 max-w-5xl mx-auto">
+            {/* Questions List */}
+            <div className="space-y-6 max-w-5xl">
                 {filteredQuestions.length === 0 ? (
-                    <div className="bg-white rounded-[3rem] p-24 text-center border-2 border-dashed border-slate-200">
-                        <div className="w-24 h-24 bg-slate-50 rounded-[2rem] flex items-center justify-center mx-auto mb-6 text-slate-300 transform -rotate-12">
-                            <Search className="h-12 w-12" />
+                    <div className="bg-white rounded-xl p-16 text-center border-2 border-dashed border-gray-200">
+                        <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-300">
+                            <Search className="h-8 w-8" />
                         </div>
-                        <h3 className="text-2xl font-black text-[#2D3748]">No Questions Found</h3>
-                        <p className="text-slate-400 font-medium mt-2">Adjust your search or add a new question to this topic.</p>
+                        <h3 className="text-lg font-bold text-[#2D3748]">No Questions Found</h3>
+                        <p className="text-gray-500 text-sm mt-1">Try a different search or add a new question.</p>
                     </div>
                 ) : (
                     filteredQuestions.map((q, index) => (
-                        <div key={q.id} className="group bg-white rounded-[2.5rem] p-8 shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-[#E6FFFA] hover:border-[#319795]/30 hover:shadow-xl transition-all duration-500 relative overflow-hidden">
-                            {/* Question Header */}
-                            <div className="flex items-start justify-between gap-6 mb-8">
-                                <div className="flex items-start gap-6">
-                                    <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-lg font-black text-slate-300 group-hover:bg-[#E6FFFA] group-hover:text-[#319795] transition-all duration-500 shrink-0">
+                        <div key={q.id} className="group bg-white rounded-xl overflow-hidden border border-gray-200 shadow-sm hover:shadow-md transition-all">
+                            <div className="bg-gray-50/80 px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 bg-[#319795] rounded-lg flex items-center justify-center text-xs font-black text-white">
                                         {index + 1}
                                     </div>
-                                    <div className="pt-1">
-                                        <h4 className="text-xl font-bold text-[#2D3748] leading-tight mb-3 pr-10">{q.question}</h4>
-                                        <div className="flex items-center gap-3">
-                                            <span className="px-2.5 py-1 bg-slate-50 rounded-lg text-[9px] font-black text-slate-400 uppercase tracking-widest border border-slate-100">Question ID: #{q.id}</span>
-                                        </div>
-                                    </div>
+                                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Question ID: #{q.id}</span>
                                 </div>
-
-                                <div className="flex items-center gap-2 shrink-0">
+                                <div className="flex items-center gap-1">
                                     <button
                                         onClick={() => handleEdit(q)}
-                                        className="p-3 bg-white text-slate-400 hover:text-[#319795] hover:bg-[#E6FFFA] border border-slate-100 hover:border-[#319795]/20 rounded-xl transition-all"
+                                        className="p-2 text-gray-400 hover:text-[#319795] hover:bg-white rounded-lg transition-all border border-transparent hover:border-teal-100"
+                                        title="Edit"
                                     >
-                                        <Edit className="h-5 w-5" />
+                                        <Edit className="h-4 w-4" />
                                     </button>
                                     <button
                                         onClick={() => handleDelete(q.id)}
-                                        className="p-3 bg-white text-slate-400 hover:text-red-500 hover:bg-red-50 border border-slate-100 hover:border-red-100 rounded-xl transition-all"
+                                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-white rounded-lg transition-all border border-transparent hover:border-red-100"
+                                        title="Delete"
                                     >
-                                        <Trash2 className="h-5 w-5" />
+                                        <Trash2 className="h-4 w-4" />
                                     </button>
                                 </div>
                             </div>
+                            <div className="p-6">
+                                <h4 className="text-lg font-bold text-[#2D3748] leading-snug mb-6">{q.question}</h4>
 
-                            {/* Options Grid */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ml-0 md:ml-12 pl-0 md:pl-6 border-l-0 md:border-l-4 border-slate-50 group-hover:border-[#E6FFFA] transition-colors">
-                                {['A', 'B', 'C', 'D'].map((letter) => (
-                                    <div
-                                        key={letter}
-                                        className={`flex items-center gap-4 p-5 rounded-2xl border-2 transition-all duration-300 ${q.answer === letter
-                                            ? 'bg-teal-50/50 border-teal-200 text-[#2C7A7B] shadow-sm'
-                                            : 'bg-slate-50/30 border-transparent text-slate-600'
-                                            }`}
-                                    >
-                                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black shadow-sm transition-all ${q.answer === letter
-                                            ? 'bg-[#319795] text-white rotate-3'
-                                            : 'bg-white text-slate-400'
-                                            }`}>
-                                            {letter}
-                                        </div>
-                                        <span className={`text-[15px] font-bold truncate ${q.answer === letter ? 'text-[#2C7A7B]' : 'text-slate-600'}`}>
-                                            {q[`option${letter}`]}
-                                        </span>
-                                        {q.answer === letter && (
-                                            <div className="ml-auto flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-[#319795]">
-                                                <CheckCircle2 className="h-4 w-4" />
-                                                Correct
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50/50 rounded-xl border border-gray-100">
+                                    {['A', 'B', 'C', 'D'].map((letter) => (
+                                        <div
+                                            key={letter}
+                                            className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${q.answer === letter
+                                                ? 'bg-white border-[#319795]'
+                                                : 'bg-white border-transparent shadow-sm'
+                                                }`}
+                                        >
+                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-black ${q.answer === letter
+                                                ? 'bg-[#319795] text-white'
+                                                : 'bg-gray-100 text-gray-400 border border-gray-100'
+                                                }`}>
+                                                {letter}
                                             </div>
-                                        )}
-                                    </div>
-                                ))}
+                                            <span className="text-sm font-bold truncate flex-1">
+                                                {q[`option${letter}`]}
+                                            </span>
+                                            {q.answer === letter && (
+                                                <div className="flex items-center gap-1.5 bg-[#319795] text-white px-2 py-1 rounded text-[9px] font-black uppercase tracking-tighter">
+                                                    <CheckCircle2 className="h-3 w-3" />
+                                                    Correct Answer
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         </div>
                     ))
                 )}
             </div>
 
-            {/* Modals restored with full logic */}
+            {/* Add/Edit Modal */}
             {isAddModalOpen && (
-                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-in fade-in duration-300">
-                    <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in slide-in-from-bottom-4 duration-500">
-                        <div className="bg-[#319795] p-8 relative overflow-hidden">
-                            <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -mr-20 -mt-20 blur-2xl"></div>
-                            <div className="relative z-10">
-                                <h3 className="text-2xl font-black text-white tracking-tight">
-                                    {editingQuestion ? 'Edit Question' : 'New Question'}
-                                </h3>
-                                <p className="text-teal-100/80 text-[10px] font-black uppercase tracking-widest mt-1">Refining the assessment hub</p>
-                            </div>
-                            <button
-                                onClick={() => setIsAddModalOpen(false)}
-                                className="absolute top-6 right-6 p-2.5 bg-white/10 hover:bg-white/20 rounded-xl transition-all text-white cursor-pointer z-20"
-                            >
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[110] p-4">
+                    <div className="bg-white rounded-xl w-full max-w-2xl overflow-hidden border border-gray-200">
+                        <div className="bg-[#319795] p-6 text-white flex justify-between items-center text-left">
+                            <h3 className="text-xl font-bold">
+                                {editingQuestion ? 'Edit Question' : 'Add New Question'}
+                            </h3>
+                            <button onClick={() => setIsAddModalOpen(false)} className="hover:bg-white/10 p-2 rounded-lg transition-colors">
                                 <X className="h-5 w-5" />
                             </button>
                         </div>
 
-                        <div className="p-8 space-y-6">
+                        <div className="p-6 space-y-6 text-left">
                             <div>
-                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-1">Question prompt</label>
+                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Question Title</label>
                                 <textarea
                                     value={formData.question}
                                     onChange={(e) => setFormData({ ...formData, question: e.target.value })}
                                     rows="3"
-                                    className="w-full border border-slate-200 bg-slate-50 rounded-2xl px-6 py-4 text-[15px] font-bold text-slate-700 focus:border-[#319795] focus:bg-white outline-none transition-all resize-none"
-                                    placeholder="What is the question you want to ask?"
+                                    className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:border-[#319795] outline-none transition-all resize-none placeholder:opacity-40"
+                                    placeholder="Enter question text here..."
                                 />
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {['A', 'B', 'C', 'D'].map((letter) => (
-                                    <div
-                                        key={letter}
-                                        className={`group p-4 rounded-2xl border-2 transition-all cursor-pointer ${formData.answer === letter ? 'border-[#319795] bg-[#E6FFFA]/30' : 'border-slate-100 bg-slate-50/50'}`}
-                                        onClick={() => setFormData({ ...formData, answer: letter })}
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs transition-all ${formData.answer === letter ? 'bg-[#319795] text-white' : 'bg-white text-slate-400'}`}>
-                                                {letter}
-                                            </div>
-                                            <input
-                                                type="text"
-                                                value={formData[`option${letter}`]}
-                                                onChange={(e) => {
-                                                    e.stopPropagation();
-                                                    setFormData({ ...formData, [`option${letter}`]: e.target.value });
-                                                }}
-                                                className="flex-1 bg-transparent text-sm font-bold text-[#2D3748] outline-none placeholder:text-slate-300"
-                                                placeholder={`Option ${letter}...`}
-                                            />
-                                            {formData.answer === letter && <CheckCircle2 className="h-4 w-4 text-[#319795]" />}
-                                        </div>
+                                    <div key={letter} className="space-y-1">
+                                        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Option {letter}</label>
+                                        <input
+                                            type="text"
+                                            value={formData[`option${letter}`]}
+                                            onChange={(e) => setFormData({ ...formData, [`option${letter}`]: e.target.value })}
+                                            className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm font-semibold text-[#2D3748] focus:border-[#319795] outline-none transition-all bg-gray-50/30 placeholder:opacity-30"
+                                            placeholder={`Option ${letter}...`}
+                                        />
                                     </div>
                                 ))}
                             </div>
 
-                            <div className="p-4 bg-amber-50 rounded-xl border border-amber-100 flex gap-3">
-                                <AlertCircle className="h-5 w-5 text-amber-500 shrink-0" />
-                                <p className="text-[11px] text-amber-800 font-bold leading-tight">
-                                    Click on an option box to set it as the correct answer. You must fill the question and at least two options.
-                                </p>
+                            <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 flex items-center justify-between">
+                                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Correct Answer</span>
+                                <div className="flex gap-2">
+                                    {['A', 'B', 'C', 'D'].map((letter) => (
+                                        <button
+                                            key={letter}
+                                            onClick={() => setFormData({ ...formData, answer: letter })}
+                                            className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all border font-bold ${formData.answer === letter
+                                                ? 'bg-[#319795] border-[#319795] text-white shadow-sm'
+                                                : 'bg-white border-gray-200 text-gray-400 hover:border-teal-200 active:bg-teal-50'
+                                                }`}
+                                        >
+                                            {letter}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
 
-                        <div className="px-8 pb-8 flex gap-3 mt-2">
-                            <button
-                                onClick={() => setIsAddModalOpen(false)}
-                                className="flex-1 py-4 text-slate-400 font-black uppercase text-[10px] tracking-widest hover:text-slate-600 transition-colors"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleSave}
-                                className="flex-[2] bg-[#319795] hover:bg-[#2B7A73] text-white py-4 rounded-xl font-black uppercase text-[11px] tracking-widest flex items-center justify-center gap-2 shadow-xl shadow-[#319795]/20 transition-all active:scale-95"
-                            >
-                                <Save className="h-5 w-5" />
-                                {editingQuestion ? 'Update Question' : 'Save Question'}
-                            </button>
+                            <div className="flex gap-3 justify-end pt-4">
+                                <button
+                                    onClick={() => setIsAddModalOpen(false)}
+                                    className="px-6 py-2.5 text-gray-500 font-bold text-sm hover:text-gray-700"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleSave}
+                                    className="bg-[#319795] hover:bg-[#2B7A73] text-white px-8 py-2.5 rounded-lg font-bold text-sm transition-all"
+                                >
+                                    {editingQuestion ? 'Update Changes' : 'Save Question'}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -350,49 +377,36 @@ export default function TopicQuestions() {
 
             {/* Bulk Import Guidance */}
             {isGuidanceOpen && (
-                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[110] p-4 animate-in fade-in duration-300">
-                    <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in slide-in-from-bottom-4 duration-500">
-                        <div className="p-10">
-                            <div className="flex justify-between items-start mb-8">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-14 h-14 bg-[#2D3748] rounded-2xl flex items-center justify-center text-[#4FD1C5] transform rotate-12">
-                                        <FileSpreadsheet className="h-7 w-7" />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-2xl font-black text-[#2D3748] tracking-tight">Bulk Import</h3>
-                                        <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-1">Smart CSV Ingestion</p>
-                                    </div>
-                                </div>
-                                <button onClick={() => setIsGuidanceOpen(false)} className="p-2 hover:bg-slate-100 rounded-xl transition-all text-slate-400">
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[120] p-4">
+                    <div className="bg-white rounded-xl w-full max-w-xl overflow-hidden border border-gray-200">
+                        <div className="p-8">
+                            <div className="flex justify-between items-start mb-6">
+                                <h3 className="text-xl font-bold text-[#2D3748]">Bulk Import Questions</h3>
+                                <button onClick={() => setIsGuidanceOpen(false)} className="text-gray-400 hover:text-gray-600">
                                     <X className="h-6 w-6" />
                                 </button>
                             </div>
 
-                            <div className="space-y-8">
-                                <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100">
-                                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">CSV Header Requirements</h4>
-                                    <div className="flex flex-wrap gap-2 mb-4">
-                                        {['Question', 'OptionA', 'OptionB', 'OptionC', 'OptionD', 'Answer'].map((h) => (
-                                            <span key={h} className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[10px] font-bold text-[#319795]">{h}</span>
-                                        ))}
-                                    </div>
-                                    <p className="text-[11px] text-slate-500 font-bold leading-relaxed">
-                                        Column headers must be exactly as shown above. The <span className="text-[#319795]">Answer</span> column should contain a single letter (A, B, C, or D).
-                                    </p>
+                            <div className="space-y-6">
+                                <div className="bg-gray-50 p-5 rounded-lg border border-gray-200 text-sm">
+                                    <p className="font-bold text-gray-700 mb-2">CSV Column Headers:</p>
+                                    <code className="block bg-white p-2 border border-gray-200 rounded text-xs text-[#319795]">
+                                        Question, OptionA, OptionB, OptionC, OptionD, Answer
+                                    </code>
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <button
                                         onClick={handleDownloadTemplate}
-                                        className="p-6 bg-[#E6FFFA] rounded-[2rem] border border-teal-100 text-center group transition-all hover:bg-[#319795]/10"
+                                        className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-200 rounded-xl hover:border-[#319795] hover:bg-teal-50 transition-all group"
                                     >
-                                        <HelpCircle className="h-8 w-8 text-[#319795] mx-auto mb-3 transition-transform group-hover:scale-110" />
-                                        <h5 className="text-[11px] font-black text-[#319795] uppercase tracking-widest">Get Template</h5>
+                                        <HelpCircle className="h-8 w-8 text-gray-300 mb-2 group-hover:text-[#319795]" />
+                                        <span className="text-xs font-bold text-gray-500 group-hover:text-[#319795]">Download Template</span>
                                     </button>
 
-                                    <label className="p-6 bg-white rounded-[2rem] border-2 border-dashed border-slate-200 text-center cursor-pointer hover:border-[#319795]/50 transition-all">
-                                        <Plus className="h-8 w-8 text-slate-300 mx-auto mb-3" />
-                                        <h5 className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Upload File</h5>
+                                    <label className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-200 rounded-xl hover:border-[#319795] hover:bg-teal-50 transition-all group cursor-pointer">
+                                        <Plus className="h-8 w-8 text-gray-300 mb-2 group-hover:text-[#319795]" />
+                                        <span className="text-xs font-bold text-gray-500 group-hover:text-[#319795]">Upload CSV File</span>
                                         <input type="file" className="hidden" accept=".csv" onChange={handleImportFile} />
                                     </label>
                                 </div>

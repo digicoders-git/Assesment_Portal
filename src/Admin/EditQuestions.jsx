@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import Swal from 'sweetalert2';
+import { toast } from 'react-toastify';
 import { ArrowLeft, Save, Plus, Trash2 } from 'lucide-react';
 
 export default function EditQuestions() {
@@ -44,7 +46,20 @@ export default function EditQuestions() {
     };
 
     const handleDeleteQuestion = (id) => {
-        setQuestions(questions.filter(q => q.id !== id));
+        Swal.fire({
+            title: "Remove question?",
+            text: "This question will be removed from your local draft.",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#319795",
+            cancelButtonColor: "#f56565",
+            confirmButtonText: "Remove"
+        }).then((result) => {
+            if (result.isConfirmed) {
+                setQuestions(questions.filter(q => q.id !== id));
+                toast.success("Question removed");
+            }
+        });
     };
 
     return (

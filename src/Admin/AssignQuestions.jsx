@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronRight, Save, Search, CheckCircle2, Circle, BookOpen, Layout, HelpCircle } from 'lucide-react';
+import { ChevronRight, Save, Search, CheckCircle2, Circle, BookOpen, HelpCircle } from 'lucide-react';
 import { toast } from 'react-toastify';
 
 export default function AssignQuestions() {
@@ -11,7 +11,7 @@ export default function AssignQuestions() {
     const [selectedQuestions, setSelectedQuestions] = useState([]);
     const [isTopicDropdownOpen, setIsTopicDropdownOpen] = useState(false);
 
-    // Mock Topics - Normally these would come from your state/API
+    // Mock Topics
     const topics = [
         { id: 1, name: 'TECHNICAL TEST', count: 45 },
         { id: 2, name: 'Tech Interview Test', count: 12 },
@@ -19,7 +19,7 @@ export default function AssignQuestions() {
         { id: 4, name: 'Aptitude Reasoning', count: 156 },
     ];
 
-    // Mock Questions for each topic
+    // Mock Questions database
     const questionsDatabase = {
         1: [
             { id: 101, text: "What is React?" },
@@ -51,11 +51,10 @@ export default function AssignQuestions() {
             return;
         }
 
-        // ✅ Save selection count to localStorage keyed by assessment ID
         const storageKey = `assessment_${id}_questions`;
         localStorage.setItem(storageKey, selectedQuestions.length);
 
-        toast.success(`${selectedQuestions.length} Questions successfully added to this Assessment!`);
+        toast.success(`${selectedQuestions.length} Questions successfully added!`);
         setTimeout(() => navigate(-1), 1500);
     };
 
@@ -66,64 +65,65 @@ export default function AssignQuestions() {
 
     return (
         <div className="p-6 bg-[#EDF2F7] min-h-screen">
-            {/* Header / Breadcrumb */}
             <div className="mb-8">
-                <div className="flex items-center gap-2 text-sm text-slate-400 font-medium mb-4">
+                <div className="flex items-center gap-2 text-sm text-gray-400 font-medium mb-4">
                     <span className="text-[#319795] font-semibold">Assessment</span>
                     <ChevronRight className="h-3 w-3" />
-                    <span className="text-[#2D3748] font-bold">Assign Questions</span>
+                    <span className="text-gray-700 font-bold">Assign Questions</span>
                 </div>
 
-                <div className="bg-white rounded-2xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-[#E6FFFA] flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="bg-white rounded-xl p-6 border border-gray-200 flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div className="flex items-center gap-4">
-                        <div className="bg-[#FF7F50] p-3 rounded-xl shadow-lg shadow-[#FF7F50]/20">
+                        <div className="bg-[#319795] p-3 rounded-lg flex items-center justify-center">
                             <BookOpen className="h-6 w-6 text-white" />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-black text-[#2D3748] leading-tight">Pick Questions</h1>
-                            <p className="text-gray-500 text-sm font-medium">Assignment ID: <span className="text-[#319795]">#{id}</span></p>
+                            <h1 className="text-xl font-bold text-gray-800">Pick Questions</h1>
+                            <p className="text-gray-500 text-xs">Assessment ID: <span className="text-[#319795] font-bold">#{id}</span></p>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-6">
                         <div className="text-right">
-                            <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Selected Counter</p>
-                            <p className="text-xl font-black text-[#319795]">{selectedQuestions.length} <span className="text-slate-300 font-medium">/ 100</span></p>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Selected</p>
+                            <p className="text-lg font-black text-[#319795]">{selectedQuestions.length} Items</p>
                         </div>
+                        <button
+                            onClick={handleSave}
+                            className="bg-[#319795] hover:bg-[#2B7A73] text-white px-6 py-2.5 rounded-lg font-bold text-sm transition-all flex items-center gap-2"
+                        >
+                            <Save className="h-4 w-4" />
+                            Assign Now
+                        </button>
                     </div>
                 </div>
             </div>
 
-            {/* Top Controls: Topic Selector & Search */}
             <div className="flex flex-col md:flex-row gap-4 items-center mb-6">
-                {/* Modern Dropdown For Topics */}
                 <div className="relative w-full md:w-72">
                     <button
                         onClick={() => setIsTopicDropdownOpen(!isTopicDropdownOpen)}
-                        className="w-full bg-white px-5 py-3.5 rounded-2xl shadow-sm border border-[#E6FFFA] flex items-center justify-between text-slate-700 hover:border-[#319795] transition-all"
+                        className="w-full bg-white border border-gray-200 rounded-lg px-4 py-3 text-sm font-bold text-gray-700 flex items-center justify-between hover:border-[#319795] transition-all"
                     >
-                        <div className="flex items-center gap-3">
-                            <Layout className="h-4 w-4 text-[#319795]" />
-                            <span className="font-bold text-sm">
-                                {selectedTopic ? topics.find(t => t.id === selectedTopic)?.name : 'Choose Topic'}
-                            </span>
-                        </div>
-                        <ChevronRight className={`h-4 w-4 transition-transform duration-300 ${isTopicDropdownOpen ? 'rotate-90' : ''}`} />
+                        <span className="flex items-center gap-2">
+                            {selectedTopic ? topics.find(t => t.id === selectedTopic)?.name : 'Select Topic'}
+                        </span>
+                        <ChevronRight className={`h-4 w-4 transition-transform ${isTopicDropdownOpen ? 'rotate-90' : ''}`} />
                     </button>
 
                     {isTopicDropdownOpen && (
-                        <div className="absolute top-[calc(100%+8px)] left-0 w-full bg-white rounded-2xl shadow-2xl border border-slate-100 p-2 z-50 max-h-64 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-200">
-                            {topics.map(t => (
+                        <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg overflow-hidden z-[50]">
+                            {topics.map(topic => (
                                 <button
-                                    key={t.id}
+                                    key={topic.id}
                                     onClick={() => {
-                                        setSelectedTopic(t.id);
+                                        setSelectedTopic(topic.id);
                                         setIsTopicDropdownOpen(false);
                                     }}
-                                    className={`w-full text-left p-3 rounded-xl flex items-center justify-between transition-colors ${selectedTopic === t.id ? 'bg-[#E6FFFA] text-[#319795]' : 'hover:bg-slate-50 text-slate-600'}`}
+                                    className="w-full px-4 py-3 text-sm text-left hover:bg-teal-50 flex items-center justify-between border-b border-gray-50 last:border-0"
                                 >
-                                    <span className="font-bold text-xs">{t.name}</span>
-                                    <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded-md text-slate-400">{t.count}</span>
+                                    <span className={`font-bold ${selectedTopic === topic.id ? 'text-[#319795]' : 'text-gray-600'}`}>{topic.name}</span>
+                                    <span className="text-[10px] font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-md">{topic.count} Qs</span>
                                 </button>
                             ))}
                         </div>
@@ -131,122 +131,49 @@ export default function AssignQuestions() {
                 </div>
 
                 <div className="relative flex-1 w-full">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Search className="h-5 w-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input
                         type="text"
-                        placeholder="Search specific questions..."
+                        placeholder="Search questions in this topic..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-12 pr-4 py-3.5 bg-white border border-[#E6FFFA] rounded-2xl text-sm focus:border-[#319795] focus:ring-4 focus:ring-[#319795]/5 outline-none transition-all shadow-sm"
+                        className="w-full pl-12 pr-6 py-3 bg-white border border-gray-200 rounded-lg text-sm focus:border-[#319795] outline-none"
                     />
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                {/* Progress Card (Sticky-ish) */}
-                <div className="lg:col-span-1">
-                    {selectedTopic ? (
-                        <div className="bg-[#2D3748] rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
-                            <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/5 rounded-full blur-2xl"></div>
-                            <h4 className="font-black text-xs uppercase tracking-widest text-slate-400 mb-4">Topic Progress</h4>
-                            <div className="space-y-3">
-                                <div className="flex justify-between items-end">
-                                    <span className="text-2xl font-black">{selectedQuestions.length}</span>
-                                    <span className="text-xs font-bold text-slate-400 mb-1">Target: 100</span>
-                                </div>
-                                <div className="h-2.5 bg-slate-700 rounded-full overflow-hidden p-0.5">
-                                    <div
-                                        className="h-full bg-gradient-to-r from-[#319795] to-[#4FD1C5] rounded-full transition-all duration-700"
-                                        style={{ width: `${Math.min((selectedQuestions.length / 100) * 100, 100)}%` }}
-                                    ></div>
-                                </div>
-                                <p className="text-[10px] text-slate-400 font-medium">Auto-calculating coverage area...</p>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="bg-white/50 border-2 border-dashed border-slate-200 rounded-3xl p-8 text-center">
-                            <p className="text-slate-400 text-xs font-bold uppercase">Topic Metrics Pending</p>
-                        </div>
-                    )}
-                </div>
-
-                {/* Questions List Card */}
-                <div className="lg:col-span-3">
-                    <div className="bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-[#E6FFFA] overflow-hidden">
-                        <div className="p-5 border-b border-[#E6FFFA] bg-slate-50/50 flex items-center justify-between gap-4">
-                            <div className="flex items-center gap-2">
-                                <span className={`w-2.5 h-2.5 rounded-full ${selectedTopic ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`}></span>
-                                <h3 className="text-sm font-black text-slate-700 uppercase tracking-widest">
-                                    {selectedTopic ? topics.find(t => t.id === selectedTopic)?.name : 'Database'}
-                                </h3>
-                            </div>
-
-                            <button
-                                onClick={handleSave}
-                                disabled={selectedQuestions.length === 0}
-                                className={`px-6 py-2.5 rounded-xl font-bold flex items-center gap-2 transition-all active:scale-95 text-sm shadow-md ${selectedQuestions.length > 0
-                                    ? 'bg-[#319795] text-white hover:shadow-[#319795]/20'
-                                    : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
-                                    }`}
-                            >
-                                <Save className="h-4 w-4" />
-                                Assign Now
-                            </button>
-                        </div>
-
-                        <div className="max-h-[600px] overflow-y-auto custom-scrollbar p-5">
-                            {!selectedTopic ? (
-                                <div className="py-24 text-center">
-                                    <div className="w-20 h-20 bg-slate-100 rounded-3xl rotate-12 flex items-center justify-center mx-auto mb-6 shadow-sm">
-                                        <HelpCircle className="h-10 w-10 text-slate-300 -rotate-12" />
-                                    </div>
-                                    <h3 className="text-slate-900 font-black text-xl mb-2">Ready to Start?</h3>
-                                    <p className="text-slate-400 font-medium max-w-xs mx-auto">First pick a topic from the dropdown above to see available questions.</p>
-                                </div>
-                            ) : filteredQuestions.length === 0 ? (
-                                <div className="py-24 text-center">
-                                    <p className="text-slate-400 font-medium">No results found for your search query.</p>
-                                </div>
-                            ) : (
-                                <div className="grid grid-cols-1 gap-4">
-                                    {filteredQuestions.map((q) => (
-                                        <div
-                                            key={q.id}
-                                            onClick={() => toggleQuestion(q.id)}
-                                            className={`group p-5 rounded-2xl border-2 transition-all duration-300 cursor-pointer flex items-start gap-4 ${selectedQuestions.includes(q.id)
-                                                ? 'border-[#319795] bg-[#E6FFFA]/30 shadow-md'
-                                                : 'border-slate-100 hover:border-[#319795]/30 hover:bg-slate-50'
-                                                }`}
-                                        >
-                                            <div className="mt-0.5">
-                                                {selectedQuestions.includes(q.id) ? (
-                                                    <div className="bg-[#319795] p-1 rounded-lg">
-                                                        <CheckCircle2 className="h-5 w-5 text-white" />
-                                                    </div>
-                                                ) : (
-                                                    <div className="bg-slate-100 p-1 rounded-lg group-hover:bg-[#319795]/10">
-                                                        <Circle className="h-5 w-5 text-slate-300 group-hover:text-[#319795]/50" />
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="flex-1">
-                                                <p className={`text-[15px] font-bold leading-relaxed ${selectedQuestions.includes(q.id) ? 'text-[#2D3748]' : 'text-slate-600'}`}>
-                                                    {q.text}
-                                                </p>
-                                                <div className="flex items-center gap-3 mt-3">
-                                                    <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest bg-slate-100 px-2 py-0.5 rounded-md">ID: #{q.id}</span>
-                                                    {selectedQuestions.includes(q.id) && (
-                                                        <span className="text-[10px] font-black uppercase text-[#319795] tracking-widest">Added to List</span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
+            <div className="grid grid-cols-1 gap-3">
+                {!selectedTopic ? (
+                    <div className="bg-white rounded-xl p-20 text-center border-2 border-dashed border-gray-200">
+                        <HelpCircle className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                        <h3 className="text-lg font-bold text-gray-700">Select a Topic</h3>
+                        <p className="text-gray-500 text-sm mt-1">Please choose a topic from the dropdown to see questions.</p>
                     </div>
-                </div>
+                ) : filteredQuestions.length === 0 ? (
+                    <div className="p-10 text-center text-gray-400 font-bold">No questions found matching your search.</div>
+                ) : (
+                    filteredQuestions.map((q) => (
+                        <div
+                            key={q.id}
+                            onClick={() => toggleQuestion(q.id)}
+                            className={`p-5 rounded-xl border-2 transition-all cursor-pointer flex items-center justify-between group ${selectedQuestions.includes(q.id)
+                                    ? 'border-[#319795] bg-teal-50'
+                                    : 'border-white bg-white hover:border-gray-100'
+                                }`}
+                        >
+                            <div className="flex items-center gap-4">
+                                <div className={`w-6 h-6 rounded flex items-center justify-center transition-all ${selectedQuestions.includes(q.id) ? 'bg-[#319795] text-white' : 'bg-gray-100 text-gray-300'
+                                    }`}>
+                                    {selectedQuestions.includes(q.id) ? <CheckCircle2 className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
+                                </div>
+                                <span className={`text-sm font-bold ${selectedQuestions.includes(q.id) ? 'text-[#2C7A7B]' : 'text-gray-600'}`}>
+                                    {q.text}
+                                </span>
+                            </div>
+                            <span className="text-[10px] font-bold text-gray-300 group-hover:text-gray-400 transition-colors">ID: #{q.id}</span>
+                        </div>
+                    ))
+                )}
             </div>
         </div>
     );

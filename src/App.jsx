@@ -45,11 +45,9 @@ function App() {
             <Route path="topic-questions/:topicId" element={<TopicQuestions />} />
             <Route path="assessment/result/:id" element={<AssessmentResult />} />
             <Route path="assign-questions/:id" element={<AssignQuestions />} />
+            <Route path="print/:topicId" element={<PrintPaper />} />
+            <Route path="edit/:topicId" element={<EditQuestions />} />
           </Route>
-
-          {/* External Full Screen Routes */}
-          <Route path="/admin/print/:topicId" element={<PrintPaper />} />
-          <Route path="/admin/edit/:topicId" element={<EditQuestions />} />
         </Routes>
       </Router>
       <ToastContainer position="top-right" autoClose={2500} />

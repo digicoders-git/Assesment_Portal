@@ -29,7 +29,7 @@ export default function PrintPaper() {
             <div className="max-w-4xl mx-auto mb-8 print:hidden flex justify-end items-center">
                 <button
                     onClick={handlePrint}
-                    className="flex items-center gap-2 bg-teal-500 hover:bg-teal-600 text-white px-6 py-2 rounded-lg font-medium transition-colors shadow-sm"
+                    className="flex items-center gap-2 bg-teal-500 hover:bg-teal-600 text-white px-6 py-2 rounded-lg font-medium transition-colors"
                 >
                     <Printer className="h-4 w-4" />
                     Print Solution
@@ -73,15 +73,15 @@ export default function PrintPaper() {
                 {/* Questions List */}
                 <div className="space-y-8">
                     {questions.map((q) => (
-                        <div key={q.id}>
-                            <p className="font-bold text-gray-900 mb-3">
+                        <div key={q.id} className="break-inside-avoid mb-8">
+                            <p className="font-bold text-black mb-3 text-[1.1rem]">
                                 Q.{q.id}) {q.question}
                             </p>
-                            <div className="space-y-2 ml-1">
+                            <div className="grid grid-cols-2 gap-y-3 gap-x-8 ml-2">
                                 {q.options.map((opt, idx) => (
                                     <div key={idx} className="flex items-center gap-3">
-                                        <div className="w-5 h-5 border-2 border-gray-400 rounded-sm flex-shrink-0"></div>
-                                        <span className="text-gray-700">
+                                        <div className="w-5 h-5 border-2 border-black rounded-sm flex-shrink-0"></div>
+                                        <span className="text-black font-semibold text-sm">
                                             {String.fromCharCode(65 + idx)}). {opt}
                                         </span>
                                     </div>
@@ -95,8 +95,20 @@ export default function PrintPaper() {
             {/* Print Styles */}
             <style>{`
                 @media print {
-                    @page { margin: 2cm; }
-                    body { -webkit-print-color-adjust: exact; }
+                    @page { 
+                        margin: 1.5cm 2cm;
+                        size: auto;
+                    }
+                    body { 
+                        -webkit-print-color-adjust: exact; 
+                        background-color: white !important;
+                        color: black !important;
+                        opacity: 1 !important;
+                    }
+                    * {
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
+                    }
                 }
             `}</style>
         </div>

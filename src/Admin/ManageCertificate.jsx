@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Swal from 'sweetalert2';
 import { Plus, Search, Edit, Trash2, X, Eye, ArrowLeft, Save, Image as ImageIcon, Type, Layout, Grid } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useUser } from '../context/UserContext';
@@ -118,6 +119,24 @@ export function ManageCertificate() {
         setCertificates(certificates.map(cert =>
             cert.id === id ? { ...cert, status: !cert.status } : cert
         ));
+        toast.info("Status updated");
+    };
+
+    const handleDelete = (id) => {
+        Swal.fire({
+            title: "Are you sure?",
+            text: "This certificate template will be permanently removed!",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#319795",
+            cancelButtonColor: "#f56565",
+            confirmButtonText: "Yes, delete it!"
+        }).then((result) => {
+            if (result.isConfirmed) {
+                setCertificates(certificates.filter(c => c.id !== id));
+                toast.success("Certificate deleted successfully");
+            }
+        });
     };
 
     const fontFamilies = [
@@ -142,7 +161,7 @@ export function ManageCertificate() {
                     </div>
                     <button
                         onClick={handleSave}
-                        className="flex items-center gap-2 bg-teal-500 hover:bg-teal-600 text-white px-6 py-2.5 rounded-lg font-medium transition-all shadow-md active:scale-95"
+                        className="flex items-center gap-2 bg-teal-500 hover:bg-teal-600 text-white px-6 py-2.5 rounded-lg font-medium transition-all active:scale-95"
                     >
                         <Save className="h-5 w-5" />
                         Save Certificate
@@ -153,7 +172,7 @@ export function ManageCertificate() {
                     {/* Left Column: Properties */}
                     <div className="lg:col-span-5 space-y-6 overflow-y-auto max-h-[calc(100vh-180px)] pr-2 custom-scrollbar">
                         {/* Basic Details */}
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <div className="bg-white rounded-xl border border-gray-200 p-6">
                             <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4 flex items-center gap-2">
                                 <Layout className="h-4 w-4 text-teal-500" />
                                 Basic Details
@@ -200,7 +219,7 @@ export function ManageCertificate() {
                             { id: 'assessmentName', label: 'Assessment Name', sample: 'Full Stack Development Quiz' },
                             { id: 'assessmentCode', label: 'Assessment Code', sample: 'DCT-2025-001' }
                         ].map((layer) => (
-                            <div key={layer.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                            <div key={layer.id} className="bg-white rounded-xl border border-gray-200 p-6">
                                 <div className="flex items-center justify-between mb-4">
                                     <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider flex items-center gap-2">
                                         <Type className="h-4 w-4 text-teal-500" />
@@ -293,7 +312,7 @@ export function ManageCertificate() {
 
                     {/* Right Column: Live Preview */}
                     <div className="lg:col-span-7">
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sticky top-6">
+                        <div className="bg-white rounded-xl border border-gray-200 p-6 sticky top-6">
                             <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4 flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                     <Grid className="h-4 w-4 text-teal-500" />
@@ -302,7 +321,7 @@ export function ManageCertificate() {
                                 <span className="text-[10px] text-gray-400 font-normal">WYSIWYG EDITOR</span>
                             </h3>
 
-                            <div className="aspect-[3/2] bg-slate-100 rounded-lg border-4 border-slate-200 overflow-hidden relative shadow-inner flex items-center justify-center">
+                            <div className="aspect-[3/2] bg-slate-100 rounded-lg border-4 border-slate-200 overflow-hidden relative flex items-center justify-center">
                                 {formData.image ? (
                                     <div className="relative w-full h-full">
                                         <img src={formData.image} alt="Template" className="w-full h-full object-contain" />
@@ -374,7 +393,7 @@ export function ManageCertificate() {
                 </div>
                 <button
                     onClick={handleAdd}
-                    className="flex items-center gap-2 bg-teal-500 hover:bg-teal-600 text-white px-5 py-2.5 rounded-lg font-medium transition-all shadow-md active:scale-95"
+                    className="flex items-center gap-2 bg-teal-500 hover:bg-teal-600 text-white px-5 py-2.5 rounded-lg font-medium transition-all active:scale-95"
                 >
                     <Plus className="h-5 w-5" />
                     New Certificate
@@ -382,7 +401,7 @@ export function ManageCertificate() {
             </div>
 
             {/* List Table */}
-            <div className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200">
+            <div className="bg-white rounded-xl overflow-hidden border border-gray-200">
                 <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-white">
                     <h3 className="text-gray-700 font-bold uppercase text-xs tracking-widest">Available Templates</h3>
                     <div className="relative">
@@ -417,7 +436,7 @@ export function ManageCertificate() {
                                         <div className="text-[10px] text-gray-400 mt-0.5">ID: {cert.id * 1234}CERT</div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <div className="h-10 w-16 bg-slate-100 border border-slate-200 rounded shadow-sm overflow-hidden flex items-center justify-center relative group-hover:ring-2 ring-teal-500/20 transition-all">
+                                        <div className="h-10 w-16 bg-slate-100 border border-slate-200 rounded overflow-hidden flex items-center justify-center relative group-hover:ring-2 ring-teal-500/20 transition-all">
                                             {cert.image ? (
                                                 <img src={cert.image} alt="cert" className="w-full h-full object-cover" />
                                             ) : (
@@ -459,6 +478,7 @@ export function ManageCertificate() {
                                                 <Edit className="h-4 w-4" />
                                             </button>
                                             <button
+                                                onClick={() => handleDelete(cert.id)}
                                                 className="text-slate-400 hover:text-red-500 hover:bg-red-50 p-2 rounded-lg transition-all"
                                                 title="Delete Template"
                                             >
@@ -479,7 +499,7 @@ export function ManageCertificate() {
                     className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-[100] p-4 animate-in fade-in duration-300"
                     onClick={() => setIsPreviewOpen(false)}
                 >
-                    <div className="relative max-w-5xl w-full max-h-[90vh] scale-in duration-300 shadow-2xl rounded-2xl overflow-hidden border-4 border-white/10" onClick={e => e.stopPropagation()}>
+                    <div className="relative max-w-5xl w-full max-h-[90vh] scale-in duration-300 rounded-2xl overflow-hidden border-4 border-white/10" onClick={e => e.stopPropagation()}>
                         <button
                             onClick={() => setIsPreviewOpen(false)}
                             className="absolute top-4 right-4 bg-white/20 hover:bg-white/40 backdrop-blur-md text-white p-2 rounded-full transition-all z-10"

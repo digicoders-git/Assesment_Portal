@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Edit, Trash2, Printer, X, Eye } from 'lucide-react';
+import Swal from 'sweetalert2';
+import { Plus, Search, Edit, Trash2, Printer, X, Eye, Download } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useUser } from '../context/UserContext';
 export { ManageCertificate } from './ManageCertificate';
@@ -50,6 +51,24 @@ export function ManageTopics() {
         setTopics(topics.map(topic =>
             topic.id === id ? { ...topic, status: !topic.status } : topic
         ));
+        toast.info("Status updated");
+    };
+
+    const handleDeleteTopic = (id) => {
+        Swal.fire({
+            title: "Are you sure?",
+            text: "All questions in this topic will also be hidden!",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#319795",
+            cancelButtonColor: "#f56565",
+            confirmButtonText: "Yes, delete it!"
+        }).then((result) => {
+            if (result.isConfirmed) {
+                setTopics(topics.filter(topic => topic.id !== id));
+                toast.success("Topic deleted successfully");
+            }
+        });
     };
 
     return (
@@ -67,7 +86,7 @@ export function ManageTopics() {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <button
                     onClick={() => setIsDialogOpen(true)}
-                    className="flex items-center gap-2 bg-[#319795] hover:bg-[#2B7A73] text-white px-5 py-2.5 rounded-lg font-medium transition-colors shadow-md"
+                    className="flex items-center gap-2 bg-[#319795] hover:bg-[#2B7A73] text-white px-5 py-2.5 rounded-lg font-medium transition-colors"
                 >
                     <Plus className="h-5 w-5" />
                     Add Topic
@@ -86,7 +105,7 @@ export function ManageTopics() {
             </div>
 
             {/* Table */}
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            <div className="bg-white rounded-lg overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full whitespace-nowrap">
                         <thead>
@@ -131,12 +150,9 @@ export function ManageTopics() {
                                                 Print
                                             </button>
                                             <button
-                                                onClick={() => navigate(`/admin/edit/${topic.id}`)}
-                                                className="text-[#319795] hover:text-[#2B7A73] border border-[#319795] hover:border-[#2B7A73] p-1.5 rounded transition-colors"
+                                                onClick={() => handleDeleteTopic(topic.id)}
+                                                className="text-red-600 hover:text-red-700 border border-red-600 hover:border-red-700 p-1.5 rounded transition-colors"
                                             >
-                                                <Edit className="h-4 w-4" />
-                                            </button>
-                                            <button className="text-red-600 hover:text-red-700 border border-red-600 hover:border-red-700 p-1.5 rounded transition-colors">
                                                 <Trash2 className="h-4 w-4" />
                                             </button>
                                         </div>
@@ -161,7 +177,7 @@ export function ManageTopics() {
             {/* Add Topic Dialog */}
             {isDialogOpen && (
                 <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all">
-                    <div className="bg-white rounded-lg shadow-2xl max-w-md w-full transform transition-all scale-100">
+                    <div className="bg-white rounded-lg max-w-md w-full transform transition-all scale-100">
                         <div className="flex items-center justify-between px-6 py-4 bg-[#319795] text-white rounded-t-lg">
                             <h3 className="text-xl font-semibold">Add Topic</h3>
                             <button
@@ -206,26 +222,52 @@ export function ActiveAssessment() {
     const [searchQuery, setSearchQuery] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingAssessment, setEditingAssessment] = useState(null);
-    const [assessments, setAssessments] = useState([
-        {
-            id: 1,
-            status: true,
-            currentQuestions: 100,
-            totalQuestions: 100,
-            name: "Skill Up Test by DigiCoders",
-            duration: "30 Min",
-            code: "DCT2025",
-            attempts: 6780,
-            startTime: "2025-12-13T11:46",
-            endTime: "2025-12-13T23:46",
-            remark: "Skill Up Test by DigiCoders 13 Dec 2025",
-            hasCertificate: true,
-            certificateType: "Custom",
-            includeAssessmentName: true,
-            includeAssessmentCode: true,
-            includeStudentName: true
+    const [assessments, setAssessments] = useState([]);
+
+    useEffect(() => {
+        const saved = localStorage.getItem('all_assessments');
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            // Filter: active status OR has assigned questions
+            const activeOnes = parsed.filter(item =>
+                item.status === true ||
+                localStorage.getItem(`assessment_${item.id}_questions`)
+            );
+            setAssessments(activeOnes);
+        } else {
+            const initial = [
+                {
+                    id: 1,
+                    status: true,
+                    currentQuestions: 100,
+                    totalQuestions: 100,
+                    name: "Skill Up Test by DigiCoders",
+                    duration: "30 Min",
+                    code: "DCT2025",
+                    attempts: 6780,
+                    startTime: "2025-12-13T11:46",
+                    endTime: "2025-12-13T23:46",
+                    remark: "Skill Up Test by DigiCoders 13 Dec 2025",
+                    hasCertificate: true,
+                    certificateType: "Custom",
+                    includeAssessmentName: true,
+                    includeAssessmentCode: true,
+                    includeStudentName: true
+                }
+            ];
+            localStorage.setItem('all_assessments', JSON.stringify(initial));
+            setAssessments(initial);
         }
-    ]);
+    }, []);
+
+    const updateGlobalAssessments = (newList) => {
+        localStorage.setItem('all_assessments', JSON.stringify(newList));
+        const activeOnes = newList.filter(item =>
+            item.status === true ||
+            localStorage.getItem(`assessment_${item.id}_questions`)
+        );
+        setAssessments(activeOnes);
+    };
 
     // Form State
     const [formData, setFormData] = useState({
@@ -282,8 +324,9 @@ export function ActiveAssessment() {
     };
 
     const handleSave = () => {
+        const saved = JSON.parse(localStorage.getItem('all_assessments') || '[]');
         if (editingAssessment) {
-            setAssessments(assessments.map(a => a.id === editingAssessment.id ? {
+            const newList = saved.map(a => a.id === editingAssessment.id ? {
                 ...a,
                 name: formData.name,
                 code: formData.code,
@@ -297,10 +340,11 @@ export function ActiveAssessment() {
                 includeAssessmentName: formData.includeAssessmentName === 'Yes',
                 includeAssessmentCode: formData.includeAssessmentCode === 'Yes',
                 includeStudentName: formData.includeStudentName === 'Yes'
-            } : a));
+            } : a);
+            updateGlobalAssessments(newList);
         } else {
-            setAssessments([...assessments, {
-                id: assessments.length + 1,
+            const newList = [...saved, {
+                id: Date.now(),
                 status: true,
                 currentQuestions: 0,
                 totalQuestions: parseInt(formData.totalQuestions) || 0,
@@ -316,13 +360,36 @@ export function ActiveAssessment() {
                 includeAssessmentName: formData.includeAssessmentName === 'Yes',
                 includeAssessmentCode: formData.includeAssessmentCode === 'Yes',
                 includeStudentName: formData.includeStudentName === 'Yes'
-            }]);
+            }];
+            updateGlobalAssessments(newList);
         }
         setIsModalOpen(false);
     };
 
     const toggleStatus = (id) => {
-        setAssessments(assessments.map(a => a.id === id ? { ...a, status: !a.status } : a));
+        const saved = JSON.parse(localStorage.getItem('all_assessments') || '[]');
+        const newList = saved.map(a => a.id === id ? { ...a, status: !a.status } : a);
+        updateGlobalAssessments(newList);
+        toast.info("Status updated");
+    };
+
+    const handleDeleteAssessment = (id) => {
+        Swal.fire({
+            title: "Are you sure?",
+            text: "This assessment will be permanently deleted!",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#319795",
+            cancelButtonColor: "#f56565",
+            confirmButtonText: "Yes, delete it!"
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const saved = JSON.parse(localStorage.getItem('all_assessments') || '[]');
+                const newList = saved.filter(a => a.id !== id);
+                updateGlobalAssessments(newList);
+                toast.success("Assessment deleted successfully");
+            }
+        });
     };
 
     return (
@@ -340,7 +407,7 @@ export function ActiveAssessment() {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <button
                     onClick={handleAdd}
-                    className="flex items-center gap-2 bg-[#319795] hover:bg-[#2c7a7b] text-white px-4 py-2 rounded-md font-medium transition-colors shadow-sm text-sm"
+                    className="flex items-center gap-2 bg-[#319795] hover:bg-[#2c7a7b] text-white px-4 py-2 rounded-md font-medium transition-colors text-sm"
                 >
                     <Plus className="h-4 w-4 text-white" />
                     Add Assessment
@@ -358,7 +425,7 @@ export function ActiveAssessment() {
             </div>
 
             {/* Table */}
-            <div className="bg-white rounded-lg shadow-sm border border-[#E6FFFA] overflow-hidden">
+            <div className="bg-white rounded-lg border border-[#E6FFFA] overflow-hidden">
                 <div className="overflow-x-auto custom-scrollbar ">
                     <table className="w-full text-sm text-left whitespace-nowrap">
                         <thead className="bg-[#E6FFFA] text-[#2D3748] font-semibold border-b border-[#319795]">
@@ -375,7 +442,17 @@ export function ActiveAssessment() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[#E6FFFA]">
-                            {assessments.map((item, index) => (
+                            {assessments.length === 0 ? (
+                                <tr>
+                                    <td colSpan="9" className="px-4 py-20 text-center">
+                                        <div className="flex flex-col items-center justify-center text-gray-400">
+                                            <Search className="h-12 w-12 mb-4 opacity-20" />
+                                            <p className="text-lg font-bold">No Active Assessments</p>
+                                            <p className="text-sm">Activate an assessment from history to see it here.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : assessments.map((item, index) => (
                                 <tr key={item.id} >
                                     <td className="px-4 py-3 align-top">{index + 1}</td>
                                     <td className="px-4 py-3 align-top">
@@ -428,13 +505,14 @@ export function ActiveAssessment() {
                                             </button>
                                             <div className="flex items-center gap-1">
                                                 <button
-                                                    onClick={() => handleEdit(item)}
-                                                    className="p-1 border border-[#319795] text-[#319795] rounded hover:bg-[#E6FFFA]"
+                                                    onClick={() => handleDeleteAssessment(item.id)}
+                                                    className="p-1 border border-red-500 text-red-500 rounded hover:bg-red-50"
+                                                    title="Delete"
                                                 >
-                                                    <Edit className="h-3 w-3" />
+                                                    <Trash2 className="h-3 w-3" />
                                                 </button>
-                                                <button className="px-2 py-0.5 border border-[#F56565] text-[#F56565] rounded text-xs hover:bg-[#F56565]/20">
-                                                    Data Export
+                                                <button className="px-1.5 py-0.5 border border-gray-400 text-gray-500 rounded text-[10px] hover:bg-gray-100">
+                                                    Export
                                                 </button>
                                             </div>
                                         </div>
@@ -457,7 +535,7 @@ export function ActiveAssessment() {
             {/* Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+                    <div className="bg-white rounded-lg w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
                         <div className="bg-[#319795] text-[#E6FFFA] px-6 py-4 flex justify-between items-center">
                             <h3 className="font-semibold text-lg">{editingAssessment ? 'Edit Assessment Schedule' : 'Add Assessment Schedule'}</h3>
                             <button onClick={() => setIsModalOpen(false)} className="text-[#E6FFFA] hover:text-[#B2F5EA]">
@@ -492,23 +570,19 @@ export function AssessmentHistory() {
     const [searchQuery, setSearchQuery] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingAssessment, setEditingAssessment] = useState(null);
-    const [assessments, setAssessments] = useState([
-        {
-            id: 1,
-            status: false,
-            currentQuestions: 100,
-            totalQuestions: 100,
-            name: "Skill Up Test by DigiCoders",
-            duration: "30 Min",
-            code: "DCT2025",
-            attempts: 6780,
-            startTime: "2025-12-13T11:46",
-            endTime: "2025-12-13T23:46",
-            remark: "Skill Up Test by DigiCoders 13 Dec 2025",
-            hasCertificate: true,
-            certificateType: "Custom"
+    const [assessments, setAssessments] = useState([]);
+
+    useEffect(() => {
+        const saved = localStorage.getItem('all_assessments');
+        if (saved) {
+            setAssessments(JSON.parse(saved));
         }
-    ]);
+    }, []);
+
+    const updateGlobalAssessments = (newList) => {
+        localStorage.setItem('all_assessments', JSON.stringify(newList));
+        setAssessments(newList);
+    };
 
     const [formData, setFormData] = useState({
         name: '',
@@ -555,8 +629,9 @@ export function AssessmentHistory() {
     };
 
     const handleSave = () => {
+        const saved = JSON.parse(localStorage.getItem('all_assessments') || '[]');
         if (editingAssessment) {
-            setAssessments(assessments.map(a => a.id === editingAssessment.id ? {
+            const newList = saved.map(a => a.id === editingAssessment.id ? {
                 ...a,
                 name: formData.name,
                 code: formData.code,
@@ -567,10 +642,11 @@ export function AssessmentHistory() {
                 hasCertificate: formData.hasCertificate === 'Yes',
                 certificateType: formData.hasCertificate === 'Yes' ? formData.certificateType : null,
                 remark: formData.remark
-            } : a));
+            } : a);
+            updateGlobalAssessments(newList);
         } else {
-            setAssessments([...assessments, {
-                id: assessments.length + 1,
+            const newList = [...saved, {
+                id: Date.now(),
                 status: false,
                 currentQuestions: 0,
                 totalQuestions: parseInt(formData.totalQuestions) || 0,
@@ -583,13 +659,36 @@ export function AssessmentHistory() {
                 remark: formData.remark,
                 hasCertificate: formData.hasCertificate === 'Yes',
                 certificateType: formData.hasCertificate === 'Yes' ? formData.certificateType : null
-            }]);
+            }];
+            updateGlobalAssessments(newList);
         }
         setIsModalOpen(false);
     };
 
     const toggleStatus = (id) => {
-        setAssessments(assessments.map(a => a.id === id ? { ...a, status: !a.status } : a));
+        const saved = JSON.parse(localStorage.getItem('all_assessments') || '[]');
+        const newList = saved.map(a => a.id === id ? { ...a, status: !a.status } : a);
+        updateGlobalAssessments(newList);
+        toast.info("Status updated");
+    };
+
+    const handleDeleteAssessment = (id) => {
+        Swal.fire({
+            title: "Are you sure?",
+            text: "This assessment will be permanently deleted!",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#319795",
+            cancelButtonColor: "#f56565",
+            confirmButtonText: "Yes, delete it!"
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const saved = JSON.parse(localStorage.getItem('all_assessments') || '[]');
+                const newList = saved.filter(a => a.id !== id);
+                updateGlobalAssessments(newList);
+                toast.success("Assessment deleted successfully");
+            }
+        });
     };
 
     return (
@@ -607,7 +706,7 @@ export function AssessmentHistory() {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <button
                     onClick={handleAdd}
-                    className="flex items-center gap-2 bg-[#319795] hover:bg-[#2c7a7b] text-white px-4 py-2 rounded-md font-medium transition-colors shadow-sm text-sm"
+                    className="flex items-center gap-2 bg-[#319795] hover:bg-[#2c7a7b] text-white px-4 py-2 rounded-md font-medium transition-colors text-sm"
                 >
                     <Plus className="h-4 w-4 text-white" />
                     Add Assessment
@@ -625,7 +724,7 @@ export function AssessmentHistory() {
             </div>
 
             {/* Table */}
-            <div className="bg-white rounded-lg shadow-sm border border-[#E6FFFA] overflow-hidden">
+            <div className="bg-white rounded-lg border border-[#E6FFFA] overflow-hidden">
                 <div className="overflow-x-auto custom-scrollbar">
                     <table className="w-full text-sm text-left whitespace-nowrap">
                         <thead className="bg-[#E6FFFA] text-[#2D3748] font-semibold border-b border-[#319795]">
@@ -695,13 +794,14 @@ export function AssessmentHistory() {
                                             </button>
                                             <div className="flex items-center gap-1">
                                                 <button
-                                                    onClick={() => handleEdit(item)}
-                                                    className="p-1 border border-[#319795] text-[#319795] rounded hover:bg-[#E6FFFA]"
+                                                    onClick={() => handleDeleteAssessment(item.id)}
+                                                    className="p-1 border border-red-500 text-red-500 rounded hover:bg-red-50"
+                                                    title="Delete"
                                                 >
-                                                    <Edit className="h-3 w-3" />
+                                                    <Trash2 className="h-3 w-3" />
                                                 </button>
-                                                <button className="px-2 py-0.5 border border-[#F56565] text-[#F56565] rounded text-xs hover:bg-[#F56565]/20">
-                                                    Data Export
+                                                <button className="px-1.5 py-0.5 border border-gray-400 text-gray-500 rounded text-[10px] hover:bg-gray-100">
+                                                    Export
                                                 </button>
                                             </div>
                                         </div>
@@ -716,7 +816,7 @@ export function AssessmentHistory() {
             {/* Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+                    <div className="bg-white rounded-lg w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
                         <div className="bg-[#319795] text-[#E6FFFA] px-6 py-4 flex justify-between items-center">
                             <h3 className="font-semibold text-lg">{editingAssessment ? 'Edit Assessment Schedule' : 'Add Assessment Schedule'}</h3>
                             <button onClick={() => setIsModalOpen(false)} className="text-[#E6FFFA] hover:text-[#B2F5EA]">
@@ -803,31 +903,6 @@ export function AssessmentHistory() {
                                     </label>
                                 </div>
                             </div>
-                            {formData.hasCertificate === 'Yes' && (
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Certificate Type</label>
-                                    <div className="flex gap-4">
-                                        <label className="flex items-center gap-2 text-sm text-gray-600">
-                                            <input
-                                                type="radio"
-                                                name="certType_history"
-                                                checked={formData.certificateType === 'Default'}
-                                                onChange={() => setFormData({ ...formData, certificateType: 'Default' })}
-                                                className="text-[#319795] focus:ring-[#319795]"
-                                            /> Default
-                                        </label>
-                                        <label className="flex items-center gap-2 text-sm text-gray-600">
-                                            <input
-                                                type="radio"
-                                                name="certType_history"
-                                                checked={formData.certificateType === 'Custom'}
-                                                onChange={() => setFormData({ ...formData, certificateType: 'Custom' })}
-                                                className="text-[#319795] focus:ring-[#319795]"
-                                            /> Custom
-                                        </label>
-                                    </div>
-                                </div>
-                            )}
                             <div>
                                 <label className="block text-xs font-semibold text-gray-600 mb-1">Remark</label>
                                 <input
@@ -907,7 +982,7 @@ export function ManageStudents() {
             </div>
 
             {/* Table */}
-            <div className="bg-white rounded-lg shadow-sm border border-[#E6FFFA] overflow-hidden">
+            <div className="bg-white rounded-lg border border-[#E6FFFA] overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left whitespace-nowrap">
                         <thead className="bg-[#E6FFFA] text-[#2D3748] font-semibold border-b border-[#319795]">
@@ -948,6 +1023,9 @@ export function ManageStudents() {
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-2">
+                                            <button className="text-[#319795] hover:text-[#2c7a7b] border border-[#319795] hover:bg-[#E6FFFA] p-1.5 rounded transition-colors" title="Download">
+                                                <Download className="h-4 w-4" />
+                                            </button>
                                             <button className="text-[#319795] hover:text-[#2c7a7b] border border-[#319795] hover:bg-[#E6FFFA] p-1.5 rounded transition-colors" title="Edit">
                                                 <Edit className="h-4 w-4" />
                                             </button>
@@ -1006,14 +1084,14 @@ export function ManageCertificate_Old() {
 
             {/* Controls */}
             <div className="mb-6">
-                <button className="flex items-center gap-2 bg-[#319795] hover:bg-[#2c7a7b] text-white px-5 py-2.5 rounded-lg font-medium transition-colors shadow-sm">
+                <button className="flex items-center gap-2 bg-[#319795] hover:bg-[#2c7a7b] text-white px-5 py-2.5 rounded-lg font-medium transition-colors">
                     <Plus className="h-5 w-5" />
                     Add Certificate
                 </button>
             </div>
 
             {/* Content Area */}
-            <div className="bg-white rounded-lg shadow-sm border border-[#E6FFFA] overflow-hidden">
+            <div className="bg-white rounded-lg border border-[#E6FFFA] overflow-hidden">
                 <div className="px-6 py-4 border-b border-[#E6FFFA]">
                     <h3 className="text-[#2D3748] font-semibold uppercase text-sm">All Certificates</h3>
                 </div>
@@ -1117,7 +1195,7 @@ export function SecuritySettings() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Edit Profile Card */}
-                <div className="bg-white rounded-lg shadow-md p-6">
+                <div className="bg-white rounded-lg p-6">
                     <h3 className="text-lg font-semibold text-[#2D3748] mb-6 border-b pb-2">Edit Profile</h3>
                     <div className="space-y-4">
                         <div className="flex items-center gap-4 mb-4">
@@ -1158,7 +1236,7 @@ export function SecuritySettings() {
                         </div>
                         <button
                             onClick={handleProfileUpdate}
-                            className="w-full bg-[#319795] hover:bg-[#2c7a7b] text-white font-medium py-2 rounded transition-colors shadow-sm mt-2"
+                            className="w-full bg-[#319795] hover:bg-[#2c7a7b] text-white font-medium py-2 rounded transition-colors mt-2"
                         >
                             Save Profile
                         </button>
@@ -1166,7 +1244,7 @@ export function SecuritySettings() {
                 </div>
 
                 {/* Change Password Card */}
-                <div className="bg-white rounded-lg shadow-md p-6">
+                <div className="bg-white rounded-lg p-6">
                     <h3 className="text-lg font-semibold text-[#2D3748] mb-6 border-b pb-2">Change Password</h3>
                     <div className="space-y-4">
                         {["current", "new", "confirm"].map((field, i) => (
@@ -1184,7 +1262,7 @@ export function SecuritySettings() {
                         ))}
                         <button
                             onClick={handlePasswordChange}
-                            className="w-full bg-[#319795] hover:bg-[#2c7a7b] text-white font-medium py-2 rounded transition-colors shadow-sm mt-2"
+                            className="w-full bg-[#319795] hover:bg-[#2c7a7b] text-white font-medium py-2 rounded transition-colors mt-2"
                         >
                             Update Password
                         </button>
@@ -1192,7 +1270,7 @@ export function SecuritySettings() {
                 </div>
 
                 {/* Two-Factor Authentication Card */}
-                <div className="bg-white rounded-lg shadow-md p-6 h-fit lg:col-span-2">
+                <div className="bg-white rounded-lg p-6 h-fit lg:col-span-2">
                     <h3 className="text-lg font-semibold text-[#2D3748] mb-6 border-b pb-2">Two-Factor Authentication</h3>
                     <div className="flex items-center justify-between">
                         <div>
