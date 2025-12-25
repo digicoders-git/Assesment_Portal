@@ -173,23 +173,23 @@ export default function Result() {
                                 </table>
                             </div>
                             
-                            {/* Mobile Column Layout */}
-                            <div className="md:hidden space-y-3">
-                                <div className="border border-gray-300 rounded-lg p-3">
-                                    <div className="font-bold text-gray-700 text-sm mb-1">Assessment Code</div>
-                                    <div className="font-medium text-gray-600">{assessmentCode}</div>
+                            {/* Mobile Compact Layout - Labels Left, Values Right */}
+                            <div className="md:hidden border border-gray-300 rounded-lg p-3 space-y-2">
+                                <div className="flex justify-between items-center">
+                                    <span className="font-bold text-gray-700 text-sm">Assessment Code:</span>
+                                    <span className="font-medium text-gray-600 text-sm">{assessmentCode}</span>
                                 </div>
-                                <div className="border border-gray-300 rounded-lg p-3">
-                                    <div className="font-bold text-gray-700 text-sm mb-1">Date</div>
-                                    <div className="font-medium text-gray-600">{user.submissionDate ? new Date(user.submissionDate).toLocaleDateString() : new Date().toLocaleDateString()}</div>
+                                <div className="flex justify-between items-center">
+                                    <span className="font-bold text-gray-700 text-sm">Date:</span>
+                                    <span className="font-medium text-gray-600 text-sm">{user.submissionDate ? new Date(user.submissionDate).toLocaleDateString() : new Date().toLocaleDateString()}</span>
                                 </div>
-                                <div className="border border-gray-300 rounded-lg p-3">
-                                    <div className="font-bold text-gray-700 text-sm mb-1">Time</div>
-                                    <div className="font-medium text-gray-600">{location.state.submissionTime || new Date().toLocaleTimeString()}</div>
+                                <div className="flex justify-between items-center">
+                                    <span className="font-bold text-gray-700 text-sm">Time:</span>
+                                    <span className="font-medium text-gray-600 text-sm">{location.state.submissionTime || new Date().toLocaleTimeString()}</span>
                                 </div>
-                                <div className="border border-gray-300 rounded-lg p-3">
-                                    <div className="font-bold text-gray-700 text-sm mb-1">Duration</div>
-                                    <div className="font-medium text-gray-600">{duration || 'N/A'}</div>
+                                <div className="flex justify-between items-center">
+                                    <span className="font-bold text-gray-700 text-sm">Duration:</span>
+                                    <span className="font-medium text-gray-600 text-sm">{duration || 'N/A'}</span>
                                 </div>
                             </div>
                         </div>

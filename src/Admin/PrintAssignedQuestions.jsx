@@ -2,30 +2,30 @@ import React from 'react';
 import { useParams } from 'react-router-dom';
 import { Printer } from 'lucide-react';
 
-export default function PrintPaper() {
-    const { topicId } = useParams();
+export default function PrintAssignedQuestions() {
+    const { id } = useParams();
 
-    // Mock data - in real app fetch based on topicId
-    const questions = Array(20).fill(null).map((_, i) => ({
-        id: i + 1,
-        question: i === 0 ? "Who is known as the father of computer?" :
-            i === 1 ? "Who is the brain of a computer system called?" :
-                "Which of the following is not a valid C variable name?",
-        options: [
-            "Dennis Ritchie",
-            "Bill Gates",
-            "Charles Babbage",
-            "James Gosling"
-        ]
-    }));
+    // Load assigned questions from localStorage
+    const assignedQuestions = JSON.parse(localStorage.getItem(`assessment_${id}_assigned_questions`) || '[]');
 
     const handlePrint = () => {
         window.print();
     };
 
+    if (assignedQuestions.length === 0) {
+        return (
+            <div className="min-h-screen bg-white flex items-center justify-center">
+                <div className="text-center">
+                    <h2 className="text-2xl font-bold text-gray-700 mb-4">No Questions Assigned</h2>
+                    <p className="text-gray-500">Please assign questions first to print the paper.</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-white text-gray-800 p-8 print:p-0">
-            {/* Print Button & Navigation - Hidden when printing */}
+            {/* Print Button - Hidden when printing */}
             <div className="max-w-4xl mx-auto mb-8 print:hidden flex justify-end items-center">
                 <button
                     onClick={handlePrint}
@@ -72,23 +72,33 @@ export default function PrintPaper() {
 
                 {/* Questions List */}
                 <div className="space-y-8">
-                    {questions.map((q) => (
-                        <div key={q.id} className="break-inside-avoid mb-8">
-                            <p className="font-bold text-black mb-3 text-[1.1rem]">
-                                Q.{q.id}) {q.question}
-                            </p>
-                            <div className="grid grid-cols-2 gap-y-3 gap-x-8 ml-2">
-                                {q.options.map((opt, idx) => (
-                                    <div key={idx} className="flex items-center gap-3">
-                                        <div className="w-5 h-5 border-2 border-black rounded-sm flex-shrink-0"></div>
-                                        <span className="text-black font-semibold text-sm">
-                                            {String.fromCharCode(65 + idx)}). {opt}
-                                        </span>
-                                    </div>
-                                ))}
+                    {assignedQuestions.map((q, index) => {
+                        // Get actual options from the question data
+                        const options = [q.optionA, q.optionB, q.optionC, q.optionD].filter(opt => opt && opt.trim());
+                        
+                        // Fallback options if none exist
+                        const displayOptions = options.length > 0 ? options : [
+                            "Option A", "Option B", "Option C", "Option D"
+                        ];
+                        
+                        return (
+                            <div key={q.id} className="break-inside-avoid mb-8">
+                                <p className="font-bold text-black mb-3 text-[1.1rem]">
+                                    Q.{index + 1}) {q.text || q.question}
+                                </p>
+                                <div className="grid grid-cols-2 gap-y-3 gap-x-8 ml-2">
+                                    {displayOptions.map((opt, idx) => (
+                                        <div key={idx} className="flex items-center gap-3">
+                                            <div className="w-5 h-5 border-2 border-black rounded-sm flex-shrink-0"></div>
+                                            <span className="text-black font-semibold text-sm">
+                                                {String.fromCharCode(65 + idx)}). {opt}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             </div>
 

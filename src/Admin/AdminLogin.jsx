@@ -31,12 +31,9 @@ export default function AdminLogin() {
                 <div className="bg-white rounded-2xl p-8 border border-gray-200">
                     {/* Logo */}
                     <div className="text-center mb-10">
-                        <h1 className="text-4xl font-black mb-1">
-                            <span className="text-gray-900">Digi</span>
-                            <span className="text-[#319795]">{'{Coders}'}</span>
-                        </h1>
-                        <p className="text-gray-400 text-xs font-bold uppercase tracking-[0.2em]">Management Suite</p>
-                        <h2 className="text-xl font-bold text-gray-700 mt-8">Admin Access</h2>
+                        <div className="flex justify-center items-center  mt-5">
+                            <img src="/icon.jpg" className='h-32 w-32' alt="" />
+                        </div>
                     </div>
 
                     {/* Form Fields */}
@@ -78,10 +75,6 @@ export default function AdminLogin() {
                         </button>
                     </div>
                 </div>
-
-                <p className="text-center mt-8 text-gray-400 text-[10px] font-bold uppercase tracking-widest">
-                    Authorized Personnel Only
-                </p>
             </div>
         </div>
     );

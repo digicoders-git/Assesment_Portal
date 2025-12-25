@@ -1,23 +1,22 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronRight, Save, Search, CheckCircle2, Circle, BookOpen, HelpCircle } from 'lucide-react';
+import { ChevronRight, Save, Search, CheckCircle2, Circle, BookOpen, HelpCircle, X, Download } from 'lucide-react';
 import { toast } from 'react-toastify';
 
 export default function AssignQuestions() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const [searchQuery, setSearchQuery] = useState('');
     const [selectedTopic, setSelectedTopic] = useState('');
     const [selectedQuestions, setSelectedQuestions] = useState([]);
     const [isTopicDropdownOpen, setIsTopicDropdownOpen] = useState(false);
+    const [assignedQuestions, setAssignedQuestions] = useState([]);
 
-    // Mock Topics
-    const topics = [
-        { id: 1, name: 'TECHNICAL TEST', count: 45 },
-        { id: 2, name: 'Tech Interview Test', count: 12 },
-        { id: 3, name: 'Interview Questions', count: 28 },
-        { id: 4, name: 'Aptitude Reasoning', count: 156 },
-    ];
+    // Load already assigned questions
+    React.useEffect(() => {
+        const storageKey = `assessment_${id}_assigned_questions`;
+        const assigned = JSON.parse(localStorage.getItem(storageKey) || '[]');
+        setAssignedQuestions(assigned);
+    }, [id]);
 
     // Mock Questions database
     const questionsDatabase = {
@@ -37,12 +36,36 @@ export default function AssignQuestions() {
         ]
     };
 
+    // Mock Topics with dynamic count from questionsDatabase
+    const topics = [
+        { id: 1, name: 'TECHNICAL TEST' },
+        { id: 2, name: 'Tech Interview Test' },
+        { id: 3, name: 'Interview Questions' },
+        { id: 4, name: 'Aptitude Reasoning' },
+    ].map(topic => ({
+        ...topic,
+        count: questionsDatabase[topic.id]?.length || 0
+    }));
+
     const toggleQuestion = (qId) => {
         setSelectedQuestions(prev =>
             prev.includes(qId)
                 ? prev.filter(id => id !== qId)
                 : [...prev, qId]
         );
+    };
+
+    const handleRemoveQuestion = (questionId) => {
+        const updatedAssigned = assignedQuestions.filter(q => q.id !== questionId);
+        setAssignedQuestions(updatedAssigned);
+        
+        const storageKey = `assessment_${id}_questions`;
+        const assignedKey = `assessment_${id}_assigned_questions`;
+        
+        localStorage.setItem(storageKey, updatedAssigned.length);
+        localStorage.setItem(assignedKey, JSON.stringify(updatedAssigned));
+        
+        toast.success("Question removed successfully!");
     };
 
     const handleSave = () => {
@@ -52,7 +75,36 @@ export default function AssignQuestions() {
         }
 
         const storageKey = `assessment_${id}_questions`;
-        localStorage.setItem(storageKey, selectedQuestions.length);
+        const assignedKey = `assessment_${id}_assigned_questions`;
+        
+        // Get selected question details
+        const selectedQuestionDetails = [];
+        Object.keys(questionsDatabase).forEach(topicId => {
+            questionsDatabase[topicId].forEach(q => {
+                if (selectedQuestions.includes(q.id)) {
+                    selectedQuestionDetails.push({
+                        ...q,
+                        topicId: parseInt(topicId),
+                        topicName: topics.find(t => t.id === parseInt(topicId))?.name
+                    });
+                }
+            });
+        });
+        
+        // Check for duplicates
+        const assignedIds = assignedQuestions.map(q => q.id);
+        const duplicates = selectedQuestionDetails.filter(q => assignedIds.includes(q.id));
+        
+        if (duplicates.length > 0) {
+            toast.error(`${duplicates.length} question(s) already assigned!`);
+            return;
+        }
+        
+        // Merge with existing assigned questions
+        const updatedAssigned = [...assignedQuestions, ...selectedQuestionDetails];
+        
+        localStorage.setItem(storageKey, updatedAssigned.length);
+        localStorage.setItem(assignedKey, JSON.stringify(updatedAssigned));
 
         // Activates the assessment when questions are assigned
         const allAssessments = JSON.parse(localStorage.getItem('all_assessments') || '[]');
@@ -62,13 +114,26 @@ export default function AssignQuestions() {
         localStorage.setItem('all_assessments', JSON.stringify(updatedAssessments));
 
         toast.success(`${selectedQuestions.length} Questions successfully added & Assessment Activated!`);
-        setTimeout(() => navigate(-1), 1500);
+        setTimeout(() => navigate('/admin/assessment'), 1500);
     };
 
+    // Calculate assigned questions count per topic
+    const getTopicAssignedCount = (topicId) => {
+        return assignedQuestions.filter(q => q.topicId === topicId).length;
+    };
+
+    // Filter out already assigned questions from current questions
+    const assignedIds = assignedQuestions.map(q => q.id);
     const currentQuestions = selectedTopic ? questionsDatabase[selectedTopic] || [] : [];
-    const filteredQuestions = currentQuestions.filter(q =>
-        q.text.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const availableQuestions = currentQuestions.filter(q => !assignedIds.includes(q.id));
+
+    const handleExportPDF = () => {
+        if (assignedQuestions.length === 0) {
+            toast.error("No questions assigned to export!");
+            return;
+        }
+        navigate(`/admin/print-assigned-questions/${id}`);
+    };
 
     return (
         <div className="p-6 bg-[#EDF2F7] min-h-screen">
@@ -86,7 +151,6 @@ export default function AssignQuestions() {
                         </div>
                         <div>
                             <h1 className="text-xl font-bold text-gray-800">Pick Questions</h1>
-                            <p className="text-gray-500 text-xs">Assessment ID: <span className="text-[#319795] font-bold">#{id}</span></p>
                         </div>
                     </div>
 
@@ -95,13 +159,24 @@ export default function AssignQuestions() {
                             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Selected</p>
                             <p className="text-lg font-black text-[#319795]">{selectedQuestions.length} Items</p>
                         </div>
-                        <button
-                            onClick={handleSave}
-                            className="bg-[#319795] hover:bg-[#2B7A73] text-white px-6 py-2.5 rounded-lg font-bold text-sm transition-all flex items-center gap-2"
-                        >
-                            <Save className="h-4 w-4" />
-                            Assign Now
-                        </button>
+                        <div className="flex items-center gap-3">
+                            {assignedQuestions.length > 0 && (
+                                <button
+                                    onClick={handleExportPDF}
+                                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2.5 rounded-lg font-bold text-sm transition-all flex items-center gap-2"
+                                >
+                                    <Download className="h-4 w-4" />
+                                    Export PDF
+                                </button>
+                            )}
+                            <button
+                                onClick={handleSave}
+                                className="bg-[#319795] hover:bg-[#2B7A73] text-white px-6 py-2.5 rounded-lg font-bold text-sm transition-all flex items-center gap-2"
+                            >
+                                <Save className="h-4 w-4" />
+                                Assign Now
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -130,36 +205,29 @@ export default function AssignQuestions() {
                                     className="w-full px-4 py-3 text-sm text-left hover:bg-teal-50 flex items-center justify-between border-b border-gray-50 last:border-0"
                                 >
                                     <span className={`font-bold ${selectedTopic === topic.id ? 'text-[#319795]' : 'text-gray-600'}`}>{topic.name}</span>
-                                    <span className="text-[10px] font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-md">{topic.count} Qs</span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[10px] font-bold text-green-600 bg-green-100 px-2 py-1 rounded-md">
+                                            {getTopicAssignedCount(topic.id)}/{topic.count} Assigned
+                                        </span>
+                                        <span className="text-[10px] font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-md">{topic.count} Qs</span>
+                                    </div>
                                 </button>
                             ))}
                         </div>
                     )}
                 </div>
-
-                <div className="relative flex-1 w-full">
-                    <Search className="h-5 w-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input
-                        type="text"
-                        placeholder="Search questions in this topic..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-12 pr-6 py-3 bg-white border border-gray-200 rounded-lg text-sm focus:border-[#319795] outline-none"
-                    />
-                </div>
             </div>
 
             <div className="grid grid-cols-1 gap-3">
                 {!selectedTopic ? (
-                    <div className="bg-white rounded-xl p-20 text-center border-2 border-dashed border-gray-200">
-                        <HelpCircle className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                    <div className="flex items-center justify-center flex-col h-2 bg-white rounded-xl p-20 text-center border-2 border-dashed border-gray-200">
                         <h3 className="text-lg font-bold text-gray-700">Select a Topic</h3>
                         <p className="text-gray-500 text-sm mt-1">Please choose a topic from the dropdown to see questions.</p>
                     </div>
-                ) : filteredQuestions.length === 0 ? (
-                    <div className="p-10 text-center text-gray-400 font-bold">No questions found matching your search.</div>
+                ) : availableQuestions.length === 0 ? (
+                    <div className="p-10 text-center text-gray-400 font-bold">No questions available in this topic.</div>
                 ) : (
-                    filteredQuestions.map((q) => (
+                    availableQuestions.map((q) => (
                         <div
                             key={q.id}
                             onClick={() => toggleQuestion(q.id)}
@@ -177,11 +245,41 @@ export default function AssignQuestions() {
                                     {q.text}
                                 </span>
                             </div>
-                            <span className="text-[10px] font-bold text-gray-300 group-hover:text-gray-400 transition-colors">ID: #{q.id}</span>
                         </div>
                     ))
                 )}
             </div>
+
+            {assignedQuestions.length > 0 && (
+                <div className="mt-8">
+                    <h3 className="text-lg font-bold text-gray-800 mb-4">Already Assigned Questions ({assignedQuestions.length})</h3>
+                    <div className="grid grid-cols-1 gap-3">
+                        {assignedQuestions.map((q) => (
+                            <div
+                                key={q.id}
+                                className="p-5 rounded-xl border-2 border-green-200 bg-green-50 flex items-center justify-between"
+                            >
+                                <div className="flex items-center gap-4">
+                                    <div className="w-6 h-6 rounded flex items-center justify-center bg-green-500 text-white">
+                                        <CheckCircle2 className="h-4 w-4" />
+                                    </div>
+                                    <span className="text-sm font-bold text-green-700">{q.text}</span>
+                                    <span className="text-xs bg-green-200 text-green-700 px-2 py-1 rounded">{q.topicName}</span>
+                                </div>
+                                <div className=" ml-4 flex items-center">
+                                    <button
+                                        onClick={() => handleRemoveQuestion(q.id)}
+                                        className="p-1 bg-red-500 hover:bg-red-600 text-white rounded transition-colors"
+                                        title="Remove Question"
+                                    >
+                                        <X className="h-3 w-3" />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

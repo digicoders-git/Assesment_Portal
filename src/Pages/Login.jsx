@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { User, Phone, GraduationCap, Calendar, BookOpen, Key, Sparkles, ArrowRight, ChevronDown, Search, Mail } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { useUser } from '../context/UserContext';
 
@@ -71,9 +71,17 @@ export default function DigiCodersPortal() {
 
     const digi = "{Coders}"
     const navigate = useNavigate();
+    const { code } = useParams();
     const { login } = useUser();
 
     const [focusedField, setFocusedField] = useState(null);
+
+    useEffect(() => {
+        // Auto-fill assessment code from URL parameter
+        if (code) {
+            setFormData(prev => ({ ...prev, code: code }));
+        }
+    }, [code]);
 
     useEffect(() => {
         const handleClickOutside = (event) => {

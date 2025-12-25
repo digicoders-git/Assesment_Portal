@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
-import { Plus, Search, Edit, Trash2, Printer, X, Eye, Download } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Printer, X, Eye, Download, Copy, Link } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useUser } from '../context/UserContext';
 import jsPDF from 'jspdf';
@@ -23,6 +23,7 @@ export function ManageTopics() {
     const [searchQuery, setSearchQuery] = useState('');
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [topicName, setTopicName] = useState('');
+    const [editingTopic, setEditingTopic] = useState(null);
 
     const [topics, setTopics] = useState([
         { id: 1, name: 'TECHNICAL TEST', questions: 2, status: true },
@@ -36,17 +37,31 @@ export function ManageTopics() {
 
     const handleSubmit = () => {
         if (topicName.trim()) {
-            const newTopic = {
-                id: topics.length + 1,
-                name: topicName,
-                questions: 0,
-                status: true
-            };
-            setTopics([...topics, newTopic]);
+            if (editingTopic) {
+                setTopics(topics.map(topic => 
+                    topic.id === editingTopic.id ? { ...topic, name: topicName } : topic
+                ));
+                toast.success("Topic Updated Successfully!");
+                setEditingTopic(null);
+            } else {
+                const newTopic = {
+                    id: topics.length + 1,
+                    name: topicName,
+                    questions: 0,
+                    status: true
+                };
+                setTopics([...topics, newTopic]);
+                toast.success("Topic Added Successfully!");
+            }
             setTopicName('');
             setIsDialogOpen(false);
-            toast.success("Topic Added Successfully!");
         }
+    };
+
+    const handleEditTopic = (topic) => {
+        setEditingTopic(topic);
+        setTopicName(topic.name);
+        setIsDialogOpen(true);
     };
 
     const toggleStatus = (id) => {
@@ -87,7 +102,11 @@ export function ManageTopics() {
             {/* Add Topic Button and Search */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <button
-                    onClick={() => setIsDialogOpen(true)}
+                    onClick={() => {
+                        setEditingTopic(null);
+                        setTopicName('');
+                        setIsDialogOpen(true);
+                    }}
                     className="flex items-center gap-2 bg-[#319795] hover:bg-[#2B7A73] text-white px-5 py-2.5 rounded-lg font-medium transition-colors"
                 >
                     <Plus className="h-5 w-5" />
@@ -152,6 +171,12 @@ export function ManageTopics() {
                                                 Print
                                             </button>
                                             <button
+                                                onClick={() => handleEditTopic(topic)}
+                                                className="text-blue-600 hover:text-blue-700 border border-blue-600 hover:border-blue-700 p-1.5 rounded transition-colors"
+                                            >
+                                                <Edit className="h-4 w-4" />
+                                            </button>
+                                            <button
                                                 onClick={() => handleDeleteTopic(topic.id)}
                                                 className="text-red-600 hover:text-red-700 border border-red-600 hover:border-red-700 p-1.5 rounded transition-colors"
                                             >
@@ -181,7 +206,7 @@ export function ManageTopics() {
                 <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all">
                     <div className="bg-white rounded-lg max-w-md w-full transform transition-all scale-100">
                         <div className="flex items-center justify-between px-6 py-4 bg-[#319795] text-white rounded-t-lg">
-                            <h3 className="text-xl font-semibold">Add Topic</h3>
+                            <h3 className="text-xl font-semibold">{editingTopic ? 'Edit Topic' : 'Add Topic'}</h3>
                             <button
                                 onClick={() => setIsDialogOpen(false)}
                                 className="text-white hover:text-gray-200 transition-colors"
@@ -221,10 +246,23 @@ export function ManageTopics() {
 
 export function ActiveAssessment() {
     const navigate = useNavigate();
-    const [searchQuery, setSearchQuery] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingAssessment, setEditingAssessment] = useState(null);
     const [assessments, setAssessments] = useState([]);
+
+    // Helper function to convert datetime to Kolkata timezone
+    const toKolkataTime = (dateTime) => {
+        if (!dateTime) return '';
+        const date = new Date(dateTime);
+        return new Intl.DateTimeFormat('sv-SE', {
+            timeZone: 'Asia/Kolkata',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        }).format(date).replace(' ', 'T');
+    };
 
     useEffect(() => {
         const saved = localStorage.getItem('all_assessments');
@@ -244,6 +282,8 @@ export function ActiveAssessment() {
                     duration: "30 Min",
                     code: "DCT2025",
                     attempts: 6780,
+                    startedAttempts: 4200,
+                    submittedAttempts: 2580,
                     startTime: "2025-12-13T11:46",
                     endTime: "2025-12-13T23:46",
                     remark: "Skill Up Test by DigiCoders 13 Dec 2025",
@@ -263,6 +303,23 @@ export function ActiveAssessment() {
         localStorage.setItem('all_assessments', JSON.stringify(newList));
         const activeOnes = newList.filter(item => item.status === true);
         setAssessments(activeOnes);
+    };
+
+    const handleCopyCode = (code) => {
+        navigator.clipboard.writeText(code).then(() => {
+            toast.success("Assessment code copied!");
+        }).catch(() => {
+            toast.error("Failed to copy code");
+        });
+    };
+
+    const handleCopyLink = (code) => {
+        const link = `${window.location.origin}/${code}`;
+        navigator.clipboard.writeText(link).then(() => {
+            toast.success("Assessment link copied!");
+        }).catch(() => {
+            toast.error("Failed to copy link");
+        });
     };
 
     const handleExport = (assessment) => {
@@ -301,11 +358,28 @@ export function ActiveAssessment() {
         endTime: '',
         hasCertificate: 'No',
         certificateType: 'Default',
+        certificateName: '',
         remark: '',
         includeAssessmentName: 'Yes',
         includeAssessmentCode: 'Yes',
         includeStudentName: 'Yes'
     });
+
+    // Certificate options
+    const certificateOptions = [
+        { id: 1, name: 'Default Certificate' },
+        { id: 2, name: 'Skill Up Certificate' },
+        { id: 3, name: 'Achievement Certificate' },
+        { id: 4, name: 'Completion Certificate' },
+        { id: 5, name: 'Excellence Certificate' }
+    ];
+
+    const [certificateSearch, setCertificateSearch] = useState('');
+    const [showCertificateDropdown, setShowCertificateDropdown] = useState(false);
+
+    const filteredCertificates = certificateOptions.filter(cert =>
+        cert.name.toLowerCase().includes(certificateSearch.toLowerCase())
+    );
 
     const handleEdit = (assessment) => {
         setEditingAssessment(assessment);
@@ -314,10 +388,11 @@ export function ActiveAssessment() {
             code: assessment.code,
             totalQuestions: assessment.totalQuestions,
             duration: assessment.duration.replace(' Min', ''),
-            startTime: assessment.startTime,
-            endTime: assessment.endTime,
+            startTime: toKolkataTime(assessment.startTime),
+            endTime: toKolkataTime(assessment.endTime),
             hasCertificate: assessment.hasCertificate ? 'Yes' : 'No',
             certificateType: assessment.certificateType || 'Default',
+            certificateName: assessment.certificateName || '',
             remark: assessment.remark,
             includeAssessmentName: assessment.includeAssessmentName ? 'Yes' : 'No',
             includeAssessmentCode: assessment.includeAssessmentCode ? 'Yes' : 'No',
@@ -337,6 +412,7 @@ export function ActiveAssessment() {
             endTime: '',
             hasCertificate: 'No',
             certificateType: 'Default',
+            certificateName: '',
             remark: '',
             includeAssessmentName: 'Yes',
             includeAssessmentCode: 'Yes',
@@ -374,6 +450,8 @@ export function ActiveAssessment() {
                 duration: `${formData.duration} Min`,
                 code: formData.code,
                 attempts: 0,
+                startedAttempts: 0,
+                submittedAttempts: 0,
                 startTime: formData.startTime,
                 endTime: formData.endTime,
                 remark: formData.remark,
@@ -434,16 +512,6 @@ export function ActiveAssessment() {
                     <Plus className="h-4 w-4 text-white" />
                     Add Assessment
                 </button>
-
-                <div className="relative w-full sm:w-auto flex items-center gap-2">
-                    <span className="text-sm text-[#2D3748]">Search:</span>
-                    <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="border border-gray-300 rounded px-3 py-1.5 w-64 focus:outline-none focus:border-[#319795] transition-colors text-sm"
-                    />
-                </div>
             </div>
 
             {/* Table */}
@@ -503,9 +571,32 @@ export function ActiveAssessment() {
                                         </div>
                                     </td>
                                     <td className="px-4 py-3 align-top">
-                                        <div className="font-medium text-[#2D3748]">{item.code}</div>
-                                        <div className="text-xs bg-[#F56565]/20 text-[#B8322F] inline-block px-1.5 rounded mt-1">
-                                            Attempts: {item.attempts}
+                                        <div className="font-medium text-[#2D3748] mb-2">{item.code}</div>
+                                        <div className="flex gap-1 mb-1">
+                                            <button
+                                                onClick={() => handleCopyCode(item.code)}
+                                                className="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-600 rounded text-xs hover:bg-blue-100 transition-colors"
+                                                title="Copy Assessment Code"
+                                            >
+                                                <Copy className="h-3 w-3" />
+                                                Copy
+                                            </button>
+                                            <button
+                                                onClick={() => handleCopyLink(item.code)}
+                                                className="flex items-center gap-1 px-2 py-1 bg-green-50 text-green-600 rounded text-xs hover:bg-green-100 transition-colors"
+                                                title="Copy Assessment Link"
+                                            >
+                                                <Link className="h-3 w-3" />
+                                                Copy Link
+                                            </button>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <div className="text-xs bg-[#319795]/20 text-[#2B7A73] inline-block px-1.5 rounded">
+                                                Start: {item.startedAttempts || Math.floor((item.attempts || 0) * 0.62)}
+                                            </div>
+                                            <div className="text-xs bg-[#F56565]/20 text-[#B8322F] inline-block px-1.5 rounded">
+                                                Submit: {item.submittedAttempts || Math.floor((item.attempts || 0) * 0.38)}
+                                            </div>
                                         </div>
                                     </td>
                                     <td className="px-4 py-3 align-top text-gray-500 text-xs whitespace-nowrap">
@@ -514,7 +605,7 @@ export function ActiveAssessment() {
                                     </td>
                                     <td className="px-4 py-3 align-top text-[#2D3748]">{item.remark}</td>
                                     <td className="px-4 py-3 align-top text-[#2D3748]">
-                                        <div>{item.hasCertificate ? 'Yes' : 'No'} , {item.certificateType}</div>
+                                        <div>{item.hasCertificate ? 'Yes' : 'No'}</div>
                                         <div className="text-xs text-gray-400">{item.name}</div>
                                     </td>
                                     <td className="px-4 py-3 align-top">
@@ -526,6 +617,13 @@ export function ActiveAssessment() {
                                                 Result
                                             </button>
                                             <div className="flex items-center gap-1">
+                                                <button
+                                                    onClick={() => handleEdit(item)}
+                                                    className="p-1 border border-blue-500 text-blue-500 rounded hover:bg-blue-50"
+                                                    title="Edit"
+                                                >
+                                                    <Edit className="h-3 w-3" />
+                                                </button>
                                                 <button
                                                     onClick={() => handleDeleteAssessment(item.id)}
                                                     className="p-1 border border-red-500 text-red-500 rounded hover:bg-red-50"
@@ -640,6 +738,42 @@ export function ActiveAssessment() {
                                     </label>
                                 </div>
                             </div>
+                            {formData.hasCertificate === 'Yes' && (
+                                <div className="relative">
+                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Choose Certificate Name</label>
+                                    <input
+                                        type="text"
+                                        value={certificateSearch}
+                                        onChange={(e) => {
+                                            setCertificateSearch(e.target.value);
+                                            setShowCertificateDropdown(true);
+                                        }}
+                                        onFocus={() => setShowCertificateDropdown(true)}
+                                        placeholder="Search certificate..."
+                                        className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#319795]"
+                                    />
+                                    {showCertificateDropdown && (
+                                        <div className="absolute z-10 w-full bg-white border border-gray-300 rounded mt-1 max-h-40 overflow-y-auto">
+                                            {filteredCertificates.map((cert) => (
+                                                <div
+                                                    key={cert.id}
+                                                    onClick={() => {
+                                                        setFormData({ ...formData, certificateName: cert.name });
+                                                        setCertificateSearch(cert.name);
+                                                        setShowCertificateDropdown(false);
+                                                    }}
+                                                    className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                                                >
+                                                    {cert.name}
+                                                </div>
+                                            ))}
+                                            {filteredCertificates.length === 0 && (
+                                                <div className="px-3 py-2 text-gray-500 text-sm">No certificates found</div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                             <div>
                                 <label className="block text-xs font-semibold text-gray-600 mb-1">Remark</label>
                                 <input

@@ -9,7 +9,8 @@ import {
     Shield,
     History,
     Menu,
-    X
+    X,
+    GraduationCap
 } from 'lucide-react';
 
 import { useUser } from '../../context/UserContext';
@@ -27,6 +28,7 @@ export default function AdminDashboard() {
         { id: 'history', label: 'Assessment History', icon: History, path: '/admin/history' },
         { id: 'students', label: 'Manage Students', icon: Users, path: '/admin/students' },
         { id: 'certificate', label: 'Manage Certificate', icon: Award, path: '/admin/certificate' },
+        { id: 'academic', label: 'Academic Setup', icon: GraduationCap, path: '/admin/academic' },
         { id: 'security', label: 'Security Settings', icon: Shield, path: '/admin/security' },
     ];
 

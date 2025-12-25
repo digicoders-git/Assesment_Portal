@@ -16,11 +16,13 @@ import {
   SecuritySettings
 } from "./Admin/AdminPages";
 import PrintPaper from "./Admin/PrintPaper";
+import PrintAssignedQuestions from "./Admin/PrintAssignedQuestions";
 import EditQuestions from "./Admin/EditQuestions";
 import AssessmentResult from "./Admin/AssessmentResult";
 import TopicQuestions from "./Admin/TopicQuestions";
 import AssignQuestions from "./Admin/AssignQuestions";
 import AdminDashboard from "./Comp/Admincomp/AdminDashboard";
+import AcademicSetup from "./Admin/AcademicSetup";
 
 function App() {
   return (
@@ -41,13 +43,18 @@ function App() {
             <Route path="history" element={<AssessmentHistory />} />
             <Route path="students" element={<ManageStudents />} />
             <Route path="certificate" element={<ManageCertificate />} />
+            <Route path="academic" element={<AcademicSetup />} />
             <Route path="security" element={<SecuritySettings />} />
             <Route path="topic-questions/:topicId" element={<TopicQuestions />} />
             <Route path="assessment/result/:id" element={<AssessmentResult />} />
             <Route path="assign-questions/:id" element={<AssignQuestions />} />
+            <Route path="print-assigned-questions/:id" element={<PrintAssignedQuestions />} />
             <Route path="print/:topicId" element={<PrintPaper />} />
             <Route path="edit/:topicId" element={<EditQuestions />} />
           </Route>
+          
+          {/* Catch-all route for assessment codes */}
+          <Route path="/:code" element={<Login />} />
         </Routes>
       </Router>
       <ToastContainer position="top-right" autoClose={2500} />

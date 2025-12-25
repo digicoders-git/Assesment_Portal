@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
-import { Plus, Trash2, X } from 'lucide-react';
+import { Plus, Trash2, X, Edit } from 'lucide-react';
 import { toast } from 'react-toastify';
 
 export function AssessmentHistoryEnhanced() {
@@ -281,6 +281,13 @@ export function AssessmentHistoryEnhanced() {
                                             </button>
                                             <div className="flex items-center gap-1">
                                                 <button
+                                                    onClick={() => handleEdit(item)}
+                                                    className="p-1 border border-blue-500 text-blue-500 rounded hover:bg-blue-50"
+                                                    title="Edit"
+                                                >
+                                                    <Edit className="h-3 w-3" />
+                                                </button>
+                                                <button
                                                     onClick={() => handleDeleteAssessment(item.id)}
                                                     className="p-1 border border-red-500 text-red-500 rounded hover:bg-red-50"
                                                     title="Delete"
@@ -301,6 +308,14 @@ export function AssessmentHistoryEnhanced() {
                             ))}
                         </tbody>
                     </table>
+                </div>
+                <div className="px-4 py-3 border-t border-[#E6FFFA] text-xs text-[#2D3748] flex justify-between items-center">
+                    <span>Showing 1 to {assessments.length} of {assessments.length} entries</span>
+                    <div className="flex gap-1">
+                        <span className="text-gray-400">Previous</span>
+                        <span className="font-medium text-[#2D3748]">1</span>
+                        <span className="text-gray-400">Next</span>
+                    </div>
                 </div>
             </div>
 

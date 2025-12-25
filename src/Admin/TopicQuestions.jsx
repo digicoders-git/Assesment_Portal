@@ -1,25 +1,19 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
-import {
-    Plus, Trash2, Edit, Save, X, Search,
-    FileSpreadsheet, CheckCircle2, AlertCircle,
-    LayoutGrid, ChevronRight, BookOpen, HelpCircle
-} from 'lucide-react';
+import { Plus, Trash2, Edit, X, FileSpreadsheet } from 'lucide-react';
 import { toast } from 'react-toastify';
 
 export default function TopicQuestions() {
     const { topicId } = useParams();
     const navigate = useNavigate();
 
-    // States
     const [topicName] = useState('TECHNICAL TEST');
     const [searchQuery, setSearchQuery] = useState('');
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isGuidanceOpen, setIsGuidanceOpen] = useState(false);
     const [editingQuestion, setEditingQuestion] = useState(null);
 
-    // Initial Questions Data
     const [questions, setQuestions] = useState([
         {
             id: 1,
@@ -28,7 +22,7 @@ export default function TopicQuestions() {
             optionB: "To use state and lifecycle features in functional components",
             optionC: "To replace Redux entirely",
             optionD: "To manage database connections",
-            answer: "B"
+            answer: "To use state and lifecycle features in functional components"
         },
         {
             id: 2,
@@ -37,7 +31,7 @@ export default function TopicQuestions() {
             optionB: "useMemo",
             optionC: "useEffect",
             optionD: "useCallback",
-            answer: "C"
+            answer: "useEffect"
         }
     ]);
 
@@ -47,30 +41,75 @@ export default function TopicQuestions() {
         optionB: '',
         optionC: '',
         optionD: '',
-        answer: 'A'
+        answer: ''
     };
     const [formData, setFormData] = useState(initialFormState);
 
-    // Handlers
+    const handleDownloadSample = () => {
+        const sampleData = [
+            {
+                question: "What is React?",
+                optionA: "A JavaScript library",
+                optionB: "A database",
+                optionC: "A programming language",
+                optionD: "An operating system",
+                answer: "A JavaScript library"
+            },
+            {
+                question: "Which hook is used for state management?",
+                optionA: "useEffect",
+                optionB: "useState",
+                optionC: "useContext",
+                optionD: "useReducer",
+                answer: "useState"
+            }
+        ];
+        
+        // Create proper Excel format with tab separation
+        const headers = "Question\tOptionA\tOptionB\tOptionC\tOptionD\tAnswer\n";
+        const csvContent = sampleData.map(q => 
+            `${q.question}\t${q.optionA}\t${q.optionB}\t${q.optionC}\t${q.optionD}\t${q.answer}`
+        ).join('\n');
+        
+        const blob = new Blob([headers + csvContent], { type: 'application/vnd.ms-excel' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'sample_questions_template.xls';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        toast.success("Sample Excel template downloaded!");
+    };
+
     const handleOpenAdd = () => {
         setEditingQuestion(null);
         setFormData(initialFormState);
         setIsAddModalOpen(true);
     };
 
-    const handleDownloadTemplate = () => {
-        const headers = "Question,OptionA,OptionB,OptionC,OptionD,Answer\n";
-        const sampleRow = "What is React?,Library,Framework,Language,Tool,Library\n";
-        const blob = new Blob([headers + sampleRow], { type: 'text/csv' });
+    const handleExportExcel = () => {
+        if (questions.length === 0) {
+            toast.error("No questions available to export!");
+            return;
+        }
+        
+        const headers = "Question\tOptionA\tOptionB\tOptionC\tOptionD\tAnswer\n";
+        const csvContent = questions.map(q => 
+            `${q.question}\t${q.optionA}\t${q.optionB}\t${q.optionC}\t${q.optionD}\t${q.answer}`
+        ).join('\n');
+        
+        const blob = new Blob([headers + csvContent], { type: 'application/vnd.ms-excel' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = "quiz_template.csv";
+        a.download = `${topicName}_questions_${new Date().toISOString().split('T')[0]}.xls`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
-        toast.success("Template downloaded successfully!");
+        toast.success(`${questions.length} questions exported to Excel successfully!`);
     };
 
     const handleEdit = (q) => {
@@ -85,11 +124,26 @@ export default function TopicQuestions() {
             return;
         }
 
+        if (!formData.answer.trim()) {
+            toast.error("Answer is required!");
+            return;
+        }
+
+        const options = [formData.optionA, formData.optionB, formData.optionC, formData.optionD].filter(opt => opt.trim());
+        const answerMatch = options.find(opt => opt.toLowerCase().trim() === formData.answer.toLowerCase().trim());
+        
+        if (!answerMatch) {
+            toast.error("Answer must match one of the provided options exactly!");
+            return;
+        }
+
+        const finalData = { ...formData, answer: answerMatch };
+
         if (editingQuestion) {
-            setQuestions(questions.map(q => q.id === editingQuestion.id ? { ...formData, id: q.id } : q));
+            setQuestions(questions.map(q => q.id === editingQuestion.id ? { ...finalData, id: q.id } : q));
             toast.success("Question updated successfully");
         } else {
-            const newQ = { ...formData, id: Date.now() };
+            const newQ = { ...finalData, id: Date.now() };
             setQuestions([...questions, newQ]);
             toast.success("New question added");
         }
@@ -115,48 +169,85 @@ export default function TopicQuestions() {
 
     const handleImportFile = (e) => {
         const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (event) => {
+        if (!file) return;
+        
+        const fileExtension = file.name.split('.').pop().toLowerCase();
+        if (!['csv', 'xlsx', 'xls'].includes(fileExtension)) {
+            toast.error("Please upload only Excel files (.xlsx, .xls) or CSV files!");
+            return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
                 const text = event.target.result;
-                const rows = text.split('\n');
-                const headers = rows[0].split(',').map(h => h.trim().toLowerCase());
-
-                // Validate headers
+                const rows = text.split('\n').filter(row => row.trim());
+                
+                if (rows.length < 2) {
+                    toast.error("File must contain at least header and one data row!");
+                    return;
+                }
+                
+                // Handle Excel format with tab separation
+                const headers = rows[0].split('\t').map(h => h.trim().toLowerCase());
                 const required = ['question', 'optiona', 'optionb', 'optionc', 'optiond', 'answer'];
                 const isValid = required.every(h => headers.includes(h));
 
                 if (!isValid) {
-                    toast.error("Invalid CSV Format! Use the provided template.");
+                    toast.error(`Invalid format! Required columns: ${required.join(', ')}`);
                     return;
                 }
 
                 const newQuestions = [];
+                const invalidRows = [];
+                
                 for (let i = 1; i < rows.length; i++) {
-                    const columns = rows[i].split(',').map(c => c.trim());
-                    if (columns.length >= 6) {
-                        newQuestions.push({
-                            id: Date.now() + i,
+                    const columns = rows[i].split('\t').map(c => c.trim());
+                    if (columns.length >= 6 && columns[headers.indexOf('question')]) {
+                        const questionData = {
                             question: columns[headers.indexOf('question')],
                             optionA: columns[headers.indexOf('optiona')],
                             optionB: columns[headers.indexOf('optionb')],
                             optionC: columns[headers.indexOf('optionc')],
                             optionD: columns[headers.indexOf('optiond')],
-                            answer: columns[headers.indexOf('answer')].toUpperCase()
+                            answer: columns[headers.indexOf('answer')]
+                        };
+                        
+                        // Validate answer matches one of the options
+                        const options = [questionData.optionA, questionData.optionB, questionData.optionC, questionData.optionD].filter(opt => opt.trim());
+                        const answerMatch = options.find(opt => opt.toLowerCase().trim() === questionData.answer.toLowerCase().trim());
+                        
+                        if (!answerMatch) {
+                            invalidRows.push(`Row ${i + 1}: Answer "${questionData.answer}" doesn't match any option`);
+                            continue;
+                        }
+                        
+                        newQuestions.push({
+                            id: Date.now() + i,
+                            ...questionData,
+                            answer: answerMatch
                         });
                     }
                 }
 
+                if (invalidRows.length > 0) {
+                    toast.error(`Import failed! Invalid answers found:\n${invalidRows.slice(0, 3).join('\n')}${invalidRows.length > 3 ? '\n...and more' : ''}`);
+                    return;
+                }
+
                 if (newQuestions.length > 0) {
                     setQuestions(prev => [...prev, ...newQuestions]);
-                    toast.success(`${newQuestions.length} Questions imported successfully!`);
+                    toast.success(`${newQuestions.length} questions imported successfully from Excel!`);
                     setIsGuidanceOpen(false);
                 } else {
-                    toast.error("No valid questions found in CSV.");
+                    toast.error("No valid questions found in file!");
                 }
-            };
-            reader.readAsText(file);
-        }
+            } catch (error) {
+                toast.error("Error reading Excel file. Please check format!");
+            }
+        };
+        reader.readAsText(file);
+        e.target.value = '';
     };
 
     const filteredQuestions = questions.filter(q =>
@@ -164,253 +255,327 @@ export default function TopicQuestions() {
     );
 
     return (
-        <div className="p-6 bg-[#F7FAFC] min-h-screen">
-            {/* Breadcrumb & Header Sections */}
-            <div className="mb-8">
-                <div className="flex items-center gap-2 text-sm text-slate-500 font-medium mb-4">
-                    <button onClick={() => navigate('/admin/topics')} className="hover:text-[#319795] transition-colors">Topics</button>
-                    <ChevronRight className="h-3 w-3" />
-                    <span className="text-[#2D3748] font-bold">{topicName}</span>
+        <div className="p-3 sm:p-6 bg-[#EDF2F7] min-h-screen">
+            {/* Header */}
+            <div className="mb-4 sm:mb-6">
+                <div className="flex items-center gap-2 text-sm mb-4">
+                    <button onClick={() => navigate('/admin/topics')} className="text-[#319795] hover:underline">Topics</button>
+                    <span>/</span>
+                    <span className="text-gray-700">{topicName}</span>
                 </div>
-
-                <div className="bg-white rounded-xl p-8 border border-gray-200 flex flex-col md:flex-row md:items-center justify-between gap-8 relative overflow-hidden">
-                    <div className="flex items-center gap-6 relative z-10">
-                        <div className="w-16 h-16 bg-[#319795] rounded-xl flex items-center justify-center text-white">
-                            <BookOpen className="h-8 w-8" />
-                        </div>
-                        <div>
-                            <h1 className="text-2xl font-bold text-[#2D3748] tracking-tight">{topicName}</h1>
-                            <div className="flex items-center gap-4 mt-2">
-                                <span className="px-2 py-0.5 bg-gray-100 text-[#4A5568] text-[10px] font-bold uppercase tracking-widest rounded border border-gray-200">
-                                    ID: {topicId}
-                                </span>
-                                <div className="h-4 w-[1px] bg-slate-200"></div>
-                                <span className="text-slate-500 text-sm font-medium flex items-center gap-1.5">
-                                    {questions.length} Questions
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center gap-3 relative z-10">
-                        <button
-                            onClick={() => setIsGuidanceOpen(true)}
-                            className="flex items-center gap-2 bg-white border border-gray-300 hover:border-[#319795] text-[#2D3748] px-5 py-2.5 rounded-lg font-bold text-sm transition-all active:scale-95"
-                        >
-                            <FileSpreadsheet className="h-4 w-4 text-[#319795]" />
-                            Import CSV
-                        </button>
-                        <button
-                            onClick={handleOpenAdd}
-                            className="flex items-center gap-2 bg-[#319795] hover:bg-[#2B7A73] text-white px-6 py-2.5 rounded-lg font-bold text-sm transition-all active:scale-95"
-                        >
-                            <Plus className="h-4 w-4" />
-                            Add Question
-                        </button>
-                    </div>
-                </div>
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-800">{topicName} Questions</h1>
             </div>
 
-            {/* Search Row */}
-            <div className="mb-6">
-                <div className="relative w-full max-w-2xl">
-                    <Search className="h-5 w-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input
-                        type="text"
-                        placeholder="Search questions by keywords..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-12 pr-6 py-3.5 bg-white border border-gray-200 rounded-xl text-[15px] text-[#2D3748] focus:border-[#319795] outline-none transition-all"
-                    />
+            {/* Controls */}
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+                <div className="flex flex-wrap gap-2 sm:gap-3">
+                    <button
+                        onClick={() => setIsGuidanceOpen(true)}
+                        className="flex items-center gap-2 bg-white border border-gray-300 hover:bg-gray-50 px-3 sm:px-4 py-2 rounded text-xs sm:text-sm"
+                    >
+                        <FileSpreadsheet className="h-4 w-4" />
+                        <span className="hidden sm:inline">Import Excel</span>
+                        <span className="sm:hidden">Import</span>
+                    </button>
+                    <button
+                        onClick={handleExportExcel}
+                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-3 sm:px-4 py-2 rounded text-xs sm:text-sm"
+                    >
+                        <FileSpreadsheet className="h-4 w-4" />
+                        <span className="hidden sm:inline">Export Excel</span>
+                        <span className="sm:hidden">Export</span>
+                    </button>
+                    <button
+                        onClick={handleOpenAdd}
+                        className="flex items-center gap-2 bg-[#319795] hover:bg-[#2B7A73] text-white px-3 sm:px-4 py-2 rounded text-xs sm:text-sm"
+                    >
+                        <Plus className="h-4 w-4" />
+                        <span className="hidden sm:inline">Add Question</span>
+                        <span className="sm:hidden">Add</span>
+                    </button>
                 </div>
+                <input
+                    type="text"
+                    placeholder="Search questions..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="border border-gray-300 rounded px-3 py-2 w-full sm:w-64"
+                />
             </div>
 
-            {/* Questions List */}
-            <div className="space-y-6 max-w-5xl">
-                {filteredQuestions.length === 0 ? (
-                    <div className="bg-white rounded-xl p-16 text-center border-2 border-dashed border-gray-200">
-                        <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-300">
-                            <Search className="h-8 w-8" />
-                        </div>
-                        <h3 className="text-lg font-bold text-[#2D3748]">No Questions Found</h3>
-                        <p className="text-gray-500 text-sm mt-1">Try a different search or add a new question.</p>
-                    </div>
-                ) : (
-                    filteredQuestions.map((q, index) => (
-                        <div key={q.id} className="group bg-white rounded-xl overflow-hidden border border-gray-200 shadow-sm hover:shadow-md transition-all">
-                            <div className="bg-gray-50/80 px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 bg-[#319795] rounded-lg flex items-center justify-center text-xs font-black text-white">
-                                        {index + 1}
-                                    </div>
-                                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Question ID: #{q.id}</span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                    <button
-                                        onClick={() => handleEdit(q)}
-                                        className="p-2 text-gray-400 hover:text-[#319795] hover:bg-white rounded-lg transition-all border border-transparent hover:border-teal-100"
-                                        title="Edit"
-                                    >
-                                        <Edit className="h-4 w-4" />
-                                    </button>
-                                    <button
-                                        onClick={() => handleDelete(q.id)}
-                                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-white rounded-lg transition-all border border-transparent hover:border-red-100"
-                                        title="Delete"
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </button>
-                                </div>
-                            </div>
-                            <div className="p-6">
-                                <h4 className="text-lg font-bold text-[#2D3748] leading-snug mb-6">{q.question}</h4>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50/50 rounded-xl border border-gray-100">
-                                    {['A', 'B', 'C', 'D'].map((letter) => (
-                                        <div
-                                            key={letter}
-                                            className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${q.answer === letter
-                                                ? 'bg-white border-[#319795]'
-                                                : 'bg-white border-transparent shadow-sm'
-                                                }`}
+            {/* Desktop Table */}
+            <div className="hidden lg:block bg-white rounded-lg overflow-auto max-h-[70vh]">
+                <table className="w-full min-w-[1400px]">
+                    <thead className="bg-gray-50 sticky top-0">
+                        <tr>
+                            <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 w-16">Sr.</th>
+                            <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 min-w-[250px]">Question</th>
+                            <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 min-w-[200px]">Option A</th>
+                            <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 min-w-[200px]">Option B</th>
+                            <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 min-w-[200px]">Option C</th>
+                            <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 min-w-[200px]">Option D</th>
+                            <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 w-20">Answer</th>
+                            <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 w-24">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                        {filteredQuestions.map((q, index) => (
+                            <tr key={q.id} className="hover:bg-gray-50">
+                                <td className="px-4 py-4 text-sm text-gray-900">{index + 1}</td>
+                                <td className="px-4 py-4 text-sm text-gray-900">{q.question}</td>
+                                <td className="px-4 py-4 text-sm text-gray-600">{q.optionA}</td>
+                                <td className="px-4 py-4 text-sm text-gray-600">{q.optionB}</td>
+                                <td className="px-4 py-4 text-sm text-gray-600">{q.optionC}</td>
+                                <td className="px-4 py-4 text-sm text-gray-600">{q.optionD}</td>
+                                <td className="px-4 py-4 text-sm">
+                                    <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium">
+                                        {q.answer}
+                                    </span>
+                                </td>
+                                <td className="px-4 py-4 text-sm">
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => handleEdit(q)}
+                                            className="text-blue-600 hover:text-blue-800"
                                         >
-                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-black ${q.answer === letter
-                                                ? 'bg-[#319795] text-white'
-                                                : 'bg-gray-100 text-gray-400 border border-gray-100'
-                                                }`}>
-                                                {letter}
-                                            </div>
-                                            <span className="text-sm font-bold truncate flex-1">
-                                                {q[`option${letter}`]}
-                                            </span>
-                                            {q.answer === letter && (
-                                                <div className="flex items-center gap-1.5 bg-[#319795] text-white px-2 py-1 rounded text-[9px] font-black uppercase tracking-tighter">
-                                                    <CheckCircle2 className="h-3 w-3" />
-                                                    Correct Answer
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
+                                            <Edit className="h-4 w-4" />
+                                        </button>
+                                        <button
+                                            onClick={() => handleDelete(q.id)}
+                                            className="text-red-600 hover:text-red-800"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+
+            {/* Mobile Cards */}
+            <div className="lg:hidden space-y-4">
+                {filteredQuestions.map((q, index) => (
+                    <div key={q.id} className="bg-white rounded-lg p-4 shadow-sm">
+                        <div className="flex justify-between items-start mb-3">
+                            <span className="text-sm font-medium text-gray-500">Q{index + 1}</span>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => handleEdit(q)}
+                                    className="text-blue-600 hover:text-blue-800 p-1"
+                                >
+                                    <Edit className="h-4 w-4" />
+                                </button>
+                                <button
+                                    onClick={() => handleDelete(q.id)}
+                                    className="text-red-600 hover:text-red-800 p-1"
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                </button>
                             </div>
                         </div>
-                    ))
-                )}
+                        <div className="mb-3">
+                            <p className="text-sm font-medium text-gray-900 mb-2">{q.question}</p>
+                            <div className="space-y-1 text-xs text-gray-600">
+                                <div>A) {q.optionA}</div>
+                                <div>B) {q.optionB}</div>
+                                <div>C) {q.optionC}</div>
+                                <div>D) {q.optionD}</div>
+                            </div>
+                        </div>
+                        <div className="flex justify-between items-center">
+                            <span className="text-xs text-gray-500">Correct Answer:</span>
+                            <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium">
+                                {q.answer}
+                            </span>
+                        </div>
+                    </div>
+                ))}
             </div>
 
             {/* Add/Edit Modal */}
             {isAddModalOpen && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[110] p-4">
-                    <div className="bg-white rounded-xl w-full max-w-2xl overflow-hidden border border-gray-200">
-                        <div className="bg-[#319795] p-6 text-white flex justify-between items-center text-left">
-                            <h3 className="text-xl font-bold">
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                        <div className="p-4 sm:p-6 border-b">
+                            <h3 className="text-lg font-semibold">
                                 {editingQuestion ? 'Edit Question' : 'Add New Question'}
                             </h3>
-                            <button onClick={() => setIsAddModalOpen(false)} className="hover:bg-white/10 p-2 rounded-lg transition-colors">
-                                <X className="h-5 w-5" />
-                            </button>
                         </div>
-
-                        <div className="p-6 space-y-6 text-left">
+                        <div className="p-4 sm:p-6 space-y-4">
                             <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Question Title</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Question</label>
                                 <textarea
                                     value={formData.question}
                                     onChange={(e) => setFormData({ ...formData, question: e.target.value })}
                                     rows="3"
-                                    className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:border-[#319795] outline-none transition-all resize-none placeholder:opacity-40"
-                                    placeholder="Enter question text here..."
+                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                                    placeholder="Enter question..."
                                 />
                             </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {['A', 'B', 'C', 'D'].map((letter) => (
-                                    <div key={letter} className="space-y-1">
-                                        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Option {letter}</label>
-                                        <input
-                                            type="text"
-                                            value={formData[`option${letter}`]}
-                                            onChange={(e) => setFormData({ ...formData, [`option${letter}`]: e.target.value })}
-                                            className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm font-semibold text-[#2D3748] focus:border-[#319795] outline-none transition-all bg-gray-50/30 placeholder:opacity-30"
-                                            placeholder={`Option ${letter}...`}
-                                        />
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 flex items-center justify-between">
-                                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Correct Answer</span>
-                                <div className="flex gap-2">
-                                    {['A', 'B', 'C', 'D'].map((letter) => (
-                                        <button
-                                            key={letter}
-                                            onClick={() => setFormData({ ...formData, answer: letter })}
-                                            className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all border font-bold ${formData.answer === letter
-                                                ? 'bg-[#319795] border-[#319795] text-white shadow-sm'
-                                                : 'bg-white border-gray-200 text-gray-400 hover:border-teal-200 active:bg-teal-50'
-                                                }`}
-                                        >
-                                            {letter}
-                                        </button>
-                                    ))}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Option A</label>
+                                    <input
+                                        type="text"
+                                        value={formData.optionA}
+                                        onChange={(e) => setFormData({ ...formData, optionA: e.target.value })}
+                                        className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                                        placeholder="Option A..."
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Option B</label>
+                                    <input
+                                        type="text"
+                                        value={formData.optionB}
+                                        onChange={(e) => setFormData({ ...formData, optionB: e.target.value })}
+                                        className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                                        placeholder="Option B..."
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Option C</label>
+                                    <input
+                                        type="text"
+                                        value={formData.optionC}
+                                        onChange={(e) => setFormData({ ...formData, optionC: e.target.value })}
+                                        className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                                        placeholder="Option C..."
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Option D</label>
+                                    <input
+                                        type="text"
+                                        value={formData.optionD}
+                                        onChange={(e) => setFormData({ ...formData, optionD: e.target.value })}
+                                        className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                                        placeholder="Option D..."
+                                    />
                                 </div>
                             </div>
-
-                            <div className="flex gap-3 justify-end pt-4">
-                                <button
-                                    onClick={() => setIsAddModalOpen(false)}
-                                    className="px-6 py-2.5 text-gray-500 font-bold text-sm hover:text-gray-700"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={handleSave}
-                                    className="bg-[#319795] hover:bg-[#2B7A73] text-white px-8 py-2.5 rounded-lg font-bold text-sm transition-all"
-                                >
-                                    {editingQuestion ? 'Update Changes' : 'Save Question'}
-                                </button>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Correct Answer</label>
+                                <input
+                                    type="text"
+                                    value={formData.answer}
+                                    onChange={(e) => setFormData({ ...formData, answer: e.target.value })}
+                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                                    placeholder="Enter the correct answer text (must match one of the options above)"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">Type the exact text of the correct option from above</p>
                             </div>
+                        </div>
+                        <div className="p-4 sm:p-6 border-t flex flex-col sm:flex-row justify-end gap-3">
+                            <button
+                                onClick={() => setIsAddModalOpen(false)}
+                                className="px-4 py-2 text-gray-600 hover:text-gray-800 order-2 sm:order-1"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleSave}
+                                className="bg-[#319795] hover:bg-[#2B7A73] text-white px-4 py-2 rounded order-1 sm:order-2"
+                            >
+                                {editingQuestion ? 'Update' : 'Save'}
+                            </button>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Bulk Import Guidance */}
+            {/* Import Modal */}
             {isGuidanceOpen && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[120] p-4">
-                    <div className="bg-white rounded-xl w-full max-w-xl overflow-hidden border border-gray-200">
-                        <div className="p-8">
-                            <div className="flex justify-between items-start mb-6">
-                                <h3 className="text-xl font-bold text-[#2D3748]">Bulk Import Questions</h3>
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg w-full max-w-lg max-h-[90vh] overflow-y-auto">
+                        <div className="p-4 sm:p-6 border-b">
+                            <div className="flex justify-between items-center">
+                                <h3 className="text-lg font-semibold">Import Questions</h3>
                                 <button onClick={() => setIsGuidanceOpen(false)} className="text-gray-400 hover:text-gray-600">
-                                    <X className="h-6 w-6" />
+                                    <X className="h-5 w-5" />
                                 </button>
                             </div>
-
-                            <div className="space-y-6">
-                                <div className="bg-gray-50 p-5 rounded-lg border border-gray-200 text-sm">
-                                    <p className="font-bold text-gray-700 mb-2">CSV Column Headers:</p>
-                                    <code className="block bg-white p-2 border border-gray-200 rounded text-xs text-[#319795]">
-                                        Question, OptionA, OptionB, OptionC, OptionD, Answer
-                                    </code>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <button
-                                        onClick={handleDownloadTemplate}
-                                        className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-200 rounded-xl hover:border-[#319795] hover:bg-teal-50 transition-all group"
-                                    >
-                                        <HelpCircle className="h-8 w-8 text-gray-300 mb-2 group-hover:text-[#319795]" />
-                                        <span className="text-xs font-bold text-gray-500 group-hover:text-[#319795]">Download Template</span>
-                                    </button>
-
-                                    <label className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-200 rounded-xl hover:border-[#319795] hover:bg-teal-50 transition-all group cursor-pointer">
-                                        <Plus className="h-8 w-8 text-gray-300 mb-2 group-hover:text-[#319795]" />
-                                        <span className="text-xs font-bold text-gray-500 group-hover:text-[#319795]">Upload CSV File</span>
-                                        <input type="file" className="hidden" accept=".csv" onChange={handleImportFile} />
-                                    </label>
+                        </div>
+                        <div className="p-4 sm:p-6 space-y-4">
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <h4 className="font-medium text-blue-900 mb-2">Required Format:</h4>
+                                <div className="text-sm text-blue-800 space-y-1">
+                                    <p>• Excel file (.xlsx, .xls) or CSV file (.csv)</p>
+                                    <p>• Columns: Question, OptionA, OptionB, OptionC, OptionD, Answer</p>
+                                    <p>• Answer must be the exact text from one of the 4 options</p>
+                                    <p>• Answer validation: System will check if answer matches any option</p>
                                 </div>
                             </div>
+                            
+                            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                                <h4 className="font-medium text-yellow-900 mb-2">⚠️ Important:</h4>
+                                <div className="text-sm text-yellow-800 space-y-1">
+                                    <p>• Answer field must exactly match one of OptionA, OptionB, OptionC, or OptionD</p>
+                                    <p>• Case doesn't matter, but spelling must be exact</p>
+                                    <p>• If answer doesn't match any option, that row will be rejected</p>
+                                </div>
+                            </div>
+                            
+                            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                                <h4 className="font-medium text-gray-900 mb-2">Sample Format:</h4>
+                                <div className="text-xs text-gray-600 bg-white p-2 rounded border overflow-x-auto">
+                                    <table className="w-full border-collapse">
+                                        <thead>
+                                            <tr className="border-b">
+                                                <th className="border-r px-2 py-1 text-left">Question</th>
+                                                <th className="border-r px-2 py-1 text-left">OptionA</th>
+                                                <th className="border-r px-2 py-1 text-left">OptionB</th>
+                                                <th className="border-r px-2 py-1 text-left">OptionC</th>
+                                                <th className="border-r px-2 py-1 text-left">OptionD</th>
+                                                <th className="px-2 py-1 text-left">Answer</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td className="border-r px-2 py-1">What is React?</td>
+                                                <td className="border-r px-2 py-1">A JavaScript library</td>
+                                                <td className="border-r px-2 py-1">A database</td>
+                                                <td className="border-r px-2 py-1">A language</td>
+                                                <td className="border-r px-2 py-1">An OS</td>
+                                                <td className="px-2 py-1">A JavaScript library</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <p className="text-xs text-gray-500 mt-2">Each column should be in separate Excel cells (not comma-separated)</p>
+                            </div>
+                            
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={handleDownloadSample}
+                                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm flex items-center justify-center gap-2"
+                                >
+                                    <FileSpreadsheet className="h-4 w-4" />
+                                    Download Excel Sample
+                                </button>
+                            </div>
+                            
+                            <div className="border-t pt-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Choose Excel File to Import:
+                                </label>
+                                <input
+                                    type="file"
+                                    accept=".xlsx,.xls,.csv"
+                                    onChange={handleImportFile}
+                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                                />
+                            </div>
+                        </div>
+                        <div className="p-4 sm:p-6 border-t flex justify-end">
+                            <button
+                                onClick={() => setIsGuidanceOpen(false)}
+                                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                            >
+                                Close
+                            </button>
                         </div>
                     </div>
                 </div>
