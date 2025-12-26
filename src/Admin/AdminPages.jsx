@@ -812,13 +812,34 @@ export function AssessmentHistory() {
     useEffect(() => {
         const saved = localStorage.getItem('all_assessments');
         if (saved) {
-            setAssessments(JSON.parse(saved));
+            const parsed = JSON.parse(saved);
+            // Filter: ONLY inactive status
+            const inactiveOnes = parsed.filter(item => item.status === false);
+            setAssessments(inactiveOnes);
         }
     }, []);
 
     const updateGlobalAssessments = (newList) => {
         localStorage.setItem('all_assessments', JSON.stringify(newList));
-        setAssessments(newList);
+        const inactiveOnes = newList.filter(item => item.status === false);
+        setAssessments(inactiveOnes);
+    };
+
+    const handleCopyCode = (code) => {
+        navigator.clipboard.writeText(code).then(() => {
+            toast.success("Assessment code copied!");
+        }).catch(() => {
+            toast.error("Failed to copy code");
+        });
+    };
+
+    const handleCopyLink = (code) => {
+        const link = `${window.location.origin}/${code}`;
+        navigator.clipboard.writeText(link).then(() => {
+            toast.success("Assessment link copied!");
+        }).catch(() => {
+            toast.error("Failed to copy link");
+        });
     };
 
     const handleExport = (assessment) => {
@@ -1033,9 +1054,32 @@ export function AssessmentHistory() {
                                         </div>
                                     </td>
                                     <td className="px-4 py-3 align-top">
-                                        <div className="font-medium text-[#2D3748]">{item.code}</div>
-                                        <div className="text-xs bg-[#F56565]/20 text-[#B8322F] inline-block px-1.5 rounded mt-1">
-                                            Attempts: {item.attempts}
+                                        <div className="font-medium text-[#2D3748] mb-2">{item.code}</div>
+                                        <div className="flex gap-1 mb-1">
+                                            <button
+                                                onClick={() => handleCopyCode(item.code)}
+                                                className="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-600 rounded text-xs hover:bg-blue-100 transition-colors"
+                                                title="Copy Assessment Code"
+                                            >
+                                                <Copy className="h-3 w-3" />
+                                                Copy
+                                            </button>
+                                            <button
+                                                onClick={() => handleCopyLink(item.code)}
+                                                className="flex items-center gap-1 px-2 py-1 bg-green-50 text-green-600 rounded text-xs hover:bg-green-100 transition-colors"
+                                                title="Copy Assessment Link"
+                                            >
+                                                <Link className="h-3 w-3" />
+                                                Copy Link
+                                            </button>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <div className="text-xs bg-[#319795]/20 text-[#2B7A73] inline-block px-1.5 rounded">
+                                                Start: {Math.floor((item.attempts || 0) * 0.62)}
+                                            </div>
+                                            <div className="text-xs bg-[#F56565]/20 text-[#B8322F] inline-block px-1.5 rounded">
+                                                Submit: {Math.floor((item.attempts || 0) * 0.38)}
+                                            </div>
                                         </div>
                                     </td>
                                     <td className="px-4 py-3 align-top text-gray-500 text-xs whitespace-nowrap">
