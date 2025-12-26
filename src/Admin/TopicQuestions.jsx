@@ -22,7 +22,7 @@ export default function TopicQuestions() {
             optionB: "To use state and lifecycle features in functional components",
             optionC: "To replace Redux entirely",
             optionD: "To manage database connections",
-            answer: "To use state and lifecycle features in functional components"
+            answer: "B"
         },
         {
             id: 2,
@@ -31,7 +31,7 @@ export default function TopicQuestions() {
             optionB: "useMemo",
             optionC: "useEffect",
             optionD: "useCallback",
-            answer: "useEffect"
+            answer: "C"
         }
     ]);
 
@@ -53,7 +53,7 @@ export default function TopicQuestions() {
                 optionB: "A database",
                 optionC: "A programming language",
                 optionD: "An operating system",
-                answer: "A JavaScript library"
+                answer: "A"
             },
             {
                 question: "Which hook is used for state management?",
@@ -61,7 +61,7 @@ export default function TopicQuestions() {
                 optionB: "useState",
                 optionC: "useContext",
                 optionD: "useReducer",
-                answer: "useState"
+                answer: "B"
             }
         ];
         
@@ -124,26 +124,16 @@ export default function TopicQuestions() {
             return;
         }
 
-        if (!formData.answer.trim()) {
-            toast.error("Answer is required!");
+        if (!formData.answer || !['A', 'B', 'C', 'D'].includes(formData.answer)) {
+            toast.error("Please select a correct answer (A, B, C, or D)!");
             return;
         }
-
-        const options = [formData.optionA, formData.optionB, formData.optionC, formData.optionD].filter(opt => opt.trim());
-        const answerMatch = options.find(opt => opt.toLowerCase().trim() === formData.answer.toLowerCase().trim());
-        
-        if (!answerMatch) {
-            toast.error("Answer must match one of the provided options exactly!");
-            return;
-        }
-
-        const finalData = { ...formData, answer: answerMatch };
 
         if (editingQuestion) {
-            setQuestions(questions.map(q => q.id === editingQuestion.id ? { ...finalData, id: q.id } : q));
+            setQuestions(questions.map(q => q.id === editingQuestion.id ? { ...formData, id: q.id } : q));
             toast.success("Question updated successfully");
         } else {
-            const newQ = { ...finalData, id: Date.now() };
+            const newQ = { ...formData, id: Date.now() };
             setQuestions([...questions, newQ]);
             toast.success("New question added");
         }
@@ -172,8 +162,9 @@ export default function TopicQuestions() {
         if (!file) return;
         
         const fileExtension = file.name.split('.').pop().toLowerCase();
-        if (!['csv', 'xlsx', 'xls'].includes(fileExtension)) {
-            toast.error("Please upload only Excel files (.xlsx, .xls) or CSV files!");
+        if (!['xlsx', 'xls'].includes(fileExtension)) {
+            toast.error("Please upload only Excel files (.xlsx, .xls)!");
+            e.target.value = '';
             return;
         }
         
@@ -194,7 +185,7 @@ export default function TopicQuestions() {
                 const isValid = required.every(h => headers.includes(h));
 
                 if (!isValid) {
-                    toast.error(`Invalid format! Required columns: ${required.join(', ')}`);
+                    toast.error(`Invalid format! Required columns: Question, OptionA, OptionB, OptionC, OptionD, Answer`);
                     return;
                 }
 
@@ -210,28 +201,33 @@ export default function TopicQuestions() {
                             optionB: columns[headers.indexOf('optionb')],
                             optionC: columns[headers.indexOf('optionc')],
                             optionD: columns[headers.indexOf('optiond')],
-                            answer: columns[headers.indexOf('answer')]
+                            answer: columns[headers.indexOf('answer')].toUpperCase()
                         };
                         
-                        // Validate answer matches one of the options
-                        const options = [questionData.optionA, questionData.optionB, questionData.optionC, questionData.optionD].filter(opt => opt.trim());
-                        const answerMatch = options.find(opt => opt.toLowerCase().trim() === questionData.answer.toLowerCase().trim());
-                        
-                        if (!answerMatch) {
-                            invalidRows.push(`Row ${i + 1}: Answer "${questionData.answer}" doesn't match any option`);
+                        // Validate answer is A, B, C, or D
+                        if (!['A', 'B', 'C', 'D'].includes(questionData.answer)) {
+                            invalidRows.push(`Row ${i + 1}: Answer must be A, B, C, or D`);
                             continue;
                         }
+                        
+                        // Convert letter to actual option text for storage
+                        const optionMap = {
+                            'A': questionData.optionA,
+                            'B': questionData.optionB,
+                            'C': questionData.optionC,
+                            'D': questionData.optionD
+                        };
                         
                         newQuestions.push({
                             id: Date.now() + i,
                             ...questionData,
-                            answer: answerMatch
+                            answer: questionData.answer // Keep as A, B, C, D
                         });
                     }
                 }
 
                 if (invalidRows.length > 0) {
-                    toast.error(`Import failed! Invalid answers found:\n${invalidRows.slice(0, 3).join('\n')}${invalidRows.length > 3 ? '\n...and more' : ''}`);
+                    toast.error(`Import failed! Invalid data found:\n${invalidRows.slice(0, 3).join('\n')}${invalidRows.length > 3 ? '\n...and more' : ''}`);
                     return;
                 }
 
@@ -457,15 +453,23 @@ export default function TopicQuestions() {
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Correct Answer</label>
-                                <input
-                                    type="text"
-                                    value={formData.answer}
-                                    onChange={(e) => setFormData({ ...formData, answer: e.target.value })}
-                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
-                                    placeholder="Enter the correct answer text (must match one of the options above)"
-                                />
-                                <p className="text-xs text-gray-500 mt-1">Type the exact text of the correct option from above</p>
+                                <label className="block text-sm font-medium text-gray-700 mb-3">Correct Answer</label>
+                                <div className="flex gap-4">
+                                    {['A', 'B', 'C', 'D'].map((option) => (
+                                        <label key={option} className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name="answer"
+                                                value={option}
+                                                checked={formData.answer === option}
+                                                onChange={(e) => setFormData({ ...formData, answer: e.target.value })}
+                                                className="w-4 h-4 text-[#319795] focus:ring-[#319795]"
+                                            />
+                                            <span className="text-sm font-medium">{option}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                                <p className="text-xs text-gray-500 mt-2">Select the correct option (A, B, C, or D)</p>
                             </div>
                         </div>
                         <div className="p-4 sm:p-6 border-t flex flex-col sm:flex-row justify-end gap-3">
@@ -502,51 +506,9 @@ export default function TopicQuestions() {
                             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                                 <h4 className="font-medium text-blue-900 mb-2">Required Format:</h4>
                                 <div className="text-sm text-blue-800 space-y-1">
-                                    <p>• Excel file (.xlsx, .xls) or CSV file (.csv)</p>
-                                    <p>• Columns: Question, OptionA, OptionB, OptionC, OptionD, Answer</p>
-                                    <p>• Answer must be the exact text from one of the 4 options</p>
-                                    <p>• Answer validation: System will check if answer matches any option</p>
+                                    <p>• Excel file (.xlsx, .xls)</p>
                                 </div>
                             </div>
-                            
-                            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                                <h4 className="font-medium text-yellow-900 mb-2">⚠️ Important:</h4>
-                                <div className="text-sm text-yellow-800 space-y-1">
-                                    <p>• Answer field must exactly match one of OptionA, OptionB, OptionC, or OptionD</p>
-                                    <p>• Case doesn't matter, but spelling must be exact</p>
-                                    <p>• If answer doesn't match any option, that row will be rejected</p>
-                                </div>
-                            </div>
-                            
-                            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                                <h4 className="font-medium text-gray-900 mb-2">Sample Format:</h4>
-                                <div className="text-xs text-gray-600 bg-white p-2 rounded border overflow-x-auto">
-                                    <table className="w-full border-collapse">
-                                        <thead>
-                                            <tr className="border-b">
-                                                <th className="border-r px-2 py-1 text-left">Question</th>
-                                                <th className="border-r px-2 py-1 text-left">OptionA</th>
-                                                <th className="border-r px-2 py-1 text-left">OptionB</th>
-                                                <th className="border-r px-2 py-1 text-left">OptionC</th>
-                                                <th className="border-r px-2 py-1 text-left">OptionD</th>
-                                                <th className="px-2 py-1 text-left">Answer</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr>
-                                                <td className="border-r px-2 py-1">What is React?</td>
-                                                <td className="border-r px-2 py-1">A JavaScript library</td>
-                                                <td className="border-r px-2 py-1">A database</td>
-                                                <td className="border-r px-2 py-1">A language</td>
-                                                <td className="border-r px-2 py-1">An OS</td>
-                                                <td className="px-2 py-1">A JavaScript library</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                                <p className="text-xs text-gray-500 mt-2">Each column should be in separate Excel cells (not comma-separated)</p>
-                            </div>
-                            
                             <div className="flex gap-3">
                                 <button
                                     onClick={handleDownloadSample}
@@ -563,7 +525,7 @@ export default function TopicQuestions() {
                                 </label>
                                 <input
                                     type="file"
-                                    accept=".xlsx,.xls,.csv"
+                                    accept=".xlsx,.xls"
                                     onChange={handleImportFile}
                                     className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
                                 />

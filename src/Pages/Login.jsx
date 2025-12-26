@@ -190,24 +190,43 @@ export default function DigiCodersPortal() {
 
         // College validation
         if (!formData.college.trim()) return alertAndFocus('Please select your College.', 'college');
-        
-        // Year validation
-        if (!formData.year.trim()) return alertAndFocus('Please select your Current Year.', 'year');
-        
-        // Course validation
-        if (!formData.course.trim()) return alertAndFocus('Please select your Course.', 'course');
-        
-        // Code validation
-        if (!formData.code.trim()) return alertAndFocus('Please enter the Assessment Code.', 'code');
-        if (formData.code.trim().length < 3) {
+        if (!colleges.includes(formData.college)) {
             Swal.fire({
-                title: 'Invalid Code!',
-                text: 'Assessment code must be at least 3 characters long.',
+                title: 'Invalid College!',
+                text: 'Please select a college from the dropdown list.',
                 icon: 'error',
                 confirmButtonColor: '#0D9488',
             });
             return;
         }
+        
+        // Year validation
+        if (!formData.year.trim()) return alertAndFocus('Please select your Current Year.', 'year');
+        if (!years.includes(formData.year)) {
+            Swal.fire({
+                title: 'Invalid Year!',
+                text: 'Please select a year from the dropdown list.',
+                icon: 'error',
+                confirmButtonColor: '#0D9488',
+            });
+            return;
+        }
+        
+        // Course validation
+        if (!formData.course.trim()) return alertAndFocus('Please select your Course.', 'course');
+        if (!courses.includes(formData.course)) {
+            Swal.fire({
+                title: 'Invalid Course!',
+                text: 'Please select a course from the dropdown list.',
+                icon: 'error',
+                confirmButtonColor: '#0D9488',
+            });
+            return;
+        }
+        
+        // Code validation
+        if (!formData.code.trim()) return alertAndFocus('Please enter the Assessment Code.', 'code');
+       
 
         // Simulating Login Success
         console.log('Form submitted:', formData);
@@ -256,7 +275,7 @@ export default function DigiCodersPortal() {
 
                                     {/* IMAGE SMALLER SIZE */}
                                     <img
-                                        src="/icon.jpg"
+                                        src="/digicoders-logo-circle.png"
                                         alt="DigiCoders Logo"
                                         className="h-24 md:h-32 w-auto object-contain mix-blend-darken"
                                     />

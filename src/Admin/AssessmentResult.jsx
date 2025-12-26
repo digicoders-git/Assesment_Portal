@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import React, { useState, useEffect, useRef } from 'react';
-import { Download, Search, ChevronLeft, Printer, FileText, FileSpreadsheet, ChevronDown } from 'lucide-react';
+import { Download, Search, ChevronLeft, FileText, FileSpreadsheet, ChevronDown, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
@@ -156,9 +156,7 @@ export default function AssessmentResult() {
         }
     };
 
-    const handlePrint = () => {
-        window.print();
-    };
+
 
     const downloadCSV = () => {
         const headers = ["ID", "Student Name", "Phone/Branch", "Course", "Phone No.", "College", "Marks", "Date Time"];
@@ -259,6 +257,17 @@ export default function AssessmentResult() {
 
     return (
         <div className="p-6 bg-gray-50 min-h-screen">
+            {/* Back Button */}
+            <div className="mb-4">
+                <button
+                    onClick={() => navigate(-1)}
+                    className="flex items-center gap-2 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                >
+                    <ArrowLeft className="h-4 w-4" />
+                    Back
+                </button>
+            </div>
+
             {/* Print Styles */}
             <style>{`
                 @media print {
@@ -345,13 +354,6 @@ export default function AssessmentResult() {
                         >
                             <FileText className="h-4 w-4" />
                             Download PDF
-                        </button>
-                        <button
-                            onClick={handlePrint}
-                            className="flex items-center gap-2 bg-slate-700 hover:bg-slate-800 text-white px-4 py-2 rounded border border-transparent transition-colors text-sm font-medium shadow-sm"
-                        >
-                            <Printer className="h-4 w-4" />
-                            Print
                         </button>
                     </div>
 

@@ -809,6 +809,20 @@ export function AssessmentHistory() {
     const [editingAssessment, setEditingAssessment] = useState(null);
     const [assessments, setAssessments] = useState([]);
 
+    // Helper function to convert datetime to Kolkata timezone
+    const toKolkataTime = (dateTime) => {
+        if (!dateTime) return '';
+        const date = new Date(dateTime);
+        return new Intl.DateTimeFormat('sv-SE', {
+            timeZone: 'Asia/Kolkata',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        }).format(date).replace(' ', 'T');
+    };
+
     useEffect(() => {
         const saved = localStorage.getItem('all_assessments');
         if (saved) {
@@ -877,8 +891,25 @@ export function AssessmentHistory() {
         endTime: '',
         hasCertificate: 'No',
         certificateType: 'Default',
+        certificateName: '',
         remark: ''
     });
+
+    // Certificate options
+    const certificateOptions = [
+        { id: 1, name: 'Default Certificate' },
+        { id: 2, name: 'Skill Up Certificate' },
+        { id: 3, name: 'Achievement Certificate' },
+        { id: 4, name: 'Completion Certificate' },
+        { id: 5, name: 'Excellence Certificate' }
+    ];
+
+    const [certificateSearch, setCertificateSearch] = useState('');
+    const [showCertificateDropdown, setShowCertificateDropdown] = useState(false);
+
+    const filteredCertificates = certificateOptions.filter(cert =>
+        cert.name.toLowerCase().includes(certificateSearch.toLowerCase())
+    );
 
     const handleEdit = (assessment) => {
         setEditingAssessment(assessment);
@@ -887,8 +918,8 @@ export function AssessmentHistory() {
             code: assessment.code,
             totalQuestions: assessment.totalQuestions,
             duration: assessment.duration.replace(' Min', ''),
-            startTime: assessment.startTime,
-            endTime: assessment.endTime,
+            startTime: toKolkataTime(assessment.startTime),
+            endTime: toKolkataTime(assessment.endTime),
             hasCertificate: assessment.hasCertificate ? 'Yes' : 'No',
             certificateType: assessment.certificateType || 'Default',
             remark: assessment.remark
@@ -1088,7 +1119,7 @@ export function AssessmentHistory() {
                                     </td>
                                     <td className="px-4 py-3 align-top text-[#2D3748]">{item.remark}</td>
                                     <td className="px-4 py-3 align-top text-[#2D3748]">
-                                        <div>{item.hasCertificate ? 'Yes' : 'No'} , {item.certificateType}</div>
+                                        <div>{item.hasCertificate ? 'Yes' : 'No'} </div>
                                         <div className="text-xs text-gray-400">{item.name}</div>
                                     </td>
                                     <td className="px-4 py-3 align-top">
@@ -1100,6 +1131,13 @@ export function AssessmentHistory() {
                                                 Result
                                             </button>
                                             <div className="flex items-center gap-1">
+                                                <button
+                                                    onClick={() => handleEdit(item)}
+                                                    className="p-1 border border-blue-500 text-blue-500 rounded hover:bg-blue-50"
+                                                    title="Edit"
+                                                >
+                                                    <Edit className="h-3 w-3" />
+                                                </button>
                                                 <button
                                                     onClick={() => handleDeleteAssessment(item.id)}
                                                     className="p-1 border border-red-500 text-red-500 rounded hover:bg-red-50"
@@ -1207,6 +1245,42 @@ export function AssessmentHistory() {
                                     </label>
                                 </div>
                             </div>
+                            {formData.hasCertificate === 'Yes' && (
+                                <div className="relative">
+                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Choose Certificate Name</label>
+                                    <input
+                                        type="text"
+                                        value={certificateSearch}
+                                        onChange={(e) => {
+                                            setCertificateSearch(e.target.value);
+                                            setShowCertificateDropdown(true);
+                                        }}
+                                        onFocus={() => setShowCertificateDropdown(true)}
+                                        placeholder="Search certificate..."
+                                        className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#319795]"
+                                    />
+                                    {showCertificateDropdown && (
+                                        <div className="absolute z-10 w-full bg-white border border-gray-300 rounded mt-1 max-h-40 overflow-y-auto">
+                                            {filteredCertificates.map((cert) => (
+                                                <div
+                                                    key={cert.id}
+                                                    onClick={() => {
+                                                        setFormData({ ...formData, certificateName: cert.name });
+                                                        setCertificateSearch(cert.name);
+                                                        setShowCertificateDropdown(false);
+                                                    }}
+                                                    className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                                                >
+                                                    {cert.name}
+                                                </div>
+                                            ))}
+                                            {filteredCertificates.length === 0 && (
+                                                <div className="px-3 py-2 text-gray-500 text-sm">No certificates found</div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                             <div>
                                 <label className="block text-xs font-semibold text-gray-600 mb-1">Remark</label>
                                 <input
@@ -1237,6 +1311,23 @@ export function AssessmentHistory() {
 
 export function ManageStudents() {
     const [searchQuery, setSearchQuery] = useState('');
+    const [selectedAssessment, setSelectedAssessment] = useState('');
+    const [assessmentSearch, setAssessmentSearch] = useState('');
+    const [showAssessmentDropdown, setShowAssessmentDropdown] = useState(false);
+    
+    // Get assessments from localStorage
+    const [assessments, setAssessments] = useState([]);
+    
+    useEffect(() => {
+        const saved = localStorage.getItem('all_assessments');
+        if (saved) {
+            setAssessments(JSON.parse(saved));
+        }
+    }, []);
+    
+    const filteredAssessments = assessments.filter(assessment =>
+        assessment.name.toLowerCase().includes(assessmentSearch.toLowerCase())
+    );
     const [students, setStudents] = useState([
         { id: 1, name: "Aditya Kashyap", phone: "9876543210", email: "aditya@example.com", course: "B.Tech CSE", status: true, date: "2023-12-12" },
         { id: 2, name: "Masoom Abbas", phone: "7890123456", email: "masoom@example.com", course: "B.Tech IT", status: true, date: "2023-12-10" },
@@ -1335,21 +1426,75 @@ export function ManageStudents() {
             </div>
 
             {/* Controls */}
-            <div className="flex justify-between items-center mb-6">
-                <div className="relative w-full sm:w-64">
-                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Search className="h-4 w-4 text-gray-400" />
-                    </span>
-                    <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search students..."
-                        className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:border-[#319795] transition-colors"
-                    />
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-4 mb-6">
+                <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
+                    {/* Assessment Dropdown */}
+                    <div className="relative w-full sm:w-64">
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Select Assessment</label>
+                        <input
+                            type="text"
+                            value={assessmentSearch}
+                            onChange={(e) => {
+                                setAssessmentSearch(e.target.value);
+                                setShowAssessmentDropdown(true);
+                            }}
+                            onFocus={() => setShowAssessmentDropdown(true)}
+                            placeholder="Search assessments..."
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-[#319795] transition-colors"
+                        />
+                        {showAssessmentDropdown && (
+                            <div className="absolute z-10 w-full bg-white border border-gray-300 rounded mt-1 max-h-40 overflow-y-auto">
+                                <div
+                                    onClick={() => {
+                                        setSelectedAssessment('');
+                                        setAssessmentSearch('All Assessments');
+                                        setShowAssessmentDropdown(false);
+                                    }}
+                                    className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm border-b"
+                                >
+                                    All Assessments
+                                </div>
+                                {filteredAssessments.map((assessment) => (
+                                    <div
+                                        key={assessment.id}
+                                        onClick={() => {
+                                            setSelectedAssessment(assessment.id);
+                                            setAssessmentSearch(assessment.name);
+                                            setShowAssessmentDropdown(false);
+                                        }}
+                                        className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                                    >
+                                        {assessment.name}
+                                    </div>
+                                ))}
+                                {filteredAssessments.length === 0 && (
+                                    <div className="px-3 py-2 text-gray-500 text-sm">No assessments found</div>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 </div>
-                <div className="text-sm text-gray-500">
-                    Total Students: <span className="font-semibold text-gray-700">{filteredStudents.length}</span>
+                
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full lg:w-auto">
+                    {/* Search Input */}
+                    <div className="relative w-full sm:w-64">
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Search Students</label>
+                        <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none mt-5">
+                            <Search className="h-4 w-4 text-gray-400" />
+                        </span>
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Search students..."
+                            className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:border-[#319795] transition-colors"
+                        />
+                    </div>
+                    
+                    {/* Total Count */}
+                    <div className="text-sm text-gray-500 whitespace-nowrap mt-5">
+                        Total Students: <span className="font-semibold text-gray-700">{filteredStudents.length}</span>
+                    </div>
                 </div>
             </div>
 
@@ -1359,7 +1504,6 @@ export function ManageStudents() {
                     <table className="w-full text-sm text-left whitespace-nowrap">
                         <thead className="bg-[#E6FFFA] text-[#2D3748] font-semibold border-b border-[#319795]">
                             <tr>
-                                <th className="px-6 py-4">#</th>
                                 <th className="px-6 py-4">Name</th>
                                 <th className="px-6 py-4">Phone</th>
                                 <th className="px-6 py-4">Email</th>
@@ -1372,7 +1516,6 @@ export function ManageStudents() {
                         <tbody className="divide-y divide-[#E6FFFA]">
                             {filteredStudents.map((student, index) => (
                                 <tr key={student.id} className="hover:bg-gray-50 transition-colors">
-                                    <td className="px-6 py-4 text-gray-500">{index + 1}</td>
                                     <td className="px-6 py-4 font-medium text-[#2D3748]">{student.name}</td>
                                     <td className="px-6 py-4 text-[#4A5568]">{student.phone}</td>
                                     <td className="px-6 py-4 text-[#4A5568]">{student.email}</td>
@@ -1418,7 +1561,7 @@ export function ManageStudents() {
                             ))}
                             {filteredStudents.length === 0 && (
                                 <tr>
-                                    <td colSpan="8" className="px-6 py-4 text-center text-gray-500">
+                                    <td colSpan="7" className="px-6 py-4 text-center text-gray-500">
                                         No students found matching your search.
                                     </td>
                                 </tr>
@@ -1510,107 +1653,107 @@ export function ManageStudents() {
 }
 
 
-export function ManageCertificate_Old() {
-    const [certificates, setCertificates] = useState([
-        {
-            id: 1,
-            name: "Skill Up Test by DigiCoders",
-            image: "https://via.placeholder.com/150",
-            category: "Custom",
-            color: "#1e2a59",
-            usedIn: "2 Assessments",
-            status: true
-        }
-    ]);
+// export function ManageCertificate_Old() {
+//     const [certificates, setCertificates] = useState([
+//         {
+//             id: 1,
+//             name: "Skill Up Test by DigiCoders",
+//             image: "https://via.placeholder.com/150",
+//             category: "Custom",
+//             color: "#1e2a59",
+//             usedIn: "2 Assessments",
+//             status: true
+//         }
+//     ]);
 
-    const toggleStatus = (id) => {
-        setCertificates(certificates.map(cert =>
-            cert.id === id ? { ...cert, status: !cert.status } : cert
-        ));
-    };
+//     const toggleStatus = (id) => {
+//         setCertificates(certificates.map(cert =>
+//             cert.id === id ? { ...cert, status: !cert.status } : cert
+//         ));
+//     };
 
-    return (
-        <div className="p-6 bg-[#EDF2F7] min-h-screen">
-            {/* Header / Breadcrumb */}
-            <div className="mb-6">
-                <div className="flex items-center gap-2 text-sm">
-                    <span className="text-[#319795] font-semibold">Assessment</span>
-                    <span className="text-gray-400">/</span>
-                    <span className="text-[#2D3748]">Manage Certificate</span>
-                </div>
-            </div>
+//     return (
+//         <div className="p-6 bg-[#EDF2F7] min-h-screen">
+//             {/* Header / Breadcrumb */}
+//             <div className="mb-6">
+//                 <div className="flex items-center gap-2 text-sm">
+//                     <span className="text-[#319795] font-semibold">Assessment</span>
+//                     <span className="text-gray-400">/</span>
+//                     <span className="text-[#2D3748]">Manage Certificate</span>
+//                 </div>
+//             </div>
 
-            {/* Controls */}
-            <div className="mb-6">
-                <button className="flex items-center gap-2 bg-[#319795] hover:bg-[#2c7a7b] text-white px-5 py-2.5 rounded-lg font-medium transition-colors">
-                    <Plus className="h-5 w-5" />
-                    Add Certificate
-                </button>
-            </div>
+//             {/* Controls */}
+//             <div className="mb-6">
+//                 <button className="flex items-center gap-2 bg-[#319795] hover:bg-[#2c7a7b] text-white px-5 py-2.5 rounded-lg font-medium transition-colors">
+//                     <Plus className="h-5 w-5" />
+//                     Add Certificate
+//                 </button>
+//             </div>
 
-            {/* Content Area */}
-            <div className="bg-white rounded-lg border border-[#E6FFFA] overflow-hidden">
-                <div className="px-6 py-4 border-b border-[#E6FFFA]">
-                    <h3 className="text-[#2D3748] font-semibold uppercase text-sm">All Certificates</h3>
-                </div>
+//             {/* Content Area */}
+//             <div className="bg-white rounded-lg border border-[#E6FFFA] overflow-hidden">
+//                 <div className="px-6 py-4 border-b border-[#E6FFFA]">
+//                     <h3 className="text-[#2D3748] font-semibold uppercase text-sm">All Certificates</h3>
+//                 </div>
 
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-left whitespace-nowrap">
-                        <thead className="bg-[#E6FFFA] text-[#2D3748] font-semibold border-b border-[#319795]">
-                            <tr>
-                                <th className="px-6 py-4 w-16">#</th>
-                                <th className="px-6 py-4">Name</th>
-                                <th className="px-6 py-4">Image</th>
-                                <th className="px-6 py-4">Category</th>
-                                <th className="px-6 py-4">Color</th>
-                                <th className="px-6 py-4">Used In</th>
-                                <th className="px-6 py-4">Status</th>
-                                <th className="px-6 py-4">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-[#E6FFFA]">
-                            {certificates.map((cert, index) => (
-                                <tr key={cert.id} className="hover:bg-gray-50 transition-colors">
-                                    <td className="px-6 py-4 text-gray-500">{index + 1}</td>
-                                    <td className="px-6 py-4 font-medium text-[#2D3748]">{cert.name}</td>
-                                    <td className="px-6 py-4">
-                                        <div className="h-12 w-20 bg-gray-100 border border-gray-200 rounded overflow-hidden flex items-center justify-center text-xs text-gray-400">
-                                            Image
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 text-[#4A5568]">{cert.category}</td>
-                                    <td className="px-6 py-4 text-[#4A5568]">{cert.color}</td>
-                                    <td className="px-6 py-4 text-[#4A5568]">{cert.usedIn}</td>
-                                    <td className="px-6 py-4">
-                                        <label className="relative inline-flex items-center cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={cert.status}
-                                                onChange={() => toggleStatus(cert.id)}
-                                                className="sr-only peer"
-                                            />
-                                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#319795]"></div>
-                                        </label>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-2">
-                                            <button className="text-[#319795] hover:text-[#2c7a7b] border border-[#319795] hover:bg-[#E6FFFA] p-1.5 rounded transition-colors">
-                                                <Edit className="h-4 w-4" />
-                                            </button>
-                                            <button className="text-[#F56565] hover:text-[#C53030] border border-[#F56565] hover:bg-[#F56565]/20 p-1.5 rounded transition-colors">
-                                                <Trash2 className="h-4 w-4" />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    );
-}
+//                 <div className="overflow-x-auto">
+//                     <table className="w-full text-sm text-left whitespace-nowrap">
+//                         <thead className="bg-[#E6FFFA] text-[#2D3748] font-semibold border-b border-[#319795]">
+//                             <tr>
+//                                 <th className="px-6 py-4 w-16">#</th>
+//                                 <th className="px-6 py-4">Name</th>
+//                                 <th className="px-6 py-4">Image</th>
+//                                 <th className="px-6 py-4">Category</th>
+//                                 <th className="px-6 py-4">Color</th>
+//                                 <th className="px-6 py-4">Used In</th>
+//                                 <th className="px-6 py-4">Status</th>
+//                                 <th className="px-6 py-4">Action</th>
+//                             </tr>
+//                         </thead>
+//                         <tbody className="divide-y divide-[#E6FFFA]">
+//                             {certificates.map((cert, index) => (
+//                                 <tr key={cert.id} className="hover:bg-gray-50 transition-colors">
+//                                     <td className="px-6 py-4 text-gray-500">{index + 1}</td>
+//                                     <td className="px-6 py-4 font-medium text-[#2D3748]">{cert.name}</td>
+//                                     <td className="px-6 py-4">
+//                                         <div className="h-12 w-20 bg-gray-100 border border-gray-200 rounded overflow-hidden flex items-center justify-center text-xs text-gray-400">
+//                                             Image
+//                                         </div>
+//                                     </td>
+//                                     <td className="px-6 py-4 text-[#4A5568]">{cert.category}</td>
+//                                     <td className="px-6 py-4 text-[#4A5568]">{cert.color}</td>
+//                                     <td className="px-6 py-4 text-[#4A5568]">{cert.usedIn}</td>
+//                                     <td className="px-6 py-4">
+//                                         <label className="relative inline-flex items-center cursor-pointer">
+//                                             <input
+//                                                 type="checkbox"
+//                                                 checked={cert.status}
+//                                                 onChange={() => toggleStatus(cert.id)}
+//                                                 className="sr-only peer"
+//                                             />
+//                                             <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#319795]"></div>
+//                                         </label>
+//                                     </td>
+//                                     <td className="px-6 py-4">
+//                                         <div className="flex items-center gap-2">
+//                                             <button className="text-[#319795] hover:text-[#2c7a7b] border border-[#319795] hover:bg-[#E6FFFA] p-1.5 rounded transition-colors">
+//                                                 <Edit className="h-4 w-4" />
+//                                             </button>
+//                                             <button className="text-[#F56565] hover:text-[#C53030] border border-[#F56565] hover:bg-[#F56565]/20 p-1.5 rounded transition-colors">
+//                                                 <Trash2 className="h-4 w-4" />
+//                                             </button>
+//                                         </div>
+//                                     </td>
+//                                 </tr>
+//                             ))}
+//                         </tbody>
+//                     </table>
+//                 </div>
+//             </div>
+//         </div>
+//     );
+// }
 
 
 export function SecuritySettings() {

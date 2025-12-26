@@ -349,7 +349,7 @@ export default function Assessment() {
                 </div>
 
                 <div>
-                    <img className='h-22 w-22' src="/icon.jpg" alt="" />
+                    <img className='h-22 w-48' src="/digicoders-logo.png" alt="" />
                 </div>
 
                 <div className="flex items-center gap-4">
@@ -445,7 +445,7 @@ export default function Assessment() {
                                 onClick={handleNext}
                                 className="flex items-center justify-center gap-1 md:gap-2 px-3 py-2 md:px-8 md:py-3 bg-[#0D9488] hover:bg-[#115E59] text-white rounded-xl font-bold shadow-lg shadow-teal-500/30 transform hover:scale-105 transition-all text-xs md:text-base flex-1 md:flex-none"
                             >
-                                {currentQuestion === questions.length - 1 ? 'SUBMIT' : 'Save&Next'} <ChevronRight size={16} className="md:w-5 md:h-5" />
+                                {currentQuestion === questions.length - 1 ? 'SUBMIT' : 'Save & Next'} <ChevronRight size={16} className="md:w-5 md:h-5" />
                             </button>
                         </div>
                     </div>

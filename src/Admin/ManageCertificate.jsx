@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { Plus, Search, Edit, Trash2, X, Eye, ArrowLeft, Save, Image as ImageIcon, Type, Layout, Grid } from 'lucide-react';
@@ -13,14 +13,28 @@ export function ManageCertificate() {
     const [selectedImage, setSelectedImage] = useState(null);
     const [editingId, setEditingId] = useState(null);
 
+    // Load Google Fonts
+    useEffect(() => {
+        const link = document.createElement('link');
+        link.href = 'https://fonts.googleapis.com/css2?family=Lobster&family=Pacifico&family=Great+Vibes&family=Satisfy&family=Kaushan+Script&family=Dancing+Script&family=Playfair+Display:wght@400;700&family=Montserrat:wght@400;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap';
+        link.rel = 'stylesheet';
+        document.head.appendChild(link);
+        
+        return () => {
+            document.head.removeChild(link);
+        };
+    }, []);
+
     const [certificates, setCertificates] = useState([
         {
             id: 1,
             name: "Skill Up Test by DigiCoders",
             image: "/certificate.jpg",
-            studentName: { included: true, color: "#1e2a59", top: "45", left: "50", fontSize: "32", fontFamily: "Playfair Display" },
-            assessmentName: { included: true, color: "#1e2a59", top: "35", left: "50", fontSize: "24", fontFamily: "Inter" },
-            assessmentCode: { included: true, color: "#1e2a59", top: "60", left: "50", fontSize: "18", fontFamily: "Roboto" },
+            studentName: { included: true, color: "#1e2a59", top: "45%", left: "50%", fontSize: "32px", fontFamily: "Playfair Display", bold: false, italic: false, underline: false },
+            assessmentName: { included: true, color: "#1e2a59", top: "35%", left: "50%", fontSize: "24px", fontFamily: "Inter", bold: false, italic: false, underline: false },
+            assessmentCode: { included: true, color: "#1e2a59", top: "60%", left: "50%", fontSize: "18px", fontFamily: "Roboto", bold: false, italic: false, underline: false },
+            collegeName: { included: false, color: "#1e2a59", top: "25%", left: "50%", fontSize: "18px", fontFamily: "Inter", bold: false, italic: false, underline: false },
+            date: { included: false, color: "#1e2a59", top: "75%", left: "50%", fontSize: "14px", fontFamily: "Inter", bold: false, italic: false, underline: false },
             usedIn: "2 Assessments",
             status: true
         }
@@ -29,9 +43,11 @@ export function ManageCertificate() {
     const initialFormState = {
         name: '',
         image: null,
-        studentName: { included: true, color: '#1e2a59', top: '50', left: '50', fontSize: '30', fontFamily: 'Inter' },
-        assessmentName: { included: false, color: '#1e2a59', top: '40', left: '50', fontSize: '20', fontFamily: 'Inter' },
-        assessmentCode: { included: false, color: '#1e2a59', top: '65', left: '50', fontSize: '16', fontFamily: 'Inter' }
+        studentName: { included: true, color: '#1e2a59', top: '50%', left: '50%', fontSize: '30px', fontFamily: 'Inter', bold: false, italic: false, underline: false },
+        assessmentName: { included: false, color: '#1e2a59', top: '40%', left: '50%', fontSize: '20px', fontFamily: 'Inter', bold: false, italic: false, underline: false },
+        assessmentCode: { included: false, color: '#1e2a59', top: '65%', left: '50%', fontSize: '16px', fontFamily: 'Inter', bold: false, italic: false, underline: false },
+        collegeName: { included: false, color: '#1e2a59', top: '25%', left: '50%', fontSize: '18px', fontFamily: 'Inter', bold: false, italic: false, underline: false },
+        date: { included: false, color: '#1e2a59', top: '75%', left: '50%', fontSize: '14px', fontFamily: 'Inter', bold: false, italic: false, underline: false }
     };
 
     const [formData, setFormData] = useState(initialFormState);
@@ -40,6 +56,7 @@ export function ManageCertificate() {
         setView('list');
         setEditingId(null);
         setFormData(initialFormState);
+        navigate('/admin/certificate');
     };
 
     const handleAdd = () => {
@@ -53,9 +70,11 @@ export function ManageCertificate() {
         setFormData({
             name: cert.name,
             image: cert.image,
-            studentName: { ...cert.studentName },
-            assessmentName: { ...cert.assessmentName },
-            assessmentCode: { ...cert.assessmentCode }
+            studentName: cert.studentName || { included: true, color: '#1e2a59', top: '50%', left: '50%', fontSize: '30px', fontFamily: 'Inter', bold: false, italic: false, underline: false },
+            assessmentName: cert.assessmentName || { included: false, color: '#1e2a59', top: '40%', left: '50%', fontSize: '20px', fontFamily: 'Inter', bold: false, italic: false, underline: false },
+            assessmentCode: cert.assessmentCode || { included: false, color: '#1e2a59', top: '65%', left: '50%', fontSize: '16px', fontFamily: 'Inter', bold: false, italic: false, underline: false },
+            collegeName: cert.collegeName || { included: false, color: '#1e2a59', top: '25%', left: '50%', fontSize: '18px', fontFamily: 'Inter', bold: false, italic: false, underline: false },
+            date: cert.date || { included: false, color: '#1e2a59', top: '75%', left: '50%', fontSize: '14px', fontFamily: 'Inter', bold: false, italic: false, underline: false }
         });
         setView('editor');
     };
@@ -74,6 +93,11 @@ export function ManageCertificate() {
     };
 
     const updateNestedState = (section, field, value) => {
+        // Validation for position and font size fields
+        if ((field === 'top' || field === 'left' || field === 'fontSize') && value.includes(' ')) {
+            return; // Don't allow spaces
+        }
+        
         setFormData(prev => ({
             ...prev,
             [section]: {
@@ -96,7 +120,9 @@ export function ManageCertificate() {
                 image: formData.image,
                 studentName: formData.studentName,
                 assessmentName: formData.assessmentName,
-                assessmentCode: formData.assessmentCode
+                assessmentCode: formData.assessmentCode,
+                collegeName: formData.collegeName,
+                date: formData.date
             } : c));
             toast.success("Certificate updated successfully!");
         } else {
@@ -108,7 +134,9 @@ export function ManageCertificate() {
                 status: true,
                 studentName: formData.studentName,
                 assessmentName: formData.assessmentName,
-                assessmentCode: formData.assessmentCode
+                assessmentCode: formData.assessmentCode,
+                collegeName: formData.collegeName,
+                date: formData.date
             }]);
             toast.success("Certificate added successfully!");
         }
@@ -146,22 +174,37 @@ export function ManageCertificate() {
         { name: 'Montserrat', value: 'Montserrat, sans-serif' },
         { name: 'Dancing Script', value: 'Dancing Script, cursive' },
         { name: 'Courier New', value: 'Courier New, monospace' },
+        { name: 'Lobster', value: 'Lobster, cursive' },
+        { name: 'Pacifico', value: 'Pacifico, cursive' },
+        { name: 'Great Vibes', value: 'Great Vibes, cursive' },
+        { name: 'Satisfy', value: 'Satisfy, cursive' },
+        { name: 'Kaushan Script', value: 'Kaushan Script, cursive' },
+        { name: 'Crimson Text', value: 'Crimson Text, serif' },
+        { name: 'Libre Baskerville', value: 'Libre Baskerville, serif' },
+        { name: 'Cormorant Garamond', value: 'Cormorant Garamond, serif' }
     ];
 
     if (view === 'editor') {
         return (
             <div className="p-6 bg-gray-50 min-h-screen">
                 {/* Editor Header */}
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
                     <div className="flex items-center gap-4">
+                        <button
+                            onClick={handleBackToList}
+                            className="flex items-center gap-2 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium transition-all active:scale-95"
+                        >
+                            <ArrowLeft className="h-4 w-4" />
+                            Back
+                        </button>
                         <div>
-                            <h2 className="text-2xl font-bold text-gray-800">{editingId ? 'Edit Certificate' : 'Create New Certificate'}</h2>
+                            <h2 className="text-xl sm:text-2xl font-bold text-gray-800">{editingId ? 'Edit Certificate' : 'Create New Certificate'}</h2>
                             <p className="text-sm text-gray-500">Design your certificate layout with live preview</p>
                         </div>
                     </div>
                     <button
                         onClick={handleSave}
-                        className="flex items-center gap-2 bg-teal-500 hover:bg-teal-600 text-white px-6 py-2.5 rounded-lg font-medium transition-all active:scale-95"
+                        className="flex items-center gap-2 bg-teal-500 hover:bg-teal-600 text-white px-6 py-2.5 rounded-lg font-medium transition-all active:scale-95 w-full sm:w-auto justify-center"
                     >
                         <Save className="h-5 w-5" />
                         Save Certificate
@@ -217,7 +260,9 @@ export function ManageCertificate() {
                         {[
                             { id: 'studentName', label: 'Student Name', sample: 'John Doe' },
                             { id: 'assessmentName', label: 'Assessment Name', sample: 'Full Stack Development Quiz' },
-                            { id: 'assessmentCode', label: 'Assessment Code', sample: 'DCT-2025-001' }
+                            { id: 'assessmentCode', label: 'Assessment Code', sample: 'DCT-2025-001' },
+                            { id: 'collegeName', label: 'College Name', sample: 'ABC Engineering College' },
+                            { id: 'date', label: 'Date', sample: 'December 25, 2024' }
                         ].map((layer) => (
                             <div key={layer.id} className="bg-white rounded-xl border border-gray-200 p-6">
                                 <div className="flex items-center justify-between mb-4">
@@ -250,12 +295,53 @@ export function ManageCertificate() {
                                                 ))}
                                             </select>
                                         </div>
+                                        
+                                        {/* Font Style Options */}
+                                        <div className="col-span-1 sm:col-span-2">
+                                            <label className="block text-[10px] font-bold text-gray-400 mb-2 uppercase">Font Style</label>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => updateNestedState(layer.id, 'bold', !formData[layer.id].bold)}
+                                                    className={`px-3 py-1 text-xs font-bold border rounded transition-colors ${
+                                                        formData[layer.id].bold 
+                                                            ? 'bg-teal-500 text-white border-teal-500' 
+                                                            : 'bg-white text-gray-600 border-gray-300 hover:border-teal-500'
+                                                    }`}
+                                                >
+                                                    B
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => updateNestedState(layer.id, 'italic', !formData[layer.id].italic)}
+                                                    className={`px-3 py-1 text-xs italic border rounded transition-colors ${
+                                                        formData[layer.id].italic 
+                                                            ? 'bg-teal-500 text-white border-teal-500' 
+                                                            : 'bg-white text-gray-600 border-gray-300 hover:border-teal-500'
+                                                    }`}
+                                                >
+                                                    I
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => updateNestedState(layer.id, 'underline', !formData[layer.id].underline)}
+                                                    className={`px-3 py-1 text-xs underline border rounded transition-colors ${
+                                                        formData[layer.id].underline 
+                                                            ? 'bg-teal-500 text-white border-teal-500' 
+                                                            : 'bg-white text-gray-600 border-gray-300 hover:border-teal-500'
+                                                    }`}
+                                                >
+                                                    U
+                                                </button>
+                                            </div>
+                                        </div>
                                         <div>
-                                            <label className="block text-[10px] font-bold text-gray-400 mb-1 uppercase">Font Size (px)</label>
+                                            <label className="block text-[10px] font-bold text-gray-400 mb-1 uppercase">Font Size</label>
                                             <input
-                                                type="number"
+                                                type="text"
                                                 value={formData[layer.id].fontSize}
                                                 onChange={(e) => updateNestedState(layer.id, 'fontSize', e.target.value)}
+                                                placeholder="e.g. 30px or 2rem"
                                                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 outline-none"
                                             />
                                         </div>
@@ -277,32 +363,24 @@ export function ManageCertificate() {
                                             </div>
                                         </div>
                                         <div>
-                                            <label className="block text-[10px] font-bold text-gray-400 mb-1 uppercase font-serif">Vertical Position (%)</label>
-                                            <div className="flex items-center gap-2">
-                                                <input
-                                                    type="number"
-                                                    min="0"
-                                                    max="100"
-                                                    value={formData[layer.id].top}
-                                                    onChange={(e) => updateNestedState(layer.id, 'top', e.target.value)}
-                                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 outline-none"
-                                                />
-                                                <span className="text-xs font-medium text-gray-600">%</span>
-                                            </div>
+                                            <label className="block text-[10px] font-bold text-gray-400 mb-1 uppercase font-serif">Vertical Position</label>
+                                            <input
+                                                type="text"
+                                                value={formData[layer.id].top}
+                                                onChange={(e) => updateNestedState(layer.id, 'top', e.target.value)}
+                                                placeholder="e.g. 50% or 100px"
+                                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 outline-none"
+                                            />
                                         </div>
                                         <div>
-                                            <label className="block text-[10px] font-bold text-gray-400 mb-1 uppercase">Horizontal Position (%)</label>
-                                            <div className="flex items-center gap-2">
-                                                <input
-                                                    type="number"
-                                                    min="0"
-                                                    max="100"
-                                                    value={formData[layer.id].left}
-                                                    onChange={(e) => updateNestedState(layer.id, 'left', e.target.value)}
-                                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 outline-none"
-                                                />
-                                                <span className="text-xs font-medium text-gray-600">%</span>
-                                            </div>
+                                            <label className="block text-[10px] font-bold text-gray-400 mb-1 uppercase">Horizontal Position</label>
+                                            <input
+                                                type="text"
+                                                value={formData[layer.id].left}
+                                                onChange={(e) => updateNestedState(layer.id, 'left', e.target.value)}
+                                                placeholder="e.g. 50% or 200px"
+                                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 outline-none"
+                                            />
                                         </div>
                                     </div>
                                 )}
@@ -318,7 +396,6 @@ export function ManageCertificate() {
                                     <Grid className="h-4 w-4 text-teal-500" />
                                     Live Preview
                                 </div>
-                                <span className="text-[10px] text-gray-400 font-normal">WYSIWYG EDITOR</span>
                             </h3>
 
                             <div className="aspect-[3/2] bg-slate-100 rounded-lg border-4 border-slate-200 overflow-hidden relative flex items-center justify-center">
@@ -330,7 +407,9 @@ export function ManageCertificate() {
                                         {[
                                             { id: 'studentName', sample: 'Sample Student Name' },
                                             { id: 'assessmentName', sample: 'Sample Assessment Name' },
-                                            { id: 'assessmentCode', sample: 'DCT-2025-XXXX' }
+                                            { id: 'assessmentCode', sample: 'DCT-2025-XXXX' },
+                                            { id: 'collegeName', sample: 'Sample College Name' },
+                                            { id: 'date', sample: 'December 25, 2024' }
                                         ].map((layer) => {
                                             const settings = formData[layer.id];
                                             if (!settings.included) return null;
@@ -344,12 +423,15 @@ export function ManageCertificate() {
                                                     key={layer.id}
                                                     className="absolute pointer-events-none whitespace-nowrap"
                                                     style={{
-                                                        top: `${settings.top}%`,
-                                                        left: `${settings.left}%`,
+                                                        top: settings.top,
+                                                        left: settings.left,
                                                         transform: 'translate(-50%, -50%)',
                                                         color: settings.color,
-                                                        fontSize: `${settings.fontSize}px`,
+                                                        fontSize: settings.fontSize,
                                                         fontFamily: fontStyle,
+                                                        fontWeight: settings.bold ? 'bold' : 'normal',
+                                                        fontStyle: settings.italic ? 'italic' : 'normal',
+                                                        textDecoration: settings.underline ? 'underline' : 'none',
                                                         lineHeight: 1
                                                     }}
                                                 >
@@ -418,7 +500,6 @@ export function ManageCertificate() {
                     <table className="w-full text-sm text-left whitespace-nowrap">
                         <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-gray-100 uppercase text-[10px] tracking-wider">
                             <tr>
-                                <th className="px-6 py-4 w-16 text-center">ID</th>
                                 <th className="px-6 py-4">Certificate Identity</th>
                                 <th className="px-6 py-4">Visual Preview</th>
                                 <th className="px-6 py-4">Assignments</th>
@@ -430,7 +511,6 @@ export function ManageCertificate() {
                         <tbody className="divide-y divide-gray-50">
                             {certificates.map((cert, index) => (
                                 <tr key={cert.id} className="hover:bg-slate-50 transition-colors group">
-                                    <td className="px-6 py-4 text-center text-gray-400">#0{cert.id}</td>
                                     <td className="px-6 py-4">
                                         <div className="font-bold text-gray-800">{cert.name}</div>
                                         <div className="text-[10px] text-gray-400 mt-0.5">ID: {cert.id * 1234}CERT</div>
@@ -464,7 +544,7 @@ export function ManageCertificate() {
                                     <td className="px-6 py-4">
                                         <div className="flex items-center justify-center gap-2 transition-opacity">
                                             <button
-                                                onClick={() => handlePreviewModal(cert.image)}
+                                                onClick={() => handlePreviewModal(cert)}
                                                 className="text-slate-400 hover:text-teal-600 hover:bg-teal-50 p-2 rounded-lg transition-all"
                                                 title="Preview Full Size"
                                             >
@@ -493,20 +573,66 @@ export function ManageCertificate() {
                 </div>
             </div>
 
-            {/* Preview Modal for existing certificates */}
-            {isPreviewOpen && (
+            {/* Enhanced Preview Modal */}
+            {isPreviewOpen && selectedImage && (
                 <div
-                    className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-[100] p-4 animate-in fade-in duration-300"
+                    className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4"
                     onClick={() => setIsPreviewOpen(false)}
                 >
-                    <div className="relative max-w-5xl w-full max-h-[90vh] scale-in duration-300 rounded-2xl overflow-hidden border-4 border-white/10" onClick={e => e.stopPropagation()}>
+                    <div className="relative max-w-4xl w-full max-h-[90vh] bg-white rounded-2xl overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
                         <button
                             onClick={() => setIsPreviewOpen(false)}
-                            className="absolute top-4 right-4 bg-white/20 hover:bg-white/40 backdrop-blur-md text-white p-2 rounded-full transition-all z-10"
+                            className="absolute top-4 right-4 bg-gray-100 hover:bg-gray-200 text-gray-600 p-2 rounded-full transition-all z-10"
                         >
-                            <X className="h-6 w-6" />
+                            <X className="h-5 w-5" />
                         </button>
-                        <img src={selectedImage} alt="Certificate Preview" className="w-full h-auto" />
+                        
+                        <div className="p-6">
+                            <h3 className="text-xl font-bold text-gray-800 mb-4">{selectedImage.name}</h3>
+                            
+                            <div className="aspect-[3/2] bg-slate-100 rounded-lg border border-slate-200 overflow-hidden relative flex items-center justify-center">
+                                <div className="relative w-full h-full">
+                                    <img src={selectedImage.image} alt="Certificate" className="w-full h-full object-contain" />
+
+                                    {/* Dynamic Overlay Layers with actual certificate data */}
+                                    {[
+                                        { id: 'studentName', sample: 'John Doe Smith' },
+                                        { id: 'assessmentName', sample: 'Full Stack Development Assessment' },
+                                        { id: 'assessmentCode', sample: 'DCT-2025-001' },
+                                        { id: 'collegeName', sample: 'ABC Engineering College' },
+                                        { id: 'date', sample: 'December 25, 2024' }
+                                    ].map((layer) => {
+                                        const settings = selectedImage[layer.id];
+                                        if (!settings || !settings.included) return null;
+
+                                        // Find full font family string
+                                        const fontDetail = fontFamilies.find(f => f.name === settings.fontFamily);
+                                        const fontStyle = fontDetail ? fontDetail.value : 'inherit';
+
+                                        return (
+                                            <div
+                                                key={layer.id}
+                                                className="absolute pointer-events-none whitespace-nowrap"
+                                                style={{
+                                                    top: settings.top,
+                                                    left: settings.left,
+                                                    transform: 'translate(-50%, -50%)',
+                                                    color: settings.color,
+                                                    fontSize: settings.fontSize,
+                                                    fontFamily: fontStyle,
+                                                    fontWeight: settings.bold ? 'bold' : 'normal',
+                                                    fontStyle: settings.italic ? 'italic' : 'normal',
+                                                    textDecoration: settings.underline ? 'underline' : 'none',
+                                                    lineHeight: 1
+                                                }}
+                                            >
+                                                {layer.sample}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}
