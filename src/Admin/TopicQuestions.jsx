@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
-import { Plus, Trash2, Edit, X, FileSpreadsheet } from 'lucide-react';
+import { Plus, Trash2, Edit, X, FileSpreadsheet, ArrowLeft } from 'lucide-react';
 import { toast } from 'react-toastify';
 
 export default function TopicQuestions() {
@@ -254,10 +254,19 @@ export default function TopicQuestions() {
         <div className="p-3 sm:p-6 bg-[#EDF2F7] min-h-screen">
             {/* Header */}
             <div className="mb-4 sm:mb-6">
-                <div className="flex items-center gap-2 text-sm mb-4">
-                    <button onClick={() => navigate('/admin/topics')} className="text-[#319795] hover:underline">Topics</button>
-                    <span>/</span>
-                    <span className="text-gray-700">{topicName}</span>
+                <div className="flex items-center gap-4 mb-4">
+                    <button
+                        onClick={() => navigate(-1)}
+                        className="flex items-center gap-2 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium transition-all active:scale-95"
+                    >
+                        <ArrowLeft className="h-4 w-4" />
+                        Back
+                    </button>
+                    <div className="flex items-center gap-2 text-sm">
+                        <button onClick={() => navigate('/admin/topics')} className="text-[#319795] hover:underline">Topics</button>
+                        <span>/</span>
+                        <span className="text-gray-700">{topicName}</span>
+                    </div>
                 </div>
                 <h1 className="text-xl sm:text-2xl font-bold text-gray-800">{topicName} Questions</h1>
             </div>
