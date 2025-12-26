@@ -55,6 +55,19 @@ export default function AssignQuestions() {
         );
     };
 
+    const handleSelectAll = () => {
+        const availableIds = availableQuestions.map(q => q.id);
+        const allSelected = availableIds.every(id => selectedQuestions.includes(id));
+        
+        if (allSelected) {
+            // Deselect all from current topic
+            setSelectedQuestions(prev => prev.filter(id => !availableIds.includes(id)));
+        } else {
+            // Select all from current topic
+            setSelectedQuestions(prev => [...new Set([...prev, ...availableIds])]);
+        }
+    };
+
     const handleRemoveQuestion = (questionId) => {
         const updatedAssigned = assignedQuestions.filter(q => q.id !== questionId);
         setAssignedQuestions(updatedAssigned);
@@ -238,26 +251,37 @@ export default function AssignQuestions() {
                 ) : availableQuestions.length === 0 ? (
                     <div className="p-10 text-center text-gray-400 font-bold">No questions available in this topic.</div>
                 ) : (
-                    availableQuestions.map((q) => (
-                        <div
-                            key={q.id}
-                            onClick={() => toggleQuestion(q.id)}
-                            className={`p-5 rounded-xl border-2 transition-all cursor-pointer flex items-center justify-between group ${selectedQuestions.includes(q.id)
-                                ? 'border-[#319795] bg-teal-50'
-                                : 'border-white bg-white hover:border-gray-100'
-                                }`}
-                        >
-                            <div className="flex items-center gap-4">
-                                <div className={`w-6 h-6 rounded flex items-center justify-center transition-all ${selectedQuestions.includes(q.id) ? 'bg-[#319795] text-white' : 'bg-gray-100 text-gray-300'
-                                    }`}>
-                                    {selectedQuestions.includes(q.id) ? <CheckCircle2 className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
-                                </div>
-                                <span className={`text-sm font-bold ${selectedQuestions.includes(q.id) ? 'text-[#2C7A7B]' : 'text-gray-600'}`}>
-                                    {q.text}
-                                </span>
-                            </div>
+                    <>
+                        {/* Select All Button */}
+                        <div className="mb-4">
+                            <button
+                                onClick={handleSelectAll}
+                                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors"
+                            >
+                                {availableQuestions.every(q => selectedQuestions.includes(q.id)) ? 'Deselect All' : 'Select All'}
+                            </button>
                         </div>
-                    ))
+                        {availableQuestions.map((q) => (
+                            <div
+                                key={q.id}
+                                onClick={() => toggleQuestion(q.id)}
+                                className={`p-5 rounded-xl border-2 transition-all cursor-pointer flex items-center justify-between group ${selectedQuestions.includes(q.id)
+                                    ? 'border-[#319795] bg-teal-50'
+                                    : 'border-white bg-white hover:border-gray-100'
+                                    }`}
+                            >
+                                <div className="flex items-center gap-4">
+                                    <div className={`w-6 h-6 rounded flex items-center justify-center transition-all ${selectedQuestions.includes(q.id) ? 'bg-[#319795] text-white' : 'bg-gray-100 text-gray-300'
+                                        }`}>
+                                        {selectedQuestions.includes(q.id) ? <CheckCircle2 className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
+                                    </div>
+                                    <span className={`text-sm font-bold ${selectedQuestions.includes(q.id) ? 'text-[#2C7A7B]' : 'text-gray-600'}`}>
+                                        {q.text}
+                                    </span>
+                                </div>
+                            </div>
+                        ))}
+                    </>
                 )}
             </div>
 

@@ -38,7 +38,7 @@ export function ManageTopics() {
     const handleSubmit = () => {
         if (topicName.trim()) {
             if (editingTopic) {
-                setTopics(topics.map(topic => 
+                setTopics(topics.map(topic =>
                     topic.id === editingTopic.id ? { ...topic, name: topicName } : topic
                 ));
                 toast.success("Topic Updated Successfully!");
@@ -50,7 +50,7 @@ export function ManageTopics() {
                     questions: 0,
                     status: true
                 };
-                setTopics([...topics, newTopic]);
+                setTopics([newTopic, ...topics]);
                 toast.success("Topic Added Successfully!");
             }
             setTopicName('');
@@ -1314,26 +1314,64 @@ export function ManageStudents() {
     const [selectedAssessment, setSelectedAssessment] = useState('');
     const [assessmentSearch, setAssessmentSearch] = useState('');
     const [showAssessmentDropdown, setShowAssessmentDropdown] = useState(false);
-    
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+
     // Get assessments from localStorage
     const [assessments, setAssessments] = useState([]);
-    
+
     useEffect(() => {
         const saved = localStorage.getItem('all_assessments');
         if (saved) {
             setAssessments(JSON.parse(saved));
         }
     }, []);
-    
+
     const filteredAssessments = assessments.filter(assessment =>
         assessment.name.toLowerCase().includes(assessmentSearch.toLowerCase())
     );
+
     const [students, setStudents] = useState([
         { id: 1, name: "Aditya Kashyap", phone: "9876543210", email: "aditya@example.com", course: "B.Tech CSE", status: true, date: "2023-12-12" },
         { id: 2, name: "Masoom Abbas", phone: "7890123456", email: "masoom@example.com", course: "B.Tech IT", status: true, date: "2023-12-10" },
         { id: 3, name: "Rahul Singh", phone: "8901234567", email: "rahul@example.com", course: "MCA", status: false, date: "2023-11-25" },
         { id: 4, name: "Priya Sharma", phone: "9012345678", email: "priya@example.com", course: "BCA", status: true, date: "2023-12-01" },
         { id: 5, name: "Amit Patel", phone: "6789012345", email: "amit@example.com", course: "Diploma CS", status: true, date: "2023-12-05" },
+        { id: 6, name: "Sneha Gupta", phone: "9123456780", email: "sneha@example.com", course: "B.Tech ECE", status: true, date: "2023-11-28" },
+        { id: 7, name: "Vikram Kumar", phone: "8234567891", email: "vikram@example.com", course: "MBA", status: false, date: "2023-12-03" },
+        { id: 8, name: "Anita Roy", phone: "7345678902", email: "anita@example.com", course: "B.Sc IT", status: true, date: "2023-11-30" },
+        { id: 9, name: "Rajesh Verma", phone: "6456789013", email: "rajesh@example.com", course: "M.Tech", status: true, date: "2023-12-07" },
+        { id: 10, name: "Kavya Nair", phone: "9567890124", email: "kavya@example.com", course: "BCA", status: false, date: "2023-11-22" },
+        { id: 11, name: "Arjun Reddy", phone: "8678901235", email: "arjun@example.com", course: "B.Tech ME", status: true, date: "2023-12-09" },
+        { id: 12, name: "Deepika Joshi", phone: "7789012346", email: "deepika@example.com", course: "MCA", status: true, date: "2023-11-26" },
+        { id: 13, name: "Suresh Yadav", phone: "6890123457", email: "suresh@example.com", course: "Diploma EE", status: false, date: "2023-12-04" },
+        { id: 14, name: "Meera Iyer", phone: "9901234568", email: "meera@example.com", course: "B.Tech CSE", status: true, date: "2023-11-29" },
+        { id: 15, name: "Karan Malhotra", phone: "8012345679", email: "karan@example.com", course: "MBA", status: true, date: "2023-12-06" },
+        { id: 16, name: "Pooja Agarwal", phone: "7123456780", email: "pooja@example.com", course: "B.Sc CS", status: false, date: "2023-11-24" },
+        { id: 17, name: "Rohit Sharma", phone: "6234567891", email: "rohit@example.com", course: "B.Tech IT", status: true, date: "2023-12-08" },
+        { id: 18, name: "Sanya Kapoor", phone: "9345678902", email: "sanya@example.com", course: "BCA", status: true, date: "2023-11-27" },
+        { id: 19, name: "Nikhil Jain", phone: "8456789013", email: "nikhil@example.com", course: "M.Tech CSE", status: false, date: "2023-12-02" },
+        { id: 20, name: "Ritu Singh", phone: "7567890124", email: "ritu@example.com", course: "Diploma CS", status: true, date: "2023-11-23" },
+        { id: 21, name: "Abhishek Tiwari", phone: "6678901235", email: "abhishek@example.com", course: "B.Tech ECE", status: true, date: "2023-12-11" },
+        { id: 22, name: "Nisha Pandey", phone: "9789012346", email: "nisha@example.com", course: "MCA", status: false, date: "2023-11-21" },
+        { id: 23, name: "Gaurav Mishra", phone: "8890123457", email: "gaurav@example.com", course: "MBA", status: true, date: "2023-12-13" },
+        { id: 24, name: "Swati Dubey", phone: "7901234568", email: "swati@example.com", course: "B.Sc IT", status: true, date: "2023-11-20" },
+        { id: 25, name: "Manish Gupta", phone: "6012345679", email: "manish@example.com", course: "B.Tech ME", status: false, date: "2023-12-14" },
+        { id: 26, name: "Priyanka Das", phone: "9123456789", email: "priyanka@example.com", course: "BCA", status: true, date: "2023-11-19" },
+        { id: 27, name: "Sachin Rao", phone: "8234567890", email: "sachin@example.com", course: "Diploma EE", status: true, date: "2023-12-15" },
+        { id: 28, name: "Divya Sinha", phone: "7345678901", email: "divya@example.com", course: "B.Tech CSE", status: false, date: "2023-11-18" },
+        { id: 29, name: "Harsh Agrawal", phone: "6456789012", email: "harsh@example.com", course: "M.Tech", status: true, date: "2023-12-16" },
+        { id: 30, name: "Shruti Bhatt", phone: "9567890123", email: "shruti@example.com", course: "MBA", status: true, date: "2023-11-17" },
+        { id: 31, name: "Varun Chopra", phone: "8678901234", email: "varun@example.com", course: "B.Sc CS", status: false, date: "2023-12-17" },
+        { id: 32, name: "Tanvi Mehta", phone: "7789012345", email: "tanvi@example.com", course: "BCA", status: true, date: "2023-11-16" },
+        { id: 33, name: "Akash Bansal", phone: "6890123456", email: "akash@example.com", course: "B.Tech IT", status: true, date: "2023-12-18" },
+        { id: 34, name: "Neha Saxena", phone: "9901234567", email: "neha@example.com", course: "Diploma CS", status: false, date: "2023-11-15" },
+        { id: 35, name: "Siddharth Jha", phone: "8012345678", email: "siddharth@example.com", course: "M.Tech CSE", status: true, date: "2023-12-19" },
+        { id: 36, name: "Aarti Kulkarni", phone: "7123456789", email: "aarti@example.com", course: "B.Tech ECE", status: true, date: "2023-11-14" },
+        { id: 37, name: "Vishal Thakur", phone: "6234567890", email: "vishal@example.com", course: "MBA", status: false, date: "2023-12-20" },
+        { id: 38, name: "Ritika Sharma", phone: "9345678901", email: "ritika@example.com", course: "B.Sc IT", status: true, date: "2023-11-13" },
+        { id: 39, name: "Mohit Arora", phone: "8456789012", email: "mohit@example.com", course: "BCA", status: true, date: "2023-12-21" },
+        { id: 40, name: "Ishita Goyal", phone: "7567890123", email: "ishita@example.com", course: "B.Tech ME", status: false, date: "2023-11-12" }
     ]);
 
     const filteredStudents = students.filter(student =>
@@ -1341,6 +1379,16 @@ export function ManageStudents() {
         student.phone.includes(searchQuery) ||
         student.email.toLowerCase().includes(searchQuery.toLowerCase())
     );
+
+    // Pagination logic
+    const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const currentStudents = filteredStudents.slice(startIndex, endIndex);
+
+    const handlePageChange = (page) => {
+        setCurrentPage(page);
+    };
 
     const toggleStatus = (id) => {
         setStudents(students.map(s => s.id === id ? { ...s, status: !s.status } : s));
@@ -1474,7 +1522,7 @@ export function ManageStudents() {
                         )}
                     </div>
                 </div>
-                
+
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full lg:w-auto">
                     {/* Search Input */}
                     <div className="relative w-full sm:w-64">
@@ -1490,7 +1538,7 @@ export function ManageStudents() {
                             className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:border-[#319795] transition-colors"
                         />
                     </div>
-                    
+
                     {/* Total Count */}
                     <div className="text-sm text-gray-500 whitespace-nowrap mt-5">
                         Total Students: <span className="font-semibold text-gray-700">{filteredStudents.length}</span>
@@ -1504,6 +1552,7 @@ export function ManageStudents() {
                     <table className="w-full text-sm text-left whitespace-nowrap">
                         <thead className="bg-[#E6FFFA] text-[#2D3748] font-semibold border-b border-[#319795]">
                             <tr>
+                                <th className="px-6 py-4">Sr No.</th>
                                 <th className="px-6 py-4">Name</th>
                                 <th className="px-6 py-4">Phone</th>
                                 <th className="px-6 py-4">Email</th>
@@ -1514,17 +1563,28 @@ export function ManageStudents() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[#E6FFFA]">
-                            {filteredStudents.map((student, index) => (
+                            {currentStudents.map((student, index) => (
                                 <tr key={student.id} className="hover:bg-gray-50 transition-colors">
-                                    <td className="px-6 py-4 font-medium text-[#2D3748]">{student.name}</td>
-                                    <td className="px-6 py-4 text-[#4A5568]">{student.phone}</td>
-                                    <td className="px-6 py-4 text-[#4A5568]">{student.email}</td>
+                                    <td className="px-6 py-4 text-[#4A5568]">
+                                        {startIndex + index + 1}
+                                    </td>
+                                    <td className="px-6 py-4 font-medium text-[#2D3748]">
+                                        {student.name}
+                                    </td>
+                                    <td className="px-6 py-4 text-[#4A5568]">
+                                        {student.phone}
+                                    </td>
+                                    <td className="px-6 py-4 text-[#4A5568]">
+                                        {student.email}
+                                    </td>
                                     <td className="px-6 py-4 text-[#4A5568]">
                                         <span className="bg-blue-50 text-blue-600 py-1 px-2 rounded text-xs border border-blue-100">
                                             {student.course}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 text-[#4A5568]">{student.date}</td>
+                                    <td className="px-6 py-4 text-[#4A5568]">
+                                        {student.date}
+                                    </td>
                                     <td className="px-6 py-4">
                                         <label className="relative inline-flex items-center cursor-pointer">
                                             <input
@@ -1533,41 +1593,82 @@ export function ManageStudents() {
                                                 onChange={() => toggleStatus(student.id)}
                                                 className="sr-only peer"
                                             />
-                                            <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#319795]"></div>
+                                            <div className="w-9 h-5 bg-gray-200 rounded-full peer peer-checked:bg-[#319795] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:h-4 after:w-4 after:rounded-full after:transition-all peer-checked:after:translate-x-full"></div>
                                         </label>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <div className="flex items-center gap-2">
-                                            <button 
+                                        <div className="flex gap-2">
+                                            <button
                                                 onClick={() => downloadStudentPDF(student)}
-                                                className="text-[#319795] hover:text-[#2c7a7b] border border-[#319795] hover:bg-[#E6FFFA] p-1.5 rounded transition-colors" 
-                                                title="Download"
+                                                className="text-[#319795] border border-[#319795] p-1.5 rounded hover:bg-[#E6FFFA]"
                                             >
                                                 <Download className="h-4 w-4" />
                                             </button>
+
                                             <button
                                                 onClick={() => handleEditStudent(student)}
-                                                className="text-[#319795] hover:text-[#2c7a7b] border border-[#319795] hover:bg-[#E6FFFA] p-1.5 rounded transition-colors"
-                                                title="Edit"
+                                                className="text-[#319795] border border-[#319795] p-1.5 rounded hover:bg-[#E6FFFA]"
                                             >
                                                 <Edit className="h-4 w-4" />
                                             </button>
-                                            <button className="text-[#F56565] hover:text-[#C53030] border border-[#F56565] hover:bg-[#F56565]/20 p-1.5 rounded transition-colors" title="Delete">
+
+                                            <button className="text-[#F56565] border border-[#F56565] p-1.5 rounded hover:bg-[#F56565]/20">
                                                 <Trash2 className="h-4 w-4" />
                                             </button>
                                         </div>
                                     </td>
                                 </tr>
                             ))}
-                            {filteredStudents.length === 0 && (
+
+                            {currentStudents.length === 0 && (
                                 <tr>
-                                    <td colSpan="7" className="px-6 py-4 text-center text-gray-500">
+                                    <td colSpan="8" className="px-6 py-4 text-center text-gray-500">
                                         No students found matching your search.
                                     </td>
                                 </tr>
                             )}
                         </tbody>
+
                     </table>
+                </div>
+
+                {/* Pagination */}
+                <div className="px-6 py-4 border-t border-[#E6FFFA] flex justify-between items-center text-sm text-gray-600">
+                    <div>Showing {startIndex + 1} to {Math.min(endIndex, filteredStudents.length)} of {filteredStudents.length} entries</div>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => handlePageChange(currentPage - 1)}
+                            disabled={currentPage === 1}
+                            className={`px-3 py-1 rounded transition-colors ${currentPage === 1
+                                    ? 'text-gray-400 cursor-not-allowed'
+                                    : 'hover:bg-gray-100 text-gray-600'
+                                }`}
+                        >
+                            Previous
+                        </button>
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                            <button
+                                key={page}
+                                onClick={() => handlePageChange(page)}
+                                className={`px-3 py-1 rounded transition-colors ${currentPage === page
+                                        ? 'bg-[#319795] text-white'
+                                        : 'hover:bg-gray-100 text-gray-600'
+                                    }`}
+                            >
+                                {page}
+                            </button>
+                        ))}
+                        <button
+                            onClick={() => handlePageChange(currentPage + 1)}
+                            disabled={currentPage === totalPages}
+                            className={`px-3 py-1 rounded transition-colors ${currentPage === totalPages
+                                    ? 'text-gray-400 cursor-not-allowed'
+                                    : 'hover:bg-gray-100 text-gray-600'
+                                }`}
+                        >
+                            Next
+                        </button>
+                    </div>
                 </div>
             </div>
             {/* Edit Student Modal */}
@@ -1651,109 +1752,6 @@ export function ManageStudents() {
         </div>
     );
 }
-
-
-// export function ManageCertificate_Old() {
-//     const [certificates, setCertificates] = useState([
-//         {
-//             id: 1,
-//             name: "Skill Up Test by DigiCoders",
-//             image: "https://via.placeholder.com/150",
-//             category: "Custom",
-//             color: "#1e2a59",
-//             usedIn: "2 Assessments",
-//             status: true
-//         }
-//     ]);
-
-//     const toggleStatus = (id) => {
-//         setCertificates(certificates.map(cert =>
-//             cert.id === id ? { ...cert, status: !cert.status } : cert
-//         ));
-//     };
-
-//     return (
-//         <div className="p-6 bg-[#EDF2F7] min-h-screen">
-//             {/* Header / Breadcrumb */}
-//             <div className="mb-6">
-//                 <div className="flex items-center gap-2 text-sm">
-//                     <span className="text-[#319795] font-semibold">Assessment</span>
-//                     <span className="text-gray-400">/</span>
-//                     <span className="text-[#2D3748]">Manage Certificate</span>
-//                 </div>
-//             </div>
-
-//             {/* Controls */}
-//             <div className="mb-6">
-//                 <button className="flex items-center gap-2 bg-[#319795] hover:bg-[#2c7a7b] text-white px-5 py-2.5 rounded-lg font-medium transition-colors">
-//                     <Plus className="h-5 w-5" />
-//                     Add Certificate
-//                 </button>
-//             </div>
-
-//             {/* Content Area */}
-//             <div className="bg-white rounded-lg border border-[#E6FFFA] overflow-hidden">
-//                 <div className="px-6 py-4 border-b border-[#E6FFFA]">
-//                     <h3 className="text-[#2D3748] font-semibold uppercase text-sm">All Certificates</h3>
-//                 </div>
-
-//                 <div className="overflow-x-auto">
-//                     <table className="w-full text-sm text-left whitespace-nowrap">
-//                         <thead className="bg-[#E6FFFA] text-[#2D3748] font-semibold border-b border-[#319795]">
-//                             <tr>
-//                                 <th className="px-6 py-4 w-16">#</th>
-//                                 <th className="px-6 py-4">Name</th>
-//                                 <th className="px-6 py-4">Image</th>
-//                                 <th className="px-6 py-4">Category</th>
-//                                 <th className="px-6 py-4">Color</th>
-//                                 <th className="px-6 py-4">Used In</th>
-//                                 <th className="px-6 py-4">Status</th>
-//                                 <th className="px-6 py-4">Action</th>
-//                             </tr>
-//                         </thead>
-//                         <tbody className="divide-y divide-[#E6FFFA]">
-//                             {certificates.map((cert, index) => (
-//                                 <tr key={cert.id} className="hover:bg-gray-50 transition-colors">
-//                                     <td className="px-6 py-4 text-gray-500">{index + 1}</td>
-//                                     <td className="px-6 py-4 font-medium text-[#2D3748]">{cert.name}</td>
-//                                     <td className="px-6 py-4">
-//                                         <div className="h-12 w-20 bg-gray-100 border border-gray-200 rounded overflow-hidden flex items-center justify-center text-xs text-gray-400">
-//                                             Image
-//                                         </div>
-//                                     </td>
-//                                     <td className="px-6 py-4 text-[#4A5568]">{cert.category}</td>
-//                                     <td className="px-6 py-4 text-[#4A5568]">{cert.color}</td>
-//                                     <td className="px-6 py-4 text-[#4A5568]">{cert.usedIn}</td>
-//                                     <td className="px-6 py-4">
-//                                         <label className="relative inline-flex items-center cursor-pointer">
-//                                             <input
-//                                                 type="checkbox"
-//                                                 checked={cert.status}
-//                                                 onChange={() => toggleStatus(cert.id)}
-//                                                 className="sr-only peer"
-//                                             />
-//                                             <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#319795]"></div>
-//                                         </label>
-//                                     </td>
-//                                     <td className="px-6 py-4">
-//                                         <div className="flex items-center gap-2">
-//                                             <button className="text-[#319795] hover:text-[#2c7a7b] border border-[#319795] hover:bg-[#E6FFFA] p-1.5 rounded transition-colors">
-//                                                 <Edit className="h-4 w-4" />
-//                                             </button>
-//                                             <button className="text-[#F56565] hover:text-[#C53030] border border-[#F56565] hover:bg-[#F56565]/20 p-1.5 rounded transition-colors">
-//                                                 <Trash2 className="h-4 w-4" />
-//                                             </button>
-//                                         </div>
-//                                     </td>
-//                                 </tr>
-//                             ))}
-//                         </tbody>
-//                     </table>
-//                 </div>
-//             </div>
-//         </div>
-//     );
-// }
 
 
 export function SecuritySettings() {
