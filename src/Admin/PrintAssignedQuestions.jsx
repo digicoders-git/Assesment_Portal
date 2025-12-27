@@ -40,7 +40,9 @@ export default function PrintAssignedQuestions() {
             <div className="max-w-4xl mx-auto bg-white print:w-full">
                 {/* Header */}
                 <div className="text-center mb-12">
-                    <h1 className="text-2xl font-bold text-gray-500 mb-2">DigiCoders</h1>
+                    <div className='flex items-center justify-center'>
+                        <img className='h-16 w-48' src="/digicoders-logo.png" alt="" />
+                    </div>
                     <h2 className="text-3xl font-bold text-gray-700">Interview Questions</h2>
                 </div>
 

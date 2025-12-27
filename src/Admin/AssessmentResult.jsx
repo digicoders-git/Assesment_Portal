@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import React, { useState, useEffect, useRef } from 'react';
-import { Download, Search, ChevronLeft, FileText, FileSpreadsheet, ChevronDown, ArrowLeft, Eye } from 'lucide-react';
+import { Download, Search,  FileText, FileSpreadsheet, ChevronDown, ArrowLeft, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
@@ -436,7 +436,7 @@ export default function AssessmentResult() {
                                                     onClick={() => handleViewStudent(item)}
                                                     className="text-blue-600 hover:text-blue-800 p-1 hover:bg-blue-50 rounded-full transition-colors"
                                                 >
-                                                    <Eye className="h-3 w-3" />
+                                                    <Eye className="h-5 w-5" />
                                                 </button>
                                             </td>
                                             <td className="px-2 py-2 text-gray-600 font-mono text-xs">

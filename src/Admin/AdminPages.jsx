@@ -1207,7 +1207,17 @@ export function AssessmentHistory() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[#E6FFFA]">
-                            {assessments.map((item, index) => (
+                            {assessments.length === 0 ? (
+                                <tr>
+                                    <td colSpan="9" className="px-4 py-20 text-center">
+                                        <div className="flex flex-col items-center justify-center text-gray-400">
+                                            <Search className="h-12 w-12 mb-4 opacity-20" />
+                                            <p className="text-lg font-bold">No Assessment History</p>
+                                            <p className="text-sm">Create an assessment to see it here.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : assessments.map((item, index) => (
                                 <tr key={item.id}>
                                     <td className="px-4 py-3 align-top">{index + 1}</td>
                                     <td className="px-4 py-3 align-top">
