@@ -19,10 +19,12 @@ import PrintPaper from "./Admin/PrintPaper";
 import PrintAssignedQuestions from "./Admin/PrintAssignedQuestions";
 import EditQuestions from "./Admin/EditQuestions";
 import AssessmentResult from "./Admin/AssessmentResult";
+import AssessmentDetails from "./Admin/AssessmentDetails";
 import TopicQuestions from "./Admin/TopicQuestions";
 import AssignQuestions from "./Admin/AssignQuestions";
 import AdminDashboard from "./Comp/Admincomp/AdminDashboard";
 import AcademicSetup from "./Admin/AcademicSetup";
+import StartedStudents from "./Admin/StartedStudents";
 
 function App() {
   return (
@@ -47,10 +49,12 @@ function App() {
             <Route path="security" element={<SecuritySettings />} />
             <Route path="topic-questions/:topicId" element={<TopicQuestions />} />
             <Route path="assessment/result/:id" element={<AssessmentResult />} />
+            <Route path="assessment/details/:id" element={<AssessmentDetails />} />
             <Route path="assign-questions/:id" element={<AssignQuestions />} />
             <Route path="print-assigned-questions/:id" element={<PrintAssignedQuestions />} />
             <Route path="print/:topicId" element={<PrintPaper />} />
             <Route path="edit/:topicId" element={<EditQuestions />} />
+            <Route path="assessment/started-students/:id" element={<StartedStudents />} />
           </Route>
           
           {/* Catch-all route for assessment codes */}

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronRight, Save, Search, CheckCircle2, Circle, BookOpen, HelpCircle, X, Download, ArrowLeft } from 'lucide-react';
+import { ChevronRight, Save, Search, CheckCircle2, Circle, BookOpen, Download, ArrowLeft, Trash2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 
 export default function AssignQuestions() {
@@ -10,6 +10,9 @@ export default function AssignQuestions() {
     const [selectedQuestions, setSelectedQuestions] = useState([]);
     const [isTopicDropdownOpen, setIsTopicDropdownOpen] = useState(false);
     const [assignedQuestions, setAssignedQuestions] = useState([]);
+    const [assignedSearchQuery, setAssignedSearchQuery] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
 
     // Load already assigned questions
     React.useEffect(() => {
@@ -18,22 +21,86 @@ export default function AssignQuestions() {
         setAssignedQuestions(assigned);
     }, [id]);
 
-    // Mock Questions database
+    // Mock Questions database with full question data
     const questionsDatabase = {
         1: [
-            { id: 101, text: "What is React?" },
-            { id: 102, text: "What is JSX?" },
-            { id: 103, text: "Difference between state and props?" },
-            { id: 104, text: "Explain React Lifecycle methods." },
+            { 
+                id: 101, 
+                text: "What is React?", 
+                optionA: "A JavaScript library", 
+                optionB: "A database", 
+                optionC: "A programming language", 
+                optionD: "An operating system", 
+                answer: "A JavaScript library" 
+            },
+            { 
+                id: 102, 
+                text: "What is JSX?", 
+                optionA: "JavaScript XML", 
+                optionB: "Java Syntax Extension", 
+                optionC: "JavaScript Extension", 
+                optionD: "JSON Structure", 
+                answer: "JavaScript XML" 
+            },
+            { 
+                id: 103, 
+                text: "Difference between state and props?", 
+                optionA: "State is mutable, Props are immutable", 
+                optionB: "Both are same", 
+                optionC: "Props are mutable, State is immutable", 
+                optionD: "Both are mutable", 
+                answer: "State is mutable, Props are immutable" 
+            },
+            { 
+                id: 104, 
+                text: "Explain React Lifecycle methods.", 
+                optionA: "componentDidMount, componentDidUpdate, componentWillUnmount", 
+                optionB: "constructor, render, componentDidMount", 
+                optionC: "useState, useEffect, useContext", 
+                optionD: "Mount, Update, Unmount phases", 
+                answer: "componentDidMount, componentDidUpdate, componentWillUnmount" 
+            },
         ],
         2: [
-            { id: 201, text: "Explain Closure in JS." },
-            { id: 202, text: "What is Event Looping?" },
+            { 
+                id: 201, 
+                text: "Explain Closure in JS.", 
+                optionA: "Function inside another function with access to outer variables", 
+                optionB: "Loop concept in JavaScript", 
+                optionC: "Variable scope management", 
+                optionD: "Memory management technique", 
+                answer: "Function inside another function with access to outer variables" 
+            },
+            { 
+                id: 202, 
+                text: "What is Event Looping?", 
+                optionA: "Mechanism for handling asynchronous operations", 
+                optionB: "Loop execution pattern", 
+                optionC: "Event handling system", 
+                optionD: "Memory allocation process", 
+                answer: "Mechanism for handling asynchronous operations" 
+            },
         ],
         3: [
-            { id: 301, text: "What are your strengths?" },
-            { id: 302, text: "Where do you see yourself in 5 years?" },
-        ]
+            { 
+                id: 301, 
+                text: "What are your strengths?", 
+                optionA: "Problem solving and analytical thinking", 
+                optionB: "Communication and teamwork", 
+                optionC: "Leadership and management", 
+                optionD: "Technical expertise", 
+                answer: "Problem solving and analytical thinking" 
+            },
+            { 
+                id: 302, 
+                text: "Where do you see yourself in 5 years?", 
+                optionA: "In a senior technical role", 
+                optionB: "Leading a team", 
+                optionC: "Starting my own company", 
+                optionD: "Continuing to learn and grow", 
+                answer: "In a senior technical role" 
+            },
+        ],
     };
 
     // Mock Topics with dynamic count from questionsDatabase
@@ -133,6 +200,31 @@ export default function AssignQuestions() {
     // Calculate assigned questions count per topic
     const getTopicAssignedCount = (topicId) => {
         return assignedQuestions.filter(q => q.topicId === topicId).length;
+    };
+
+    // Get correct answer letter (A, B, C, D)
+    const getCorrectAnswerLetter = (question) => {
+        const options = [question.optionA, question.optionB, question.optionC, question.optionD];
+        const answerIndex = options.findIndex(option => option === question.answer);
+        return answerIndex !== -1 ? String.fromCharCode(65 + answerIndex) : 'N/A';
+    };
+
+    // Filter assigned questions based on search
+    const filteredAssignedQuestions = assignedQuestions.filter(q => 
+        q.text.toLowerCase().includes(assignedSearchQuery.toLowerCase()) ||
+        q.topicName.toLowerCase().includes(assignedSearchQuery.toLowerCase()) ||
+        q.answer.toLowerCase().includes(assignedSearchQuery.toLowerCase())
+    );
+
+    // Pagination logic
+    const totalPages = Math.ceil(filteredAssignedQuestions.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const paginatedQuestions = filteredAssignedQuestions.slice(startIndex, startIndex + itemsPerPage);
+
+    const handlePageChange = (page) => {
+        if (page >= 1 && page <= totalPages) {
+            setCurrentPage(page);
+        }
     };
 
     // Filter out already assigned questions from current questions
@@ -287,31 +379,114 @@ export default function AssignQuestions() {
 
             {assignedQuestions.length > 0 && (
                 <div className="mt-8">
-                    <h3 className="text-lg font-bold text-gray-800 mb-4">Already Assigned Questions ({assignedQuestions.length})</h3>
-                    <div className="grid grid-cols-1 gap-3">
-                        {assignedQuestions.map((q) => (
-                            <div
-                                key={q.id}
-                                className="p-5 rounded-xl border-2 border-green-200 bg-green-50 flex items-center justify-between"
-                            >
-                                <div className="flex items-center gap-4">
-                                    <div className="w-6 h-6 rounded flex items-center justify-center bg-green-500 text-white">
-                                        <CheckCircle2 className="h-4 w-4" />
-                                    </div>
-                                    <span className="text-sm font-bold text-green-700">{q.text}</span>
-                                    <span className="text-xs bg-green-200 text-green-700 px-2 py-1 rounded">{q.topicName}</span>
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-bold text-gray-800">Already Assigned Questions ({assignedQuestions.length})</h3>
+                        <div className="relative w-64">
+                            <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                            <input
+                                type="text"
+                                value={assignedSearchQuery}
+                                onChange={(e) => setAssignedSearchQuery(e.target.value)}
+                                placeholder="Search assigned questions..."
+                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-[#319795] transition-colors"
+                            />
+                        </div>
+                    </div>
+                    
+                    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm text-left whitespace-nowrap border-collapse">
+                                <thead className="bg-gray-50 text-gray-700 font-semibold">
+                                    <tr>
+                                        <th className="px-4 py-3 w-16 border-r border-gray-200">Sr No.</th>
+                                        <th className="px-4 py-3 border-r border-gray-200">Category</th>
+                                        <th className="px-4 py-3 min-w-[300px] border-r border-gray-200">Question</th>
+                                        <th className="px-4 py-3 min-w-[150px] border-r border-gray-200">Option A</th>
+                                        <th className="px-4 py-3 min-w-[150px] border-r border-gray-200">Option B</th>
+                                        <th className="px-4 py-3 min-w-[150px] border-r border-gray-200">Option C</th>
+                                        <th className="px-4 py-3 min-w-[150px] border-r border-gray-200">Option D</th>
+                                        <th className="px-4 py-3 w-32 text-center border-r border-gray-200">Correct Answer</th>
+                                        <th className="px-4 py-3 w-20 text-center">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-200">
+                                    {paginatedQuestions.map((q, index) => (
+                                        <tr key={q.id} className="hover:bg-gray-50">
+                                            <td className="px-4 py-3 text-center text-gray-500 border-r border-gray-200">{startIndex + index + 1}</td>
+                                            <td className="px-4 py-3 border-r border-gray-200">
+                                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-teal-100 text-teal-800">
+                                                    {q.topicName}
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-3 font-medium text-gray-800 border-r border-gray-200">{q.text}</td>
+                                            <td className="px-4 py-3 text-gray-600 border-r border-gray-200">{q.optionA}</td>
+                                            <td className="px-4 py-3 text-gray-600 border-r border-gray-200">{q.optionB}</td>
+                                            <td className="px-4 py-3 text-gray-600 border-r border-gray-200">{q.optionC}</td>
+                                            <td className="px-4 py-3 text-gray-600 border-r border-gray-200">{q.optionD}</td>
+                                            <td className="px-4 py-3 text-center font-bold text-green-700 border-r border-gray-200">
+                                                {getCorrectAnswerLetter(q)}
+                                            </td>
+                                            <td className="px-4 py-3 text-center">
+                                                <button
+                                                    onClick={() => handleRemoveQuestion(q.id)}
+                                                    className="text-red-600 hover:text-red-800 p-2 hover:bg-red-50 rounded-lg transition-colors"
+                                                    title="Delete Question"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        {/* Pagination */}
+                        {totalPages > 1 && (
+                            <div className="px-4 py-3 border-t border-gray-200 flex items-center justify-between">
+                                <div className="text-sm text-gray-500">
+                                    Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredAssignedQuestions.length)} of {filteredAssignedQuestions.length} entries
                                 </div>
-                                <div className=" ml-4 flex items-center">
+                                <div className="flex items-center gap-1">
                                     <button
-                                        onClick={() => handleRemoveQuestion(q.id)}
-                                        className="p-1 bg-red-500 hover:bg-red-600 text-white rounded transition-colors"
-                                        title="Remove Question"
+                                        onClick={() => handlePageChange(currentPage - 1)}
+                                        disabled={currentPage === 1}
+                                        className="px-3 py-1 text-sm text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
-                                        <X className="h-3 w-3" />
+                                        Previous
+                                    </button>
+                                    
+                                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                        <button
+                                            key={page}
+                                            onClick={() => handlePageChange(page)}
+                                            className={`px-3 py-1 text-sm rounded transition-colors ${
+                                                currentPage === page 
+                                                    ? 'bg-teal-500 text-white' 
+                                                    : 'text-gray-600 hover:bg-gray-100'
+                                            }`}
+                                        >
+                                            {page}
+                                        </button>
+                                    ))}
+                                    
+                                    <button
+                                        onClick={() => handlePageChange(currentPage + 1)}
+                                        disabled={currentPage === totalPages}
+                                        className="px-3 py-1 text-sm text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        Next
                                     </button>
                                 </div>
                             </div>
-                        ))}
+                        )}
+                        
+                        {filteredAssignedQuestions.length === 0 && assignedSearchQuery && (
+                            <div className="p-8 text-center text-gray-500">
+                                <Search className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                                <p>No questions found matching "{assignedSearchQuery}"</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

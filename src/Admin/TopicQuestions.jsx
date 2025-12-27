@@ -44,6 +44,7 @@ export default function TopicQuestions() {
         answer: ''
     };
     const [formData, setFormData] = useState(initialFormState);
+    const [multipleQuestions, setMultipleQuestions] = useState([{ ...initialFormState, id: Date.now() }]);
 
     const handleDownloadSample = () => {
         const sampleData = [
@@ -64,13 +65,13 @@ export default function TopicQuestions() {
                 answer: "B"
             }
         ];
-        
+
         // Create proper Excel format with tab separation
         const headers = "Question\tOptionA\tOptionB\tOptionC\tOptionD\tAnswer\n";
-        const csvContent = sampleData.map(q => 
+        const csvContent = sampleData.map(q =>
             `${q.question}\t${q.optionA}\t${q.optionB}\t${q.optionC}\t${q.optionD}\t${q.answer}`
         ).join('\n');
-        
+
         const blob = new Blob([headers + csvContent], { type: 'application/vnd.ms-excel' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -86,6 +87,7 @@ export default function TopicQuestions() {
     const handleOpenAdd = () => {
         setEditingQuestion(null);
         setFormData(initialFormState);
+        setMultipleQuestions([{ ...initialFormState, id: Date.now() }]);
         setIsAddModalOpen(true);
     };
 
@@ -94,12 +96,12 @@ export default function TopicQuestions() {
             toast.error("No questions available to export!");
             return;
         }
-        
+
         const headers = "Question\tOptionA\tOptionB\tOptionC\tOptionD\tAnswer\n";
-        const csvContent = questions.map(q => 
+        const csvContent = questions.map(q =>
             `${q.question}\t${q.optionA}\t${q.optionB}\t${q.optionC}\t${q.optionD}\t${q.answer}`
         ).join('\n');
-        
+
         const blob = new Blob([headers + csvContent], { type: 'application/vnd.ms-excel' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -119,25 +121,51 @@ export default function TopicQuestions() {
     };
 
     const handleSave = () => {
-        if (!formData.question || !formData.optionA || !formData.optionB) {
-            toast.error("Question and at least two options are required!");
-            return;
-        }
-
-        if (!formData.answer || !['A', 'B', 'C', 'D'].includes(formData.answer)) {
-            toast.error("Please select a correct answer (A, B, C, or D)!");
-            return;
-        }
-
         if (editingQuestion) {
+            // Single question edit
+            if (!formData.question || !formData.optionA || !formData.optionB) {
+                toast.error("Question and at least two options are required!");
+                return;
+            }
+            if (!formData.answer || !['A', 'B', 'C', 'D'].includes(formData.answer)) {
+                toast.error("Please select a correct answer (A, B, C, or D)!");
+                return;
+            }
             setQuestions(questions.map(q => q.id === editingQuestion.id ? { ...formData, id: q.id } : q));
             toast.success("Question updated successfully");
         } else {
-            const newQ = { ...formData, id: Date.now() };
-            setQuestions([...questions, newQ]);
-            toast.success("New question added");
+            // Multiple questions add
+            const validQuestions = multipleQuestions.filter(q =>
+                q.question.trim() && q.optionA.trim() && q.optionB.trim() &&
+                ['A', 'B', 'C', 'D'].includes(q.answer)
+            );
+
+            if (validQuestions.length === 0) {
+                toast.error("Please fill at least one complete question with all required fields!");
+                return;
+            }
+
+            const newQuestions = validQuestions.map(q => ({ ...q, id: Date.now() + Math.random() }));
+            setQuestions([...questions, ...newQuestions]);
+            toast.success(`${newQuestions.length} question(s) added successfully!`);
         }
         setIsAddModalOpen(false);
+    };
+
+    const addNewQuestionForm = () => {
+        setMultipleQuestions([...multipleQuestions, { ...initialFormState, id: Date.now() + Math.random() }]);
+    };
+
+    const removeQuestionForm = (id) => {
+        if (multipleQuestions.length > 1) {
+            setMultipleQuestions(multipleQuestions.filter(q => q.id !== id));
+        }
+    };
+
+    const updateMultipleQuestion = (id, field, value) => {
+        setMultipleQuestions(multipleQuestions.map(q =>
+            q.id === id ? { ...q, [field]: value } : q
+        ));
     };
 
     const handleDelete = (id) => {
@@ -160,25 +188,25 @@ export default function TopicQuestions() {
     const handleImportFile = (e) => {
         const file = e.target.files[0];
         if (!file) return;
-        
+
         const fileExtension = file.name.split('.').pop().toLowerCase();
         if (!['xlsx', 'xls'].includes(fileExtension)) {
             toast.error("Please upload only Excel files (.xlsx, .xls)!");
             e.target.value = '';
             return;
         }
-        
+
         const reader = new FileReader();
         reader.onload = (event) => {
             try {
                 const text = event.target.result;
                 const rows = text.split('\n').filter(row => row.trim());
-                
+
                 if (rows.length < 2) {
                     toast.error("File must contain at least header and one data row!");
                     return;
                 }
-                
+
                 // Handle Excel format with tab separation
                 const headers = rows[0].split('\t').map(h => h.trim().toLowerCase());
                 const required = ['question', 'optiona', 'optionb', 'optionc', 'optiond', 'answer'];
@@ -191,7 +219,7 @@ export default function TopicQuestions() {
 
                 const newQuestions = [];
                 const invalidRows = [];
-                
+
                 for (let i = 1; i < rows.length; i++) {
                     const columns = rows[i].split('\t').map(c => c.trim());
                     if (columns.length >= 6 && columns[headers.indexOf('question')]) {
@@ -203,13 +231,13 @@ export default function TopicQuestions() {
                             optionD: columns[headers.indexOf('optiond')],
                             answer: columns[headers.indexOf('answer')].toUpperCase()
                         };
-                        
+
                         // Validate answer is A, B, C, or D
                         if (!['A', 'B', 'C', 'D'].includes(questionData.answer)) {
                             invalidRows.push(`Row ${i + 1}: Answer must be A, B, C, or D`);
                             continue;
                         }
-                        
+
                         // Convert letter to actual option text for storage
                         const optionMap = {
                             'A': questionData.optionA,
@@ -217,7 +245,7 @@ export default function TopicQuestions() {
                             'C': questionData.optionC,
                             'D': questionData.optionD
                         };
-                        
+
                         newQuestions.push({
                             id: Date.now() + i,
                             ...questionData,
@@ -402,97 +430,199 @@ export default function TopicQuestions() {
             {/* Add/Edit Modal */}
             {isAddModalOpen && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
                         <div className="p-4 sm:p-6 border-b">
                             <h3 className="text-lg font-semibold">
-                                {editingQuestion ? 'Edit Question' : 'Add New Question'}
+                                {editingQuestion ? 'Edit Question' : 'Add New Questions'}
                             </h3>
                         </div>
-                        <div className="p-4 sm:p-6 space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Question</label>
-                                <textarea
-                                    value={formData.question}
-                                    onChange={(e) => setFormData({ ...formData, question: e.target.value })}
-                                    rows="3"
-                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
-                                    placeholder="Enter question..."
-                                />
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Option A</label>
-                                    <input
-                                        type="text"
-                                        value={formData.optionA}
-                                        onChange={(e) => setFormData({ ...formData, optionA: e.target.value })}
-                                        className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
-                                        placeholder="Option A..."
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Option B</label>
-                                    <input
-                                        type="text"
-                                        value={formData.optionB}
-                                        onChange={(e) => setFormData({ ...formData, optionB: e.target.value })}
-                                        className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
-                                        placeholder="Option B..."
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Option C</label>
-                                    <input
-                                        type="text"
-                                        value={formData.optionC}
-                                        onChange={(e) => setFormData({ ...formData, optionC: e.target.value })}
-                                        className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
-                                        placeholder="Option C..."
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Option D</label>
-                                    <input
-                                        type="text"
-                                        value={formData.optionD}
-                                        onChange={(e) => setFormData({ ...formData, optionD: e.target.value })}
-                                        className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
-                                        placeholder="Option D..."
-                                    />
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-3">Correct Answer</label>
-                                <div className="flex gap-4">
-                                    {['A', 'B', 'C', 'D'].map((option) => (
-                                        <label key={option} className="flex items-center gap-2 cursor-pointer">
+                        <div className="p-4 sm:p-6">
+                            {editingQuestion ? (
+                                // Single question edit form
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Question</label>
+                                        <textarea
+                                            value={formData.question}
+                                            onChange={(e) => setFormData({ ...formData, question: e.target.value })}
+                                            rows="3"
+                                            className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                                            placeholder="Enter question..."
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Option A</label>
                                             <input
-                                                type="radio"
-                                                name="answer"
-                                                value={option}
-                                                checked={formData.answer === option}
-                                                onChange={(e) => setFormData({ ...formData, answer: e.target.value })}
-                                                className="w-4 h-4 text-[#319795] focus:ring-[#319795]"
+                                                type="text"
+                                                value={formData.optionA}
+                                                onChange={(e) => setFormData({ ...formData, optionA: e.target.value })}
+                                                className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                                                placeholder="Option A..."
                                             />
-                                            <span className="text-sm font-medium">{option}</span>
-                                        </label>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Option B</label>
+                                            <input
+                                                type="text"
+                                                value={formData.optionB}
+                                                onChange={(e) => setFormData({ ...formData, optionB: e.target.value })}
+                                                className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                                                placeholder="Option B..."
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Option C</label>
+                                            <input
+                                                type="text"
+                                                value={formData.optionC}
+                                                onChange={(e) => setFormData({ ...formData, optionC: e.target.value })}
+                                                className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                                                placeholder="Option C..."
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Option D</label>
+                                            <input
+                                                type="text"
+                                                value={formData.optionD}
+                                                onChange={(e) => setFormData({ ...formData, optionD: e.target.value })}
+                                                className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                                                placeholder="Option D..."
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-3">Correct Answer</label>
+                                        <div className="flex gap-4">
+                                            {['A', 'B', 'C', 'D'].map((option) => (
+                                                <label key={option} className="flex items-center gap-2 cursor-pointer">
+                                                    <input
+                                                        type="radio"
+                                                        name="answer"
+                                                        value={option}
+                                                        checked={formData.answer === option}
+                                                        onChange={(e) => setFormData({ ...formData, answer: e.target.value })}
+                                                        className="w-4 h-4 text-[#319795] focus:ring-[#319795]"
+                                                    />
+                                                    <span className="text-sm font-medium">{option}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="space-y-6">
+                                    {multipleQuestions.map((questionForm, index) => (
+                                        <div key={questionForm.id} className="border border-gray-200 rounded-lg p-4 relative">
+                                            <div className="flex justify-between items-center mb-4">
+                                                <h4 className="font-medium text-gray-700">Question {index + 1}</h4>
+                                                {multipleQuestions.length > 1 && (
+                                                    <button
+                                                        onClick={() => removeQuestionForm(questionForm.id)}
+                                                        className="text-red-600 hover:text-red-800 p-1"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">Question *</label>
+                                                    <textarea
+                                                        value={questionForm.question}
+                                                        onChange={(e) => updateMultipleQuestion(questionForm.id, 'question', e.target.value)}
+                                                        rows="2"
+                                                        className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                                                        placeholder="Enter question..."
+                                                    />
+                                                </div>
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700 mb-1">Option A *</label>
+                                                        <input
+                                                            type="text"
+                                                            value={questionForm.optionA}
+                                                            onChange={(e) => updateMultipleQuestion(questionForm.id, 'optionA', e.target.value)}
+                                                            className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                                                            placeholder="Option A..."
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700 mb-1">Option B *</label>
+                                                        <input
+                                                            type="text"
+                                                            value={questionForm.optionB}
+                                                            onChange={(e) => updateMultipleQuestion(questionForm.id, 'optionB', e.target.value)}
+                                                            className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                                                            placeholder="Option B..."
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700 mb-1">Option C</label>
+                                                        <input
+                                                            type="text"
+                                                            value={questionForm.optionC}
+                                                            onChange={(e) => updateMultipleQuestion(questionForm.id, 'optionC', e.target.value)}
+                                                            className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                                                            placeholder="Option C..."
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700 mb-1">Option D</label>
+                                                        <input
+                                                            type="text"
+                                                            value={questionForm.optionD}
+                                                            onChange={(e) => updateMultipleQuestion(questionForm.id, 'optionD', e.target.value)}
+                                                            className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                                                            placeholder="Option D..."
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-3">Correct Answer *</label>
+                                                    <div className="flex gap-4">
+                                                        {['A', 'B', 'C', 'D'].map((option) => (
+                                                            <label key={option} className="flex items-center gap-2 cursor-pointer">
+                                                                <input
+                                                                    type="radio"
+                                                                    name={`answer_${questionForm.id}`}
+                                                                    value={option}
+                                                                    checked={questionForm.answer === option}
+                                                                    onChange={(e) => updateMultipleQuestion(questionForm.id, 'answer', e.target.value)}
+                                                                    className="w-4 h-4 text-[#319795] focus:ring-[#319795]"
+                                                                />
+                                                                <span className="text-sm font-medium">{option}</span>
+                                                            </label>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     ))}
                                 </div>
-                                <p className="text-xs text-gray-500 mt-2">Select the correct option (A, B, C, or D)</p>
-                            </div>
+                            )}
                         </div>
                         <div className="p-4 sm:p-6 border-t flex flex-col sm:flex-row justify-end gap-3">
                             <button
                                 onClick={() => setIsAddModalOpen(false)}
-                                className="px-4 py-2 text-gray-600 hover:text-gray-800 order-2 sm:order-1"
+                                className="px-4 py-2 text-gray-600 hover:text-gray-800 order-3 sm:order-1"
                             >
                                 Cancel
+                            </button>
+                            <button
+                                onClick={addNewQuestionForm}
+                                className="flex items-center gap-2 bg-[#319795] hover:bg-[#2B7A73] text-white px-3 py-1.5 rounded text-sm order-2"
+                            >
+                                <Plus className="h-4 w-4" />
+                                Add Another
                             </button>
                             <button
                                 onClick={handleSave}
                                 className="bg-[#319795] hover:bg-[#2B7A73] text-white px-4 py-2 rounded order-1 sm:order-2"
                             >
-                                {editingQuestion ? 'Update' : 'Save'}
+                                {editingQuestion ? 'Update' : `Save ${multipleQuestions.length} Question(s)`}
                             </button>
                         </div>
                     </div>
@@ -527,7 +657,7 @@ export default function TopicQuestions() {
                                     Download Excel Sample
                                 </button>
                             </div>
-                            
+
                             <div className="border-t pt-4">
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
                                     Choose Excel File to Import:

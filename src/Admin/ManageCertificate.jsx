@@ -283,7 +283,8 @@ export function ManageCertificate() {
 
                                 {formData[layer.id].included && (
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-4 pt-2">
-                                        <div className="col-span-1 sm:col-span-2">
+                                        {/* Font Family and Font Style on same line */}
+                                        <div>
                                             <label className="block text-[10px] font-bold text-gray-400 mb-1 uppercase">Font Family</label>
                                             <select
                                                 value={formData[layer.id].fontFamily}
@@ -297,13 +298,13 @@ export function ManageCertificate() {
                                         </div>
                                         
                                         {/* Font Style Options */}
-                                        <div className="col-span-1 sm:col-span-2">
-                                            <label className="block text-[10px] font-bold text-gray-400 mb-2 uppercase">Font Style</label>
-                                            <div className="flex gap-2">
+                                        <div>
+                                            <label className="block text-[10px] font-bold text-gray-400 mb-1 uppercase">Font Style</label>
+                                            <div className="flex gap-1 pt-1">
                                                 <button
                                                     type="button"
                                                     onClick={() => updateNestedState(layer.id, 'bold', !formData[layer.id].bold)}
-                                                    className={`px-3 py-1 text-xs font-bold border rounded transition-colors ${
+                                                    className={`px-3 py-1.5 text-xs font-bold border rounded transition-colors ${
                                                         formData[layer.id].bold 
                                                             ? 'bg-teal-500 text-white border-teal-500' 
                                                             : 'bg-white text-gray-600 border-gray-300 hover:border-teal-500'
@@ -314,7 +315,7 @@ export function ManageCertificate() {
                                                 <button
                                                     type="button"
                                                     onClick={() => updateNestedState(layer.id, 'italic', !formData[layer.id].italic)}
-                                                    className={`px-3 py-1 text-xs italic border rounded transition-colors ${
+                                                    className={`px-3 py-1.5 text-xs italic border rounded transition-colors ${
                                                         formData[layer.id].italic 
                                                             ? 'bg-teal-500 text-white border-teal-500' 
                                                             : 'bg-white text-gray-600 border-gray-300 hover:border-teal-500'
@@ -325,7 +326,7 @@ export function ManageCertificate() {
                                                 <button
                                                     type="button"
                                                     onClick={() => updateNestedState(layer.id, 'underline', !formData[layer.id].underline)}
-                                                    className={`px-3 py-1 text-xs underline border rounded transition-colors ${
+                                                    className={`px-3 py-1.5 text-xs underline border rounded transition-colors ${
                                                         formData[layer.id].underline 
                                                             ? 'bg-teal-500 text-white border-teal-500' 
                                                             : 'bg-white text-gray-600 border-gray-300 hover:border-teal-500'
