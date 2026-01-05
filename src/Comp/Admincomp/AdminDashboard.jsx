@@ -118,9 +118,9 @@ export default function AdminDashboard() {
             )}
 
             {/* Main */}
-            <div className="flex-1 flex flex-col min-h-screen min-w-0">
+            <div className="flex-1 flex flex-col h-screen min-w-0">
                 {/* Header */}
-                <header className="sticky top-0 z-30 border-b print:hidden" style={{ backgroundColor: '#FFFFFF', borderColor: '#2D3748' }}>
+                <header className="sticky top-0 z-30 border-b print:hidden" style={{ backgroundColor: '#FFFFFF', borderColor: 'rgba(0,0,0,0.1)' }}>
                     <div className="flex items-center justify-between px-6 py-4">
                         <div className="flex items-center gap-4">
                             <button onClick={() => setSidebarOpen(prev => !prev)} className="p-2 rounded-lg hover:bg-[#FF7F50]/20">
@@ -153,7 +153,7 @@ export default function AdminDashboard() {
                 </main>
 
                 {/* Footer */}
-                <footer className="px-6 py-4 text-center border-t print:hidden" style={{ backgroundColor: '#EDF2F7', borderColor: '#2D3748' }}>
+                <footer className="px-6 py-4 text-center border-t print:hidden" style={{ backgroundColor: '#FFFFFF', borderColor: 'rgba(0,0,0,0.1)' }}>
                     <p className="text-sm" style={{ color: '#2D3748' }}>
                         © 2025 <span style={{ color: '#FF7F50', fontWeight: '600' }}>DigiCoders Assessment Portal</span>
                     </p>

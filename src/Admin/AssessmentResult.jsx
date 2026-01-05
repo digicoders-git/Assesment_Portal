@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import React, { useState, useEffect, useRef } from 'react';
-import { Download, Search,  FileText, FileSpreadsheet, ChevronDown, ArrowLeft, Eye } from 'lucide-react';
+import { Download, Search, FileText, FileSpreadsheet, ChevronDown, ArrowLeft, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
@@ -296,7 +296,7 @@ export default function AssessmentResult() {
                                 Export Data
                                 <ChevronDown className="h-4 w-4" />
                             </button>
-                            
+
                             {showExportMenu && (
                                 <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[180px]">
                                     <button
@@ -323,7 +323,7 @@ export default function AssessmentResult() {
                                 </div>
                             )}
                         </div>
-                        
+
                         <button
                             onClick={handleDownloadPDF}
                             className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded border border-transparent transition-colors text-sm font-medium shadow-sm w-full sm:w-auto justify-center"
@@ -339,7 +339,7 @@ export default function AssessmentResult() {
                             type="text"
                             value={searchQuery}
                             onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-                            className="border border-gray-300 rounded px-3 py-1.5 w-full sm:w-64 focus:outline-none focus:border-teal-500 transition-colors text-sm"
+                            className="border bg-zinc-100 border-gray-300 rounded px-3 py-1.5 w-full sm:w-64 focus:outline-none focus:border-teal-500 transition-colors text-sm"
                         />
                     </div>
                 </div>
@@ -351,11 +351,10 @@ export default function AssessmentResult() {
                                 setActiveTab('first');
                                 setCurrentPage(1);
                             }}
-                            className={`px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors rounded whitespace-nowrap ${
-                                activeTab === 'first'
-                                    ? 'border-teal-500 text-white bg-teal-400'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                            }`}
+                            className={`px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors rounded whitespace-nowrap ${activeTab === 'first'
+                                ? 'border-teal-500 text-white bg-teal-400'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                }`}
                         >
                             First Submission ({firstSubmissions.length})
                         </button>
@@ -364,11 +363,10 @@ export default function AssessmentResult() {
                                 setActiveTab('second');
                                 setCurrentPage(1);
                             }}
-                            className={`px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors rounded whitespace-nowrap ${
-                                activeTab === 'second'
-                                    ? 'border-teal-500 text-teal-600 bg-orange-300 text-white'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                            }`}
+                            className={`px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors rounded whitespace-nowrap ${activeTab === 'second'
+                                ? 'border-teal-500 text-teal-600 bg-orange-300 text-white'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                }`}
                         >
                             Duplicate Submission ({secondSubmissions.length})
                         </button>
@@ -384,14 +382,14 @@ export default function AssessmentResult() {
                                     {activeTab === 'first' ? 'No First Submissions' : 'No Second Submissions'}
                                 </h3>
                                 <p className="text-gray-500">
-                                    {searchQuery ? 'No results found for your search.' : 
-                                     activeTab === 'first' ? 'No students have submitted their first attempt yet.' :
-                                     'No students have made a second submission yet.'}
+                                    {searchQuery ? 'No results found for your search.' :
+                                        activeTab === 'first' ? 'No students have submitted their first attempt yet.' :
+                                            'No students have made a second submission yet.'}
                                 </p>
                             </div>
                         </div>
                     ) : (
-                        <div className="h-full overflow-x-auto overflow-y-auto">
+                        <div className="h-full overflow-x-scroll overflow-y-hidden">
                             <table className="w-full text-sm text-left min-w-[1200px]">
                                 <thead className="bg-gray-50 text-gray-700 font-semibold border-b border-gray-200 sticky top-0 z-10">
                                     <tr>

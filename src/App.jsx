@@ -7,14 +7,6 @@ import "react-toastify/dist/ReactToastify.css";
 import { UserProvider } from "./context/UserContext";
 import AdminLogin from "./Admin/AdminLogin";
 import DashboardHome from "./Admin/DashboardHome";
-import {
-  ManageTopics,
-  ActiveAssessment,
-  AssessmentHistory,
-  ManageStudents,
-  ManageCertificate,
-  SecuritySettings
-} from "./Admin/AdminPages";
 import PrintPaper from "./Admin/PrintPaper";
 import PrintAssignedQuestions from "./Admin/PrintAssignedQuestions";
 import EditQuestions from "./Admin/EditQuestions";
@@ -25,6 +17,12 @@ import AssignQuestions from "./Admin/AssignQuestions";
 import AdminDashboard from "./Comp/Admincomp/AdminDashboard";
 import AcademicSetup from "./Admin/AcademicSetup";
 import StartedStudents from "./Admin/StartedStudents";
+import { ManageTopics } from "./Admin/ManageTopics";
+import { ActiveAssessment } from "./Admin/ActiveAssesment";
+import { AssessmentHistory } from "./Admin/AssessmentHistoryEnhanced";
+import { ManageStudents } from "./Admin/ManageStudents";
+import { SecuritySettings } from "./Admin/SecuritySettings";
+import { ManageCertificate } from "./Admin/ManageCertificate";
 
 function App() {
   return (
@@ -61,9 +59,13 @@ function App() {
           <Route path="/:code" element={<Login />} />
         </Routes>
       </Router>
-      <ToastContainer position="top-right" autoClose={2500} />
+      <ToastContainer position="top-right" autoClose={2000} />
     </UserProvider>
   )
 }
 
 export default App
+
+
+
+

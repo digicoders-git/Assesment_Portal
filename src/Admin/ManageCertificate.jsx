@@ -467,7 +467,7 @@ export function ManageCertificate() {
             {/* Header / Breadcrumb */}
             <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h2 className="text-3xl font-bold text-gray-800">Certificates</h2>
+                    <h2 className="text-3xl font-bold text-gray-800"></h2>
                     <div className="flex items-center gap-2 text-sm mt-1">
                         <span className="text-teal-600 font-semibold cursor-pointer" onClick={() => navigate('/admin/dashboard')}>Dashboard</span>
                         <span className="text-gray-400">/</span>

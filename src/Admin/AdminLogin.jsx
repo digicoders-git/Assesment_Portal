@@ -15,7 +15,6 @@ export default function AdminLogin() {
             login({
                 name: 'Admin User',
                 email: username,
-                image: null,
                 role: 'admin'
             });
             toast.success("Login Successful");
@@ -39,7 +38,7 @@ export default function AdminLogin() {
                     {/* Form Fields */}
                     <div className="space-y-6">
                         <div>
-                            <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 ml-1">Username / Email</label>
+                            <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 ml-1">Username</label>
                             <div className="relative">
                                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-300" />
                                 <input
@@ -53,7 +52,7 @@ export default function AdminLogin() {
                         </div>
 
                         <div>
-                            <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 ml-1">Access Token / Password</label>
+                            <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 ml-1">Password</label>
                             <div className="relative">
                                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-300" />
                                 <input

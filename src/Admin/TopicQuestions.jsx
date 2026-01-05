@@ -332,7 +332,7 @@ export default function TopicQuestions() {
                     placeholder="Search questions..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="border border-gray-300 rounded px-3 py-2 w-full sm:w-64"
+                    className="bg-zinc-100 border border-gray-300 rounded px-3 py-2 w-full sm:w-64"
                 />
             </div>
 
@@ -611,13 +611,15 @@ export default function TopicQuestions() {
                             >
                                 Cancel
                             </button>
-                            <button
-                                onClick={addNewQuestionForm}
-                                className="flex items-center gap-2 bg-[#319795] hover:bg-[#2B7A73] text-white px-3 py-1.5 rounded text-sm order-2"
-                            >
-                                <Plus className="h-4 w-4" />
-                                Add Another
-                            </button>
+                            {!editingQuestion && (
+                                <button
+                                    onClick={addNewQuestionForm}
+                                    className="flex items-center gap-2 bg-[#319795] hover:bg-[#2B7A73] text-white px-3 py-1.5 rounded text-sm order-2"
+                                >
+                                    <Plus className="h-4 w-4" />
+                                    Add Another
+                                </button>
+                            )}
                             <button
                                 onClick={handleSave}
                                 className="bg-[#319795] hover:bg-[#2B7A73] text-white px-4 py-2 rounded order-1 sm:order-2"

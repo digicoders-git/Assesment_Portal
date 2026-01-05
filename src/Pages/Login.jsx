@@ -10,12 +10,10 @@ export default function DigiCodersPortal() {
         name: '',
         email: '',
         mobile: '',
-        batch: '',
         college: '',
         year: '',
         course: '',
         code: '',
-        testName: ''
     });
 
     const [collegeSearch, setCollegeSearch] = useState('');
@@ -236,7 +234,6 @@ export default function DigiCodersPortal() {
             name: formData.name,
             mobile: formData.mobile,
             code: formData.code,
-            testName: formData.testName,
             submissionDate: new Date().toISOString(),
             isLoggedIn: true
         });

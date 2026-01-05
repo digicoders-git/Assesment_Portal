@@ -6,16 +6,29 @@ import { toast } from 'react-toastify';
 
 
 
-
-
-export function AssessmentHistory() {
+export function ActiveAssessment() {
     const navigate = useNavigate();
-    const [searchQuery, setSearchQuery] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingAssessment, setEditingAssessment] = useState(null);
     const [assessments, setAssessments] = useState([]);
+    const [certificateSearch, setCertificateSearch] = useState('');
+    const [showCertificateDropdown, setShowCertificateDropdown] = useState(false);
     const certificateRef = useRef(null);
 
+
+    // Add click outside handler for certificate dropdown
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            const dropdown = document.querySelector('.certificate-dropdown');
+            if (dropdown && !dropdown.contains(event.target)) {
+                setShowCertificateDropdown(false);
+            }
+        };
+        if (showCertificateDropdown) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [showCertificateDropdown]);
 
     // Helper function to convert datetime to Kolkata timezone
     const toKolkataTime = (dateTime) => {
@@ -30,6 +43,41 @@ export function AssessmentHistory() {
             minute: '2-digit'
         }).format(date).replace(' ', 'T');
     };
+
+    useEffect(() => {
+        const saved = localStorage.getItem('all_assessments');
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            // Filter: ONLY active status
+            const activeOnes = parsed.filter(item => item.status === true);
+            setAssessments(activeOnes);
+        } else {
+            const initial = [
+                {
+                    id: 1,
+                    status: true,
+                    currentQuestions: 100,
+                    totalQuestions: 100,
+                    name: "Skill Up Test by DigiCoders",
+                    duration: "30 Min",
+                    code: "DCT2025",
+                    attempts: 6780,
+                    startedAttempts: 4200,
+                    submittedAttempts: 2580,
+                    startTime: "2025-12-13T11:46",
+                    endTime: "2025-12-13T23:46",
+                    remark: "Skill Up Test by DigiCoders 13 Dec 2025",
+                    hasCertificate: true,
+                    certificateType: "Custom",
+                    includeAssessmentName: true,
+                    includeAssessmentCode: true,
+                    includeStudentName: true
+                }
+            ];
+            localStorage.setItem('all_assessments', JSON.stringify(initial));
+            setAssessments(initial);
+        }
+    }, []);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -48,20 +96,10 @@ export function AssessmentHistory() {
     }, []);
 
 
-    useEffect(() => {
-        const saved = localStorage.getItem('all_assessments');
-        if (saved) {
-            const parsed = JSON.parse(saved);
-            // Filter: ONLY inactive status
-            const inactiveOnes = parsed.filter(item => item.status === false);
-            setAssessments(inactiveOnes);
-        }
-    }, []);
-
     const updateGlobalAssessments = (newList) => {
         localStorage.setItem('all_assessments', JSON.stringify(newList));
-        const inactiveOnes = newList.filter(item => item.status === false);
-        setAssessments(inactiveOnes);
+        const activeOnes = newList.filter(item => item.status === true);
+        setAssessments(activeOnes);
     };
 
     const handleCopyCode = (code) => {
@@ -107,6 +145,7 @@ export function AssessmentHistory() {
         document.body.removeChild(link);
     };
 
+    // Form State
     const [formData, setFormData] = useState({
         name: '',
         code: '',
@@ -117,7 +156,10 @@ export function AssessmentHistory() {
         hasCertificate: 'No',
         certificateType: 'Default',
         certificateName: '',
-        remark: ''
+        remark: '',
+        includeAssessmentName: 'Yes',
+        includeAssessmentCode: 'Yes',
+        includeStudentName: 'Yes'
     });
 
     // Certificate options
@@ -129,8 +171,6 @@ export function AssessmentHistory() {
         { id: 5, name: 'Excellence Certificate' }
     ];
 
-    const [certificateSearch, setCertificateSearch] = useState('');
-    const [showCertificateDropdown, setShowCertificateDropdown] = useState(false);
 
     const filteredCertificates = certificateOptions.filter(cert =>
         cert.name.toLowerCase().includes(certificateSearch.toLowerCase())
@@ -147,8 +187,14 @@ export function AssessmentHistory() {
             endTime: toKolkataTime(assessment.endTime),
             hasCertificate: assessment.hasCertificate ? 'Yes' : 'No',
             certificateType: assessment.certificateType || 'Default',
-            remark: assessment.remark
+            certificateName: assessment.certificateName || '',
+            remark: assessment.remark,
+            includeAssessmentName: assessment.includeAssessmentName ? 'Yes' : 'No',
+            includeAssessmentCode: assessment.includeAssessmentCode ? 'Yes' : 'No',
+            includeStudentName: assessment.includeStudentName ? 'Yes' : 'No'
         });
+        setCertificateSearch(assessment.certificateName || '');
+        setShowCertificateDropdown(false);
         setIsModalOpen(true);
     };
 
@@ -163,8 +209,14 @@ export function AssessmentHistory() {
             endTime: '',
             hasCertificate: 'No',
             certificateType: 'Default',
-            remark: ''
+            certificateName: '',
+            remark: '',
+            includeAssessmentName: 'Yes',
+            includeAssessmentCode: 'Yes',
+            includeStudentName: 'Yes'
         });
+        setCertificateSearch('');
+        setShowCertificateDropdown(false);
         setIsModalOpen(true);
     };
 
@@ -217,7 +269,10 @@ export function AssessmentHistory() {
                 hasCertificate: formData.hasCertificate === 'Yes',
                 certificateType: formData.hasCertificate === 'Yes' ? formData.certificateType : null,
                 certificateName: formData.hasCertificate === 'Yes' ? certificateSearch : '',
-                remark: formData.remark
+                remark: formData.remark,
+                includeAssessmentName: formData.includeAssessmentName === 'Yes',
+                includeAssessmentCode: formData.includeAssessmentCode === 'Yes',
+                includeStudentName: formData.includeStudentName === 'Yes'
             } : a);
             updateGlobalAssessments(newList);
         } else {
@@ -230,12 +285,17 @@ export function AssessmentHistory() {
                 duration: `${formData.duration} Min`,
                 code: formData.code,
                 attempts: 0,
+                startedAttempts: 0,
+                submittedAttempts: 0,
                 startTime: formData.startTime,
                 endTime: formData.endTime,
                 remark: formData.remark,
                 hasCertificate: formData.hasCertificate === 'Yes',
                 certificateType: formData.hasCertificate === 'Yes' ? formData.certificateType : null,
-                certificateName: formData.hasCertificate === 'Yes' ? certificateSearch : ''
+                certificateName: formData.hasCertificate === 'Yes' ? certificateSearch : '',
+                includeAssessmentName: formData.includeAssessmentName === 'Yes',
+                includeAssessmentCode: formData.includeAssessmentCode === 'Yes',
+                includeStudentName: formData.includeStudentName === 'Yes'
             }, ...saved];
             updateGlobalAssessments(newList);
         }
@@ -277,7 +337,7 @@ export function AssessmentHistory() {
                 <div className="flex items-center gap-2 text-sm">
                     <span className="text-[#319795] font-semibold">Assessment</span>
                     <span className="text-gray-400">/</span>
-                    <span className="text-[#2D3748]">Assessment History</span>
+                    <span className="text-[#2D3748]">Active Assessment</span>
                 </div>
             </div>
 
@@ -290,21 +350,11 @@ export function AssessmentHistory() {
                     <Plus className="h-4 w-4 text-white" />
                     Add Assessment
                 </button>
-
-                <div className="relative w-full sm:w-auto flex items-center gap-2">
-                    <span className="text-sm text-[#2D3748]">Search:</span>
-                    <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="border border-gray-300 rounded px-3 py-1.5 w-64 focus:outline-none focus:border-[#319795] transition-colors text-sm"
-                    />
-                </div>
             </div>
 
             {/* Table */}
             <div className="bg-white rounded-lg border border-[#E6FFFA] overflow-hidden">
-                <div className="overflow-x-auto custom-scrollbar">
+                <div className="overflow-x-auto custom-scrollbar ">
                     <table className="w-full text-sm text-left whitespace-nowrap">
                         <thead className="bg-[#E6FFFA] text-[#2D3748] font-semibold border-b border-[#319795]">
                             <tr>
@@ -325,13 +375,13 @@ export function AssessmentHistory() {
                                     <td colSpan="9" className="px-4 py-20 text-center">
                                         <div className="flex flex-col items-center justify-center text-gray-400">
                                             <Search className="h-12 w-12 mb-4 opacity-20" />
-                                            <p className="text-lg font-bold">No Assessment History</p>
-                                            <p className="text-sm">Create an assessment to see it here.</p>
+                                            <p className="text-lg font-bold">No Active Assessments</p>
+                                            <p className="text-sm">Activate an assessment from history to see it here.</p>
                                         </div>
                                     </td>
                                 </tr>
                             ) : assessments.map((item, index) => (
-                                <tr key={item.id}>
+                                <tr key={item.id} >
                                     <td className="px-4 py-3 align-top">{index + 1}</td>
                                     <td className="px-4 py-3 align-top">
                                         <label className="relative inline-flex items-center cursor-pointer">
@@ -380,10 +430,10 @@ export function AssessmentHistory() {
                                         </div>
                                         <div className="space-y-1 space-x-1">
                                             <div className="text-xs bg-[#319795]/20 text-[#2B7A73] inline-block px-1.5 rounded">
-                                                Start: {Math.floor((item.attempts || 0) * 0.62)}
+                                                Start: {item.startedAttempts || Math.floor((item.attempts || 0) * 0.62)}
                                             </div>
                                             <div className="text-xs bg-[#F56565]/20 text-[#B8322F] inline-block px-1.5 rounded">
-                                                Submit: {Math.floor((item.attempts || 0) * 0.38)}
+                                                Submit: {item.submittedAttempts || Math.floor((item.attempts || 0) * 0.38)}
                                             </div>
                                         </div>
                                     </td>
@@ -393,7 +443,7 @@ export function AssessmentHistory() {
                                     </td>
                                     <td className="px-4 py-3 align-top text-[#2D3748]">{item.remark}</td>
                                     <td className="px-4 py-3 align-top text-[#2D3748]">
-                                        <div>{item.hasCertificate ? 'Yes' : 'No'} </div>
+                                        <div>{item.hasCertificate ? 'Yes' : 'No'}</div>
                                         <div className="text-xs text-gray-400">{item.name}</div>
                                     </td>
                                     <td className="px-4 py-3 align-top">
@@ -433,6 +483,14 @@ export function AssessmentHistory() {
                         </tbody>
                     </table>
                 </div>
+                <div className="px-4 py-3 border-t border-[#E6FFFA] text-xs text-[#2D3748] flex justify-between items-center">
+                    <span>Showing 1 to {assessments.length} of {assessments.length} entries</span>
+                    <div className="flex gap-1">
+                        <span className="text-gray-400">Previous</span>
+                        <span className="font-medium text-[#2D3748]">1</span>
+                        <span className="text-gray-400">Next</span>
+                    </div>
+                </div>
             </div>
 
             {/* Modal */}
@@ -447,7 +505,6 @@ export function AssessmentHistory() {
                         </div>
 
                         <div className="p-6 overflow-y-auto custom-scrollbar space-y-4">
-                            {/* Form fields same as ActiveAssessment */}
                             <div>
                                 <label className="block text-xs font-semibold text-gray-600 mb-1">Assessment Name<span className="text-red-500">*</span></label>
                                 <input
@@ -508,7 +565,7 @@ export function AssessmentHistory() {
                                     <label className="flex items-center gap-2 text-sm text-gray-600">
                                         <input
                                             type="radio"
-                                            name="cert_history"
+                                            name="cert_active"
                                             checked={formData.hasCertificate === 'Yes'}
                                             onChange={() => setFormData({ ...formData, hasCertificate: 'Yes' })}
                                             className="text-[#319795] focus:ring-[#319795]"
@@ -517,7 +574,7 @@ export function AssessmentHistory() {
                                     <label className="flex items-center gap-2 text-sm text-gray-600">
                                         <input
                                             type="radio"
-                                            name="cert_history"
+                                            name="cert_active"
                                             checked={formData.hasCertificate === 'No'}
                                             onChange={() => setFormData({ ...formData, hasCertificate: 'No' })}
                                             className="text-[#319795] focus:ring-[#319795]"
@@ -527,7 +584,10 @@ export function AssessmentHistory() {
                             </div>
                             {formData.hasCertificate === 'Yes' && (
                                 <div className="relative" ref={certificateRef}>
-                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Choose Certificate Name</label>
+                                    <label className="block text-xs font-semibold text-gray-600 mb-1">
+                                        Choose Certificate Name
+                                    </label>
+
                                     <input
                                         type="text"
                                         value={certificateSearch}
@@ -539,28 +599,36 @@ export function AssessmentHistory() {
                                         placeholder="Search certificate..."
                                         className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#319795]"
                                     />
+
                                     {showCertificateDropdown && (
                                         <div className="absolute z-10 w-full bg-white border border-gray-300 rounded mt-1 max-h-40 overflow-y-auto">
-                                            {filteredCertificates.map((cert) => (
-                                                <div
-                                                    key={cert.id}
-                                                    onClick={() => {
-                                                        setFormData({ ...formData, certificateName: cert.name });
-                                                        setCertificateSearch(cert.name);
-                                                        setShowCertificateDropdown(false);
-                                                    }}
-                                                    className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
-                                                >
-                                                    {cert.name}
+                                            {filteredCertificates.length > 0 ? (
+                                                filteredCertificates.map((cert) => (
+                                                    <div
+                                                        key={cert.id}
+                                                        onClick={() => {
+                                                            setCertificateSearch(cert.name);
+                                                            setFormData({
+                                                                ...formData,
+                                                                certificateName: cert.name
+                                                            });
+                                                            setShowCertificateDropdown(false);
+                                                        }}
+                                                        className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                                                    >
+                                                        {cert.name}
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="px-3 py-2 text-gray-500 text-sm">
+                                                    No certificates found
                                                 </div>
-                                            ))}
-                                            {filteredCertificates.length === 0 && (
-                                                <div className="px-3 py-2 text-gray-500 text-sm">No certificates found</div>
                                             )}
                                         </div>
                                     )}
                                 </div>
                             )}
+
                             <div>
                                 <label className="block text-xs font-semibold text-gray-600 mb-1">Remark</label>
                                 <input

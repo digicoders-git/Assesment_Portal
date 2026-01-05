@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef} from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronRight, Save, Search, CheckCircle2, Circle, BookOpen, Download, ArrowLeft, Trash2 } from 'lucide-react';
 import { toast } from 'react-toastify';
+import Swal from 'sweetalert2';
 
 export default function AssignQuestions() {
     const { id } = useParams();
@@ -11,11 +12,32 @@ export default function AssignQuestions() {
     const [isTopicDropdownOpen, setIsTopicDropdownOpen] = useState(false);
     const [assignedQuestions, setAssignedQuestions] = useState([]);
     const [assignedSearchQuery, setAssignedSearchQuery] = useState('');
+    const topicDropdownRef = useRef(null);
+
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
 
+
+    useEffect(() => {
+    const handleClickOutside = (event) => {
+        if (
+            topicDropdownRef.current &&
+            !topicDropdownRef.current.contains(event.target)
+        ) {
+            setIsTopicDropdownOpen(false);
+        }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+    };
+}, []);
+
+
     // Load already assigned questions
-    React.useEffect(() => {
+    useEffect(() => {
         const storageKey = `assessment_${id}_assigned_questions`;
         const assigned = JSON.parse(localStorage.getItem(storageKey) || '[]');
         setAssignedQuestions(assigned);
@@ -136,16 +158,29 @@ export default function AssignQuestions() {
     };
 
     const handleRemoveQuestion = (questionId) => {
-        const updatedAssigned = assignedQuestions.filter(q => q.id !== questionId);
-        setAssignedQuestions(updatedAssigned);
-        
-        const storageKey = `assessment_${id}_questions`;
-        const assignedKey = `assessment_${id}_assigned_questions`;
-        
-        localStorage.setItem(storageKey, updatedAssigned.length);
-        localStorage.setItem(assignedKey, JSON.stringify(updatedAssigned));
-        
-        toast.success("Question removed successfully!");
+        Swal.fire({
+            title: 'Remove Question?',
+            text: 'Are you sure you want to remove this question from the assessment?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#F56565',
+            cancelButtonColor: '#319795',
+            confirmButtonText: 'Yes, Remove!',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const updatedAssigned = assignedQuestions.filter(q => q.id !== questionId);
+                setAssignedQuestions(updatedAssigned);
+                
+                const storageKey = `assessment_${id}_questions`;
+                const assignedKey = `assessment_${id}_assigned_questions`;
+                
+                localStorage.setItem(storageKey, updatedAssigned.length);
+                localStorage.setItem(assignedKey, JSON.stringify(updatedAssigned));
+                
+                toast.success("Question removed successfully!");
+            }
+        });
     };
 
     const handleSave = () => {
@@ -297,7 +332,7 @@ export default function AssignQuestions() {
                 </div>
             </div>
 
-            <div className="flex flex-col md:flex-row gap-4 items-center mb-6">
+            <div ref={topicDropdownRef} className="flex flex-col md:flex-row gap-4 items-center mb-6">
                 <div className="relative w-full md:w-72">
                     <button
                         onClick={() => setIsTopicDropdownOpen(!isTopicDropdownOpen)}
@@ -388,7 +423,7 @@ export default function AssignQuestions() {
                                 value={assignedSearchQuery}
                                 onChange={(e) => setAssignedSearchQuery(e.target.value)}
                                 placeholder="Search assigned questions..."
-                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-[#319795] transition-colors"
+                                className="bg-white w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-[#319795] transition-colors"
                             />
                         </div>
                     </div>

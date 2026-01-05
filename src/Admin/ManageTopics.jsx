@@ -1,260 +1,227 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Save, X, BookOpen, HelpCircle } from 'lucide-react';
-import { toast } from 'react-toastify';
-import Swal from 'sweetalert2';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Swal from 'sweetalert2';
+import { Plus, Edit, Trash2, X } from 'lucide-react';
+import { toast } from 'react-toastify';
 
-export default function ManageTopics() {
+
+export function ManageTopics() {
     const navigate = useNavigate();
-    const [topics, setTopics] = useState([]);
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [topicName, setTopicName] = useState('');
     const [editingTopic, setEditingTopic] = useState(null);
-    const [formData, setFormData] = useState({ name: '', description: '' });
 
-    // Load topics from localStorage on component mount
-    useEffect(() => {
-        const savedTopics = JSON.parse(localStorage.getItem('manage_topics') || '[]');
-        if (savedTopics.length === 0) {
-            // Default topics if none exist
-            const defaultTopics = [
-                { id: 1, name: 'TECHNICAL TEST', description: 'Technical programming questions', createdAt: new Date().toISOString() },
-                { id: 2, name: 'Tech Interview Test', description: 'Technical interview questions', createdAt: new Date().toISOString() },
-                { id: 3, name: 'Interview Questions', description: 'General interview questions', createdAt: new Date().toISOString() }
-            ];
-            setTopics(defaultTopics);
-            localStorage.setItem('manage_topics', JSON.stringify(defaultTopics));
-        } else {
-            setTopics(savedTopics);
+    const [topics, setTopics] = useState([
+        { id: 1, name: 'TECHNICAL TEST', questions: 2, status: true },
+        { id: 2, name: 'Tech Interview Test', questions: 0, status: true },
+        { id: 3, name: 'Interview Questions', questions: 0, status: true },
+    ]);
+
+    const filteredTopics = topics.filter(topic =>
+        topic.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    const handleSubmit = () => {
+        if (topicName.trim()) {
+            if (editingTopic) {
+                setTopics(topics.map(topic =>
+                    topic.id === editingTopic.id ? { ...topic, name: topicName } : topic
+                ));
+                toast.success("Topic Updated Successfully!");
+                setEditingTopic(null);
+            } else {
+                const newTopic = {
+                    id: topics.length + 1,
+                    name: topicName,
+                    questions: 0,
+                    status: true
+                };
+                setTopics([newTopic, ...topics]);
+                toast.success("Topic Added Successfully!");
+            }
+            setTopicName('');
+            setIsDialogOpen(false);
         }
-    }, []);
-
-    // Save topics to localStorage whenever topics change
-    useEffect(() => {
-        if (topics.length > 0) {
-            localStorage.setItem('manage_topics', JSON.stringify(topics));
-        }
-    }, [topics]);
-
-    const handleAdd = () => {
-        setEditingTopic(null);
-        setFormData({ name: '', description: '' });
-        setIsModalOpen(true);
     };
 
-    const handleEdit = (topic) => {
+    const handleEditTopic = (topic) => {
         setEditingTopic(topic);
-        setFormData({ name: topic.name, description: topic.description || '' });
-        setIsModalOpen(true);
+        setTopicName(topic.name);
+        setIsDialogOpen(true);
     };
 
-    const handleSave = () => {
-        if (!formData.name.trim()) {
-            toast.error('Topic name is required!');
-            return;
-        }
-
-        // Check for duplicate names (excluding current editing topic)
-        const isDuplicate = topics.some(topic => 
-            topic.name.toLowerCase() === formData.name.toLowerCase() && 
-            topic.id !== editingTopic?.id
-        );
-
-        if (isDuplicate) {
-            toast.error('Topic name already exists!');
-            return;
-        }
-
-        if (editingTopic) {
-            setTopics(topics.map(topic => 
-                topic.id === editingTopic.id 
-                    ? { ...topic, name: formData.name.trim(), description: formData.description.trim() }
-                    : topic
-            ));
-            toast.success('Topic updated successfully');
-        } else {
-            const newTopic = {
-                id: Date.now(),
-                name: formData.name.trim(),
-                description: formData.description.trim(),
-                createdAt: new Date().toISOString()
-            };
-            setTopics([...topics, newTopic]);
-            toast.success('Topic added successfully');
-        }
-        
-        setIsModalOpen(false);
+    const toggleStatus = (id) => {
+        setTopics(topics.map(topic =>
+            topic.id === id ? { ...topic, status: !topic.status } : topic
+        ));
+        toast.info("Status updated");
     };
 
-    const handleDelete = (id) => {
+    const handleDeleteTopic = (id) => {
         Swal.fire({
-            title: 'Are you sure?',
-            text: "This will also delete all questions in this topic!",
-            icon: 'warning',
+            title: "Are you sure?",
+            text: "All questions in this topic will also be hidden!",
+            icon: "warning",
             showCancelButton: true,
-            confirmButtonColor: '#319795',
-            cancelButtonColor: '#f56565',
-            confirmButtonText: 'Yes, delete it!'
+            confirmButtonColor: "#319795",
+            cancelButtonColor: "#f56565",
+            confirmButtonText: "Yes, delete it!"
         }).then((result) => {
             if (result.isConfirmed) {
                 setTopics(topics.filter(topic => topic.id !== id));
-                
-                // Also remove questions for this topic
-                const questionsKey = `topic_${id}_questions`;
-                localStorage.removeItem(questionsKey);
-                
-                toast.success('Topic and its questions deleted successfully');
+                toast.success("Topic deleted successfully");
             }
         });
     };
 
-    const getQuestionCount = (topicId) => {
-        const questionsKey = `topic_${topicId}_questions`;
-        const questions = JSON.parse(localStorage.getItem(questionsKey) || '[]');
-        return questions.length;
-    };
-
-    const handleManageQuestions = (topicId) => {
-        navigate(`/admin/topic-questions/${topicId}`);
-    };
-
     return (
-        <div className="p-6 bg-[#F7FAFC] min-h-screen">
-            {/* Header */}
-            <div className="mb-8">
-                <h1 className="text-3xl font-bold text-[#2D3748] mb-2">Manage Topics</h1>
-                <p className="text-gray-600">Create and manage question topics for assessments</p>
-            </div>
-
-            {/* Add Button */}
+        <div className="p-6">
+            {/* Breadcrumb */}
             <div className="mb-6">
-                <button
-                    onClick={handleAdd}
-                    className="flex items-center gap-2 bg-[#319795] hover:bg-[#2B7A73] text-white px-4 py-2 rounded-lg font-medium transition-all"
-                >
-                    <Plus className="h-4 w-4" />
-                    Add New Topic
-                </button>
+                <div className="flex items-center gap-2 text-sm">
+                    <span className="text-[#319795] font-semibold">Topics</span>
+                    <span className="text-gray-400">/</span>
+                    <span className="text-gray-700">Manage Topics</span>
+                </div>
             </div>
 
-            {/* Topics Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {topics.map((topic) => (
-                    <div key={topic.id} className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow">
-                        <div className="flex items-start justify-between mb-4">
-                            <div className="flex items-center gap-3">
-                                <div className="bg-[#319795] p-2 rounded-lg">
-                                    <BookOpen className="h-5 w-5 text-white" />
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-gray-800 text-lg">{topic.name}</h3>
-                                    <p className="text-sm text-gray-500">{getQuestionCount(topic.id)} Questions</p>
-                                </div>
-                            </div>
-                            <div className="flex gap-1">
-                                <button 
-                                    onClick={() => handleEdit(topic)} 
-                                    className="p-2 text-blue-600 hover:bg-blue-50 rounded"
-                                    title="Edit Topic"
-                                >
-                                    <Edit className="h-4 w-4" />
-                                </button>
-                                <button 
-                                    onClick={() => handleDelete(topic.id)} 
-                                    className="p-2 text-red-600 hover:bg-red-50 rounded"
-                                    title="Delete Topic"
-                                >
-                                    <Trash2 className="h-4 w-4" />
-                                </button>
-                            </div>
-                        </div>
-                        
-                        {topic.description && (
-                            <p className="text-gray-600 text-sm mb-4">{topic.description}</p>
-                        )}
-                        
-                        <div className="flex gap-2">
+            {/* Add Topic Button and Search */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                <button
+                    onClick={() => {
+                        setEditingTopic(null);
+                        setTopicName('');
+                        setIsDialogOpen(true);
+                    }}
+                    className="flex items-center gap-2 bg-[#319795] hover:bg-[#2B7A73] text-white px-5 py-2.5 rounded-lg font-medium transition-colors"
+                >
+                    <Plus className="h-5 w-5" />
+                    Add Topic
+                </button>
+
+                <div className="relative w-full sm:w-auto">
+                    <span className="text-sm text-gray-700 mr-2">Search:</span>
+                    <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search Topic"
+                        className="border border-gray-300 rounded px-3 py-1.5 w-48 focus:outline-none focus:border-[#319795] transition-colors"
+                    />
+                </div>
+            </div>
+
+            {/* Table */}
+            <div className="bg-white rounded-lg overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="w-full whitespace-nowrap">
+                        <thead>
+                            <tr className="bg-[#E6FFFA] border-b border-[#B2F5EA]">
+                                <th className="text-left px-6 py-4 text-sm font-semibold text-[#2D3748]">Sr.No.</th>
+                                <th className="text-left px-6 py-4 text-sm font-semibold text-[#2D3748]">Status</th>
+                                <th className="text-left px-6 py-4 text-sm font-semibold text-[#2D3748]">Topic Name</th>
+                                <th className="text-left px-6 py-4 text-sm font-semibold text-[#2D3748]">Add Question</th>
+                                <th className="text-left px-6 py-4 text-sm font-semibold text-[#2D3748]">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filteredTopics.map((topic, index) => (
+                                <tr key={topic.id} className="border-b border-gray-100 hover:bg-[#E6FFFA] transition-colors">
+                                    <td className="px-6 py-4 text-[#2D3748]">{index + 1}</td>
+                                    <td className="px-6 py-4">
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={topic.status}
+                                                onChange={() => toggleStatus(topic.id)}
+                                                className="sr-only peer"
+                                            />
+                                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#319795]"></div>
+                                        </label>
+                                    </td>
+                                    <td className="px-6 py-4 text-[#2D3748]">{topic.name}</td>
+                                    <td className="px-6 py-4">
+                                        <button
+                                            onClick={() => navigate(`/admin/topic-questions/${topic.id}`)}
+                                            className="bg-[#319795] hover:bg-[#2B7A73] text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                                        >
+                                            Questions ({topic.questions})
+                                        </button>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={() => navigate(`/admin/print/${topic.id}`)}
+                                                className="text-[#319795] hover:text-[#2B7A73] border border-[#319795] hover:border-[#2B7A73] px-3 py-1.5 rounded text-sm font-medium transition-colors"
+                                            >
+                                                Print
+                                            </button>
+                                            <button
+                                                onClick={() => handleEditTopic(topic)}
+                                                className="text-blue-600 hover:text-blue-700 border border-blue-600 hover:border-blue-700 p-1.5 rounded transition-colors"
+                                            >
+                                                <Edit className="h-4 w-4" />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeleteTopic(topic.id)}
+                                                className="text-red-600 hover:text-red-700 border border-red-600 hover:border-red-700 p-1.5 rounded transition-colors"
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* Pagination */}
+                <div className="px-6 py-4 border-t border-gray-200 flex justify-between items-center text-sm text-gray-600">
+                    <div>Showing 1 to {filteredTopics.length} of {topics.length} entries</div>
+                    <div className="flex items-center gap-2">
+                        <button className="px-3 py-1 hover:bg-gray-100 rounded transition-colors">Previous</button>
+                        <button className="px-3 py-1 bg-[#319795] text-white rounded">1</button>
+                        <button className="px-3 py-1 hover:bg-gray-100 rounded transition-colors">Next</button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Add Topic Dialog */}
+            {isDialogOpen && (
+                <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all">
+                    <div className="bg-white rounded-lg max-w-md w-full transform transition-all scale-100">
+                        <div className="flex items-center justify-between px-6 py-4 bg-[#319795] text-white rounded-t-lg">
+                            <h3 className="text-xl font-semibold">{editingTopic ? 'Edit Topic' : 'Add Topic'}</h3>
                             <button
-                                onClick={() => handleManageQuestions(topic.id)}
-                                className="flex-1 flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded text-sm font-medium transition-all"
+                                onClick={() => setIsDialogOpen(false)}
+                                className="text-white hover:text-gray-200 transition-colors"
                             >
-                                <HelpCircle className="h-4 w-4" />
-                                Manage Questions
+                                <X className="h-6 w-6" />
                             </button>
                         </div>
-                        
-                        <div className="mt-3 text-xs text-gray-400">
-                            Created: {new Date(topic.createdAt).toLocaleDateString()}
-                        </div>
-                    </div>
-                ))}
-            </div>
-
-            {topics.length === 0 && (
-                <div className="text-center py-12">
-                    <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Topics Yet</h3>
-                    <p className="text-gray-500 mb-4">Create your first topic to get started</p>
-                    <button
-                        onClick={handleAdd}
-                        className="bg-[#319795] hover:bg-[#2B7A73] text-white px-4 py-2 rounded-lg font-medium"
-                    >
-                        Add First Topic
-                    </button>
-                </div>
-            )}
-
-            {/* Modal */}
-            {isModalOpen && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg w-full max-w-md">
                         <div className="p-6">
-                            <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-lg font-bold text-gray-800">
-                                    {editingTopic ? 'Edit Topic' : 'Add New Topic'}
-                                </h3>
-                                <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600">
-                                    <X className="h-5 w-5" />
-                                </button>
-                            </div>
-
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Topic Name *</label>
-                                    <input
-                                        type="text"
-                                        value={formData.name}
-                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-[#319795] outline-none"
-                                        placeholder="Enter topic name"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                                    <textarea
-                                        value={formData.description}
-                                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-[#319795] outline-none"
-                                        placeholder="Enter topic description (optional)"
-                                        rows="3"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="flex gap-3 mt-6">
-                                <button
-                                    onClick={() => setIsModalOpen(false)}
-                                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={handleSave}
-                                    className="flex-1 px-4 py-2 bg-[#319795] text-white rounded-lg hover:bg-[#2B7A73] flex items-center justify-center gap-2"
-                                >
-                                    <Save className="h-4 w-4" />
-                                    Save
-                                </button>
-                            </div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Topic Name <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                value={topicName}
+                                onChange={(e) => setTopicName(e.target.value)}
+                                placeholder="Assessment Name"
+                                className="w-full border border-gray-300 rounded px-4 py-2.5 focus:outline-none focus:border-[#319795] transition-colors"
+                                autoFocus
+                            />
+                        </div>
+                        <div className="px-6 pb-6">
+                            <button
+                                onClick={handleSubmit}
+                                className="w-full bg-[#319795] hover:bg-[#2B7A73] text-white py-2.5 rounded font-medium transition-colors flex items-center justify-center gap-2"
+                            >
+                                <span className="inline-block w-5 h-5 bg-white rounded-full flex items-center justify-center text-[#319795] text-xs">✓</span>
+                                Submit
+                            </button>
                         </div>
                     </div>
                 </div>
