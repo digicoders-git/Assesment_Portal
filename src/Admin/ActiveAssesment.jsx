@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { Plus, Search, Edit, Trash2, X, Copy, Link } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { getAssessmentByStatusApi } from '../API/assesment';
 
 
 
@@ -45,39 +46,18 @@ export function ActiveAssessment() {
     };
 
     useEffect(() => {
-        const saved = localStorage.getItem('all_assessments');
-        if (saved) {
-            const parsed = JSON.parse(saved);
-            // Filter: ONLY active status
-            const activeOnes = parsed.filter(item => item.status === true);
-            setAssessments(activeOnes);
-        } else {
-            const initial = [
-                {
-                    id: 1,
-                    status: true,
-                    currentQuestions: 100,
-                    totalQuestions: 100,
-                    name: "Skill Up Test by DigiCoders",
-                    duration: "30 Min",
-                    code: "DCT2025",
-                    attempts: 6780,
-                    startedAttempts: 4200,
-                    submittedAttempts: 2580,
-                    startTime: "2025-12-13T11:46",
-                    endTime: "2025-12-13T23:46",
-                    remark: "Skill Up Test by DigiCoders 13 Dec 2025",
-                    hasCertificate: true,
-                    certificateType: "Custom",
-                    includeAssessmentName: true,
-                    includeAssessmentCode: true,
-                    includeStudentName: true
-                }
-            ];
-            localStorage.setItem('all_assessments', JSON.stringify(initial));
-            setAssessments(initial);
-        }
+        fetchAssessments();
     }, []);
+
+    const fetchAssessments = async () => {
+        try {
+            const response = await getAssessmentByStatusApi(true);
+            setAssessments(response.assessments || []);
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to fetch assessments');
+            setAssessments([]);
+        }
+    };
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -381,14 +361,14 @@ export function ActiveAssessment() {
                                     </td>
                                 </tr>
                             ) : assessments.map((item, index) => (
-                                <tr key={item.id} >
+                                <tr key={item._id} >
                                     <td className="px-4 py-3 align-top">{index + 1}</td>
                                     <td className="px-4 py-3 align-top">
                                         <label className="relative inline-flex items-center cursor-pointer">
                                             <input
                                                 type="checkbox"
                                                 checked={item.status}
-                                                onChange={() => toggleStatus(item.id)}
+                                                onChange={() => toggleStatus(item._id)}
                                                 className="sr-only peer"
                                             />
                                             <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#319795]"></div>
@@ -396,23 +376,23 @@ export function ActiveAssessment() {
                                     </td>
                                     <td className="px-4 py-3 align-top">
                                         <button
-                                            onClick={() => navigate(`/admin/assign-questions/${item.id}`)}
+                                            onClick={() => navigate(`/admin/assign-questions/${item._id}`)}
                                             className="bg-emerald-400 text-white px-3 py-1 rounded text-xs font-medium hover:bg-emerald-500 transition-colors"
                                         >
-                                            Questions ({localStorage.getItem(`assessment_${item.id}_questions`) || item.currentQuestions}/{item.totalQuestions})
+                                            Questions (0/{item.totalQuestions})
                                         </button>
                                     </td>
                                     <td className="px-4 py-3 align-top">
-                                        <div className="font-medium text-[#2D3748]">{item.name}</div>
+                                        <div className="font-medium text-[#2D3748]">{item.assessmentName}</div>
                                         <div className="text-xs bg-[#F56565]/20 text-[#B8322F] inline-block px-1.5 rounded mt-1">
-                                            {item.duration}
+                                            {item.timeDuration} Min
                                         </div>
                                     </td>
                                     <td className="px-4 py-3 align-top">
-                                        <div className="font-medium text-[#2D3748] mb-2">{item.code}</div>
+                                        <div className="font-medium text-[#2D3748] mb-2">{item.assessmentCode}</div>
                                         <div className="flex gap-1 mb-1">
                                             <button
-                                                onClick={() => handleCopyCode(item.code)}
+                                                onClick={() => handleCopyCode(item.assessmentCode)}
                                                 className="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-600 rounded text-xs hover:bg-blue-100 transition-colors"
                                                 title="Copy Assessment Code"
                                             >
@@ -420,7 +400,7 @@ export function ActiveAssessment() {
                                                 Copy
                                             </button>
                                             <button
-                                                onClick={() => handleCopyLink(item.code)}
+                                                onClick={() => handleCopyLink(item.assessmentCode)}
                                                 className="flex items-center gap-1 px-2 py-1 bg-green-50 text-green-600 rounded text-xs hover:bg-green-100 transition-colors"
                                                 title="Copy Assessment Link"
                                             >
@@ -430,32 +410,32 @@ export function ActiveAssessment() {
                                         </div>
                                         <div className="space-y-1 space-x-1">
                                             <div className="text-xs bg-[#319795]/20 text-[#2B7A73] inline-block px-1.5 rounded">
-                                                Start: {item.startedAttempts || Math.floor((item.attempts || 0) * 0.62)}
+                                                Start: 0
                                             </div>
                                             <div className="text-xs bg-[#F56565]/20 text-[#B8322F] inline-block px-1.5 rounded">
-                                                Submit: {item.submittedAttempts || Math.floor((item.attempts || 0) * 0.38)}
+                                                Submit: 0
                                             </div>
                                         </div>
                                     </td>
                                     <td className="px-4 py-3 align-top text-gray-500 text-xs whitespace-nowrap">
-                                        <div>{item.startTime}</div>
-                                        <div>{item.endTime}</div>
+                                        <div>{new Date(item.startDateTime).toLocaleString()}</div>
+                                        <div>{new Date(item.endDateTime).toLocaleString()}</div>
                                     </td>
                                     <td className="px-4 py-3 align-top text-[#2D3748]">{item.remark}</td>
                                     <td className="px-4 py-3 align-top text-[#2D3748]">
-                                        <div>{item.hasCertificate ? 'Yes' : 'No'}</div>
-                                        <div className="text-xs text-gray-400">{item.name}</div>
+                                        <div>{item.generateCertificate ? 'Yes' : 'No'}</div>
+                                        <div className="text-xs text-gray-400">{item.certificateName.certificateName || 'N/A'}</div>
                                     </td>
                                     <td className="px-4 py-3 align-top">
                                         <div className="flex flex-col gap-1.5">
                                             <button
-                                                onClick={() => navigate(`/admin/assessment/result/${item.id}`)}
+                                                onClick={() => navigate(`/admin/assessment/result/${item._id}`)}
                                                 className="border border-[#319795] text-[#319795] px-2 py-0.5 rounded text-xs hover:bg-[#E6FFFA]"
                                             >
                                                 Result
                                             </button>
                                             <button
-                                                onClick={() => navigate(`/admin/assessment/started-students/${item.id}`)}
+                                                onClick={() => navigate(`/admin/assessment/started-students/${item._id}`)}
                                                 className="border border-orange-500 text-orange-500 px-2 py-0.5 rounded text-xs hover:bg-orange-50"
                                             >
                                                 Export
@@ -469,7 +449,7 @@ export function ActiveAssessment() {
                                                     <Edit className="h-3 w-3" />
                                                 </button>
                                                 <button
-                                                    onClick={() => handleDeleteAssessment(item.id)}
+                                                    onClick={() => handleDeleteAssessment(item._id)}
                                                     className="p-1 border border-red-500 text-red-500 rounded hover:bg-red-50"
                                                     title="Delete"
                                                 >

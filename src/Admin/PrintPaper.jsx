@@ -1,103 +1,44 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Printer, ArrowLeft } from 'lucide-react';
+import { getQuestionsByTopicApi } from '../API/question';
+import { toast } from 'react-toastify';
 
 export default function PrintPaper() {
     const { topicId } = useParams();
     const navigate = useNavigate();
+    const [questions, setQuestions] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    // Dynamic dummy questions - in real app fetch based on topicId
-    const dummyQuestions = [
-        "What is the primary purpose of React Hooks?",
-        "Which method is used to create components in React?",
-        "What is JSX in React?",
-        "Which hook is used for state management in React?",
-        "What is the virtual DOM?",
-        "How do you pass data from parent to child component?",
-        "What is the difference between state and props?",
-        "Which lifecycle method is called after component mounts?",
-        "What is Redux used for?",
-        "How do you handle events in React?",
-        "What is the purpose of useEffect hook?",
-        "How do you create a functional component?",
-        "What is component lifecycle?",
-        "How do you update state in React?",
-        "What is the difference between controlled and uncontrolled components?",
-        "How do you implement routing in React?",
-        "What is context API?",
-        "How do you optimize React application performance?",
-        "What is the purpose of keys in React lists?",
-        "How do you handle forms in React?",
-        "What is higher-order component (HOC)?",
-        "How do you implement lazy loading in React?",
-        "What is the difference between class and functional components?",
-        "How do you manage global state in React?",
-        "What is the purpose of React.memo()?",
-        "How do you handle API calls in React?",
-        "What is the difference between useCallback and useMemo?",
-        "How do you implement error boundaries?",
-        "What is the purpose of useRef hook?",
-        "How do you test React components?",
-        "What is server-side rendering (SSR)?",
-        "How do you implement authentication in React?",
-        "What is the difference between React and Angular?",
-        "How do you handle routing with parameters?",
-        "What is the purpose of Fragment in React?",
-        "How do you implement conditional rendering?",
-        "What is the difference between useState and useReducer?",
-        "How do you handle side effects in React?",
-        "What is the purpose of custom hooks?",
-        "How do you implement drag and drop functionality?"
-    ];
+    useEffect(() => {
+        fetchQuestions();
+    }, [topicId]);
 
-    const dummyOptions = [
-        ["To manage state", "To handle events", "To create components", "To optimize performance"],
-        ["React.createClass()", "function Component()", "class Component", "React.Component()"],
-        ["JavaScript XML", "Java Syntax Extension", "JSON XML", "JavaScript Extension"],
-        ["useEffect", "useState", "useContext", "useReducer"],
-        ["Real DOM copy", "Virtual representation of DOM", "Browser DOM", "Shadow DOM"],
-        ["Through props", "Through state", "Through context", "Through events"],
-        ["State is mutable, props are immutable", "Props are mutable, state is immutable", "Both are mutable", "Both are immutable"],
-        ["componentDidMount", "componentWillMount", "componentDidUpdate", "componentWillUnmount"],
-        ["State management", "Component creation", "Event handling", "API calls"],
-        ["onClick handlers", "Event listeners", "Synthetic events", "DOM events"],
-        ["Side effects", "State management", "Component creation", "Event handling"],
-        ["function Component()", "React.createComponent()", "class Component", "React.Component()"],
-        ["Component creation to destruction", "State management", "Event handling", "Data flow"],
-        ["setState()", "updateState()", "changeState()", "modifyState()"],
-        ["Controlled has value prop", "Uncontrolled has no value", "Both are same", "Controlled uses refs"],
-        ["React Router", "React Navigation", "React Route", "React Path"],
-        ["Global state management", "Component communication", "Event handling", "API management"],
-        ["Code splitting", "State optimization", "Event optimization", "Memory management"],
-        ["Unique identification", "Styling purpose", "Event handling", "State management"],
-        ["Controlled components", "Form libraries", "Event handlers", "State management"],
-        ["Component wrapper", "State container", "Event handler", "API wrapper"],
-        ["React.lazy()", "React.suspend()", "React.load()", "React.import()"],
-        ["Syntax and lifecycle", "Performance only", "State management", "Event handling"],
-        ["Context API", "Redux", "Local storage", "Props drilling"],
-        ["Performance optimization", "State management", "Event handling", "Component creation"],
-        ["fetch() or axios", "XMLHttpRequest", "jQuery AJAX", "Native fetch"],
-        ["useCallback for functions, useMemo for values", "Both are same", "useCallback for values", "useMemo for functions"],
-        ["componentDidCatch", "try-catch blocks", "Error boundaries", "Exception handlers"],
-        ["DOM element reference", "State management", "Event handling", "Component reference"],
-        ["Jest and React Testing Library", "Mocha and Chai", "Jasmine and Karma", "Cypress only"],
-        ["Rendering on server", "Client-side rendering", "Static generation", "Hybrid rendering"],
-        ["JWT tokens", "Session storage", "Local storage", "Cookies only"],
-        ["Component-based vs MVC", "Same architecture", "Performance only", "Syntax only"],
-        ["useParams hook", "props.params", "route.params", "window.params"],
-        ["Group elements without wrapper", "Create components", "Handle events", "Manage state"],
-        ["Ternary operator", "if-else statements", "switch cases", "Logical operators"],
-        ["useState for simple, useReducer for complex", "Both are same", "useState for objects", "useReducer for primitives"],
-        ["useEffect hook", "componentDidMount", "Event handlers", "State management"],
-        ["Reusable stateful logic", "Component creation", "Event handling", "API calls"],
-        ["HTML5 Drag and Drop API", "React DnD library", "Custom event handlers", "Third-party libraries"]
-    ];
+    const fetchQuestions = async () => {
+        try {
+            setLoading(true);
+            const response = await getQuestionsByTopicApi(topicId);
+            setQuestions(response.questions || []);
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to fetch questions');
+            setQuestions([]);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-    const questions = Array(30).fill(null).map((_, i) => ({
-        id: i + 1,
-        question: dummyQuestions[i],
-        options: dummyOptions[i]
-    }));
+
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-white flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-500 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Loading questions...</p>
+                </div>
+            </div>
+        );
+    }
 
     const handlePrint = () => {
         window.print();
@@ -163,23 +104,29 @@ export default function PrintPaper() {
 
                 {/* Questions List */}
                 <div className="space-y-3 print:space-y-2">
-                    {questions.map((q) => (
-                        <div key={q.id} className="break-inside-avoid mb-3 print:mb-2">
-                            <p className="font-bold text-black mb-1 text-[0.95rem] print:text-[0.9rem] print:mb-0.5">
-                                Q.{q.id}) {q.question}
-                            </p>
-                            <div className="grid grid-cols-2 gap-y-0.5 gap-x-3 ml-1 print:gap-y-0 print:gap-x-2">
-                                {q.options.map((opt, idx) => (
-                                    <div key={idx} className="flex items-center gap-1.5 print:gap-1">
-                                        <div className="w-3.5 h-3.5 border-2 border-black rounded-sm flex-shrink-0 print:w-3 print:h-3"></div>
-                                        <span className="text-black font-semibold text-xs print:text-[0.7rem]">
-                                            {String.fromCharCode(65 + idx)}). {opt}
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
+                    {questions.length === 0 ? (
+                        <div className="text-center py-8">
+                            <p className="text-gray-500">No questions found for this topic.</p>
                         </div>
-                    ))}
+                    ) : (
+                        questions.map((q, index) => (
+                            <div key={q._id} className="break-inside-avoid mb-3 print:mb-2">
+                                <p className="font-bold text-black mb-1 text-[0.95rem] print:text-[0.9rem] print:mb-0.5">
+                                    Q.{index + 1}) {q.question}
+                                </p>
+                                <div className="grid grid-cols-2 gap-y-0.5 gap-x-3 ml-1 print:gap-y-0 print:gap-x-2">
+                                    {Object.entries(q.options).map(([key, value]) => (
+                                        <div key={key} className="flex items-center gap-1.5 print:gap-1">
+                                            <div className="w-3.5 h-3.5 border-2 border-black rounded-sm flex-shrink-0 print:w-3 print:h-3"></div>
+                                            <span className="text-black font-semibold text-xs print:text-[0.7rem]">
+                                                {key}). {value}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ))
+                    )}
                 </div>
             </div>
 

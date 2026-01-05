@@ -2,23 +2,22 @@ import React, { useState } from 'react';
 import { Mail, Lock, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { useUser } from '../context/UserContext';
+import { adminLogin } from '../API/auth';
 
 export default function AdminLogin() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const navigate = useNavigate();
-    const { login } = useUser();
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         if (username && password) {
-            login({
-                name: 'Admin User',
-                email: username,
-                role: 'admin'
-            });
-            toast.success("Login Successful");
-            navigate('/admin/dashboard');
+            try {
+                const response = await adminLogin({ userName: username, password });
+                toast.success("Login Successful");
+                navigate('/admin/dashboard');
+            } catch (error) {
+                toast.error(error.response?.data?.message || "Login failed");
+            }
         } else {
             toast.error("Please fill in both fields");
         }
