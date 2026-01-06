@@ -4,6 +4,7 @@ import Swal from 'sweetalert2';
 import { Plus, Search, Edit, Trash2, X, Eye, ArrowLeft, Save, Image as ImageIcon, Type, Layout, Grid } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useUser } from '../context/UserContext';
+import { getAllCertificatesApi, toggleCertificateStatusApi, deleteCertificateApi, getSingleCertificateApi, createCertificateApi, updateCertificateApi } from '../API/certificate';
 
 export function ManageCertificate() {
     const navigate = useNavigate();
@@ -19,35 +20,38 @@ export function ManageCertificate() {
         link.href = 'https://fonts.googleapis.com/css2?family=Lobster&family=Pacifico&family=Great+Vibes&family=Satisfy&family=Kaushan+Script&family=Dancing+Script&family=Playfair+Display:wght@400;700&family=Montserrat:wght@400;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap';
         link.rel = 'stylesheet';
         document.head.appendChild(link);
-        
+
         return () => {
             document.head.removeChild(link);
         };
     }, []);
 
-    const [certificates, setCertificates] = useState([
-        {
-            id: 1,
-            name: "Skill Up Test by DigiCoders",
-            image: "/certificate.jpg",
-            studentName: { included: true, color: "#1e2a59", top: "45%", left: "50%", fontSize: "32px", fontFamily: "Playfair Display", bold: false, italic: false, underline: false },
-            assessmentName: { included: true, color: "#1e2a59", top: "35%", left: "50%", fontSize: "24px", fontFamily: "Inter", bold: false, italic: false, underline: false },
-            assessmentCode: { included: true, color: "#1e2a59", top: "60%", left: "50%", fontSize: "18px", fontFamily: "Roboto", bold: false, italic: false, underline: false },
-            collegeName: { included: false, color: "#1e2a59", top: "25%", left: "50%", fontSize: "18px", fontFamily: "Inter", bold: false, italic: false, underline: false },
-            date: { included: false, color: "#1e2a59", top: "75%", left: "50%", fontSize: "14px", fontFamily: "Inter", bold: false, italic: false, underline: false },
-            usedIn: "2 Assessments",
-            status: true
+    const [certificates, setCertificates] = useState([]);
+
+    useEffect(() => {
+        fetchCertificates();
+    }, []);
+
+    const fetchCertificates = async () => {
+        try {
+            const response = await getAllCertificatesApi();
+            if (response.success) {
+                setCertificates(response.certificates || []);
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to fetch certificates');
         }
-    ]);
+    };
 
     const initialFormState = {
         name: '',
         image: null,
-        studentName: { included: true, color: '#1e2a59', top: '50%', left: '50%', fontSize: '30px', fontFamily: 'Inter', bold: false, italic: false, underline: false },
-        assessmentName: { included: false, color: '#1e2a59', top: '40%', left: '50%', fontSize: '20px', fontFamily: 'Inter', bold: false, italic: false, underline: false },
-        assessmentCode: { included: false, color: '#1e2a59', top: '65%', left: '50%', fontSize: '16px', fontFamily: 'Inter', bold: false, italic: false, underline: false },
-        collegeName: { included: false, color: '#1e2a59', top: '25%', left: '50%', fontSize: '18px', fontFamily: 'Inter', bold: false, italic: false, underline: false },
-        date: { included: false, color: '#1e2a59', top: '75%', left: '50%', fontSize: '14px', fontFamily: 'Inter', bold: false, italic: false, underline: false }
+        imageFile: null, // To store the actual File object
+        studentName: { status: true, textColor: '#000000', verticalPosition: '50%', horizontalPosition: '50%', fontSize: '30px', fontFamily: 'Inter', bold: false, italic: false, underline: false },
+        assessmentName: { status: false, textColor: '#000000', verticalPosition: '40%', horizontalPosition: '50%', fontSize: '20px', fontFamily: 'Inter', bold: false, italic: false, underline: false },
+        assessmentCode: { status: false, textColor: '#000000', verticalPosition: '65%', horizontalPosition: '50%', fontSize: '16px', fontFamily: 'Inter', bold: false, italic: false, underline: false },
+        collegeName: { status: false, textColor: '#000000', verticalPosition: '25%', horizontalPosition: '50%', fontSize: '18px', fontFamily: 'Inter', bold: false, italic: false, underline: false },
+        date: { status: false, textColor: '#000000', verticalPosition: '75%', horizontalPosition: '50%', fontSize: '14px', fontFamily: 'Inter', bold: false, italic: false, underline: false }
     };
 
     const [formData, setFormData] = useState(initialFormState);
@@ -66,38 +70,62 @@ export function ManageCertificate() {
     };
 
     const handleEdit = (cert) => {
-        setEditingId(cert.id);
+        setEditingId(cert._id);
+
+        // Check which fields are present in the response to set their ON/OFF status
+        const layers = ['studentName', 'assessmentName', 'assessmentCode', 'collegeName', 'date'];
+        const updatedLayers = {};
+
+        layers.forEach(layer => {
+            if (cert[layer]) {
+                // If layer exists, keep its data and ensure status is true
+                updatedLayers[layer] = { ...cert[layer], status: true };
+            } else {
+                // If layer is missing, use default settings but keep status false
+                updatedLayers[layer] = { ...initialFormState[layer], status: false };
+            }
+        });
+
         setFormData({
-            name: cert.name,
-            image: cert.image,
-            studentName: cert.studentName || { included: true, color: '#1e2a59', top: '50%', left: '50%', fontSize: '30px', fontFamily: 'Inter', bold: false, italic: false, underline: false },
-            assessmentName: cert.assessmentName || { included: false, color: '#1e2a59', top: '40%', left: '50%', fontSize: '20px', fontFamily: 'Inter', bold: false, italic: false, underline: false },
-            assessmentCode: cert.assessmentCode || { included: false, color: '#1e2a59', top: '65%', left: '50%', fontSize: '16px', fontFamily: 'Inter', bold: false, italic: false, underline: false },
-            collegeName: cert.collegeName || { included: false, color: '#1e2a59', top: '25%', left: '50%', fontSize: '18px', fontFamily: 'Inter', bold: false, italic: false, underline: false },
-            date: cert.date || { included: false, color: '#1e2a59', top: '75%', left: '50%', fontSize: '14px', fontFamily: 'Inter', bold: false, italic: false, underline: false }
+            name: cert.certificateName,
+            image: cert.certificateImage,
+            imageFile: null, // Reset file so we don't re-upload unless changed
+            ...updatedLayers
         });
         setView('editor');
     };
 
-    const handlePreviewModal = (cert) => {
+    const handlePreviewModal = async (cert) => {
+        // First set the existing data as fallback so the modal opens immediately
         setSelectedImage(cert);
         setIsPreviewOpen(true);
+
+        try {
+            const response = await getSingleCertificateApi(cert._id);
+            if (response && response.success && response.certificate) {
+                // Then update with latest full data from backend if available
+                setSelectedImage(response.certificate);
+            }
+        } catch (error) {
+            console.error("Preview fetch error:", error);
+            // Modal is already open with fallback data 'cert'
+        }
     };
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
         if (file) {
             const url = URL.createObjectURL(file);
-            setFormData({ ...formData, image: url });
+            setFormData({ ...formData, image: url, imageFile: file });
         }
     };
 
     const updateNestedState = (section, field, value) => {
         // Validation for position and font size fields
-        if ((field === 'top' || field === 'left' || field === 'fontSize') && value.includes(' ')) {
+        if ((field === 'verticalPosition' || field === 'horizontalPosition' || field === 'fontSize') && typeof value === 'string' && value.includes(' ')) {
             return; // Don't allow spaces
         }
-        
+
         setFormData(prev => ({
             ...prev,
             [section]: {
@@ -107,47 +135,57 @@ export function ManageCertificate() {
         }));
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!formData.name || !formData.image) {
             toast.error("Please provide a name and upload a certificate image.");
             return;
         }
 
-        if (editingId) {
-            setCertificates(certificates.map(c => c.id === editingId ? {
-                ...c,
-                name: formData.name,
-                image: formData.image,
-                studentName: formData.studentName,
-                assessmentName: formData.assessmentName,
-                assessmentCode: formData.assessmentCode,
-                collegeName: formData.collegeName,
-                date: formData.date
-            } : c));
-            toast.success("Certificate updated successfully!");
-        } else {
-            setCertificates([...certificates, {
-                id: certificates.length + 1,
-                name: formData.name,
-                image: formData.image,
-                usedIn: "0 Assessments",
-                status: true,
-                studentName: formData.studentName,
-                assessmentName: formData.assessmentName,
-                assessmentCode: formData.assessmentCode,
-                collegeName: formData.collegeName,
-                date: formData.date
-            }]);
-            toast.success("Certificate added successfully!");
+        try {
+            const data = new FormData();
+            data.append('certificateName', formData.name);
+
+            // Only send image if a new file was actually selected
+            if (formData.imageFile) {
+                data.append('certificateImage', formData.imageFile);
+            }
+
+            // Only send layers that are currently toggled ON
+            const layers = ['studentName', 'assessmentName', 'assessmentCode', 'collegeName', 'date'];
+            layers.forEach(layer => {
+                if (formData[layer] && formData[layer].status) {
+                    data.append(layer, JSON.stringify(formData[layer]));
+                }
+            });
+
+            let response;
+            if (editingId) {
+                response = await updateCertificateApi(editingId, data);
+            } else {
+                response = await createCertificateApi(data);
+            }
+
+            if (response.success) {
+                toast.success(editingId ? "Certificate updated successfully!" : "Certificate added successfully!");
+                fetchCertificates();
+                handleBackToList();
+            }
+        } catch (error) {
+            console.error("Save error:", error);
+            toast.error(error.response?.data?.message || 'Failed to save certificate');
         }
-        handleBackToList();
     };
 
-    const toggleStatus = (id) => {
-        setCertificates(certificates.map(cert =>
-            cert.id === id ? { ...cert, status: !cert.status } : cert
-        ));
-        toast.info("Status updated");
+    const toggleStatus = async (id) => {
+        try {
+            const response = await toggleCertificateStatusApi(id);
+            if (response.success) {
+                toast.success(response.message || "Status updated successfully");
+                fetchCertificates();
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to update status');
+        }
     };
 
     const handleDelete = (id) => {
@@ -159,10 +197,17 @@ export function ManageCertificate() {
             confirmButtonColor: "#319795",
             cancelButtonColor: "#f56565",
             confirmButtonText: "Yes, delete it!"
-        }).then((result) => {
+        }).then(async (result) => {
             if (result.isConfirmed) {
-                setCertificates(certificates.filter(c => c.id !== id));
-                toast.success("Certificate deleted successfully");
+                try {
+                    const response = await deleteCertificateApi(id);
+                    if (response.success) {
+                        toast.success("Certificate deleted successfully");
+                        fetchCertificates();
+                    }
+                } catch (error) {
+                    toast.error(error.response?.data?.message || 'Failed to delete certificate');
+                }
             }
         });
     };
@@ -273,15 +318,15 @@ export function ManageCertificate() {
                                     <label className="relative inline-flex items-center cursor-pointer">
                                         <input
                                             type="checkbox"
-                                            checked={formData[layer.id].included}
-                                            onChange={(e) => updateNestedState(layer.id, 'included', e.target.checked)}
+                                            checked={formData[layer.id].status}
+                                            onChange={(e) => updateNestedState(layer.id, 'status', e.target.checked)}
                                             className="sr-only peer"
                                         />
                                         <div className="w-10 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-teal-500"></div>
                                     </label>
                                 </div>
 
-                                {formData[layer.id].included && (
+                                {formData[layer.id].status && (
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-4 pt-2">
                                         {/* Font Family and Font Style on same line */}
                                         <div>
@@ -296,7 +341,7 @@ export function ManageCertificate() {
                                                 ))}
                                             </select>
                                         </div>
-                                        
+
                                         {/* Font Style Options */}
                                         <div>
                                             <label className="block text-[10px] font-bold text-gray-400 mb-1 uppercase">Font Style</label>
@@ -304,33 +349,30 @@ export function ManageCertificate() {
                                                 <button
                                                     type="button"
                                                     onClick={() => updateNestedState(layer.id, 'bold', !formData[layer.id].bold)}
-                                                    className={`px-3 py-1.5 text-xs font-bold border rounded transition-colors ${
-                                                        formData[layer.id].bold 
-                                                            ? 'bg-teal-500 text-white border-teal-500' 
-                                                            : 'bg-white text-gray-600 border-gray-300 hover:border-teal-500'
-                                                    }`}
+                                                    className={`px-3 py-1.5 text-xs font-bold border rounded transition-colors ${formData[layer.id].bold
+                                                        ? 'bg-teal-500 text-white border-teal-500'
+                                                        : 'bg-white text-gray-600 border-gray-300 hover:border-teal-500'
+                                                        }`}
                                                 >
                                                     B
                                                 </button>
                                                 <button
                                                     type="button"
                                                     onClick={() => updateNestedState(layer.id, 'italic', !formData[layer.id].italic)}
-                                                    className={`px-3 py-1.5 text-xs italic border rounded transition-colors ${
-                                                        formData[layer.id].italic 
-                                                            ? 'bg-teal-500 text-white border-teal-500' 
-                                                            : 'bg-white text-gray-600 border-gray-300 hover:border-teal-500'
-                                                    }`}
+                                                    className={`px-3 py-1.5 text-xs italic border rounded transition-colors ${formData[layer.id].italic
+                                                        ? 'bg-teal-500 text-white border-teal-500'
+                                                        : 'bg-white text-gray-600 border-gray-300 hover:border-teal-500'
+                                                        }`}
                                                 >
                                                     I
                                                 </button>
                                                 <button
                                                     type="button"
                                                     onClick={() => updateNestedState(layer.id, 'underline', !formData[layer.id].underline)}
-                                                    className={`px-3 py-1.5 text-xs underline border rounded transition-colors ${
-                                                        formData[layer.id].underline 
-                                                            ? 'bg-teal-500 text-white border-teal-500' 
-                                                            : 'bg-white text-gray-600 border-gray-300 hover:border-teal-500'
-                                                    }`}
+                                                    className={`px-3 py-1.5 text-xs underline border rounded transition-colors ${formData[layer.id].underline
+                                                        ? 'bg-teal-500 text-white border-teal-500'
+                                                        : 'bg-white text-gray-600 border-gray-300 hover:border-teal-500'
+                                                        }`}
                                                 >
                                                     U
                                                 </button>
@@ -351,14 +393,14 @@ export function ManageCertificate() {
                                             <div className="flex gap-2">
                                                 <input
                                                     type="color"
-                                                    value={formData[layer.id].color}
-                                                    onChange={(e) => updateNestedState(layer.id, 'color', e.target.value)}
+                                                    value={formData[layer.id].textColor}
+                                                    onChange={(e) => updateNestedState(layer.id, 'textColor', e.target.value)}
                                                     className="w-10 h-9 p-1 border border-gray-300 rounded-lg cursor-pointer bg-white"
                                                 />
                                                 <input
                                                     type="text"
-                                                    value={formData[layer.id].color}
-                                                    onChange={(e) => updateNestedState(layer.id, 'color', e.target.value)}
+                                                    value={formData[layer.id].textColor}
+                                                    onChange={(e) => updateNestedState(layer.id, 'textColor', e.target.value)}
                                                     className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 outline-none uppercase"
                                                 />
                                             </div>
@@ -367,8 +409,8 @@ export function ManageCertificate() {
                                             <label className="block text-[10px] font-bold text-gray-400 mb-1 uppercase font-serif">Vertical Position</label>
                                             <input
                                                 type="text"
-                                                value={formData[layer.id].top}
-                                                onChange={(e) => updateNestedState(layer.id, 'top', e.target.value)}
+                                                value={formData[layer.id].verticalPosition}
+                                                onChange={(e) => updateNestedState(layer.id, 'verticalPosition', e.target.value)}
                                                 placeholder="e.g. 50% or 100px"
                                                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 outline-none"
                                             />
@@ -377,8 +419,8 @@ export function ManageCertificate() {
                                             <label className="block text-[10px] font-bold text-gray-400 mb-1 uppercase">Horizontal Position</label>
                                             <input
                                                 type="text"
-                                                value={formData[layer.id].left}
-                                                onChange={(e) => updateNestedState(layer.id, 'left', e.target.value)}
+                                                value={formData[layer.id].horizontalPosition}
+                                                onChange={(e) => updateNestedState(layer.id, 'horizontalPosition', e.target.value)}
                                                 placeholder="e.g. 50% or 200px"
                                                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 outline-none"
                                             />
@@ -413,7 +455,7 @@ export function ManageCertificate() {
                                             { id: 'date', sample: 'December 25, 2024' }
                                         ].map((layer) => {
                                             const settings = formData[layer.id];
-                                            if (!settings.included) return null;
+                                            if (!settings.status) return null;
 
                                             // Find full font family string
                                             const fontDetail = fontFamilies.find(f => f.name === settings.fontFamily);
@@ -424,10 +466,10 @@ export function ManageCertificate() {
                                                     key={layer.id}
                                                     className="absolute pointer-events-none whitespace-nowrap"
                                                     style={{
-                                                        top: settings.top,
-                                                        left: settings.left,
+                                                        top: settings.verticalPosition,
+                                                        left: settings.horizontalPosition,
                                                         transform: 'translate(-50%, -50%)',
-                                                        color: settings.color,
+                                                        color: settings.textColor,
                                                         fontSize: settings.fontSize,
                                                         fontFamily: fontStyle,
                                                         fontWeight: settings.bold ? 'bold' : 'normal',
@@ -511,15 +553,15 @@ export function ManageCertificate() {
                         </thead>
                         <tbody className="divide-y divide-gray-50">
                             {certificates.map((cert, index) => (
-                                <tr key={cert.id} className="hover:bg-slate-50 transition-colors group">
+                                <tr key={cert._id} className="hover:bg-slate-50 transition-colors group">
                                     <td className="px-6 py-4">
-                                        <div className="font-bold text-gray-800">{cert.name}</div>
-                                        <div className="text-[10px] text-gray-400 mt-0.5">ID: {cert.id * 1234}CERT</div>
+                                        <div className="font-bold text-gray-800">{cert.certificateName}</div>
+                                        <div className="text-[10px] text-gray-400 mt-0.5">ID: {cert._id.slice(-6).toUpperCase()}</div>
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="h-10 w-16 bg-slate-100 border border-slate-200 rounded overflow-hidden flex items-center justify-center relative group-hover:ring-2 ring-teal-500/20 transition-all">
-                                            {cert.image ? (
-                                                <img src={cert.image} alt="cert" className="w-full h-full object-cover" />
+                                            {cert.certificateImage ? (
+                                                <img src={cert.certificateImage} alt="cert" className="w-full h-full object-cover" />
                                             ) : (
                                                 <ImageIcon className="h-4 w-4 text-slate-300" />
                                             )}
@@ -527,16 +569,16 @@ export function ManageCertificate() {
                                     </td>
                                     <td className="px-6 py-4">
                                         <span className="bg-slate-100 text-slate-600 py-1 px-3 rounded-full text-xs font-medium border border-slate-200">
-                                            {cert.usedIn}
+                                            {cert.usedIn || 0} Assessments
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 text-gray-500 text-xs">Dec 18, 2025</td>
+                                    <td className="px-6 py-4 text-gray-500 text-xs">{new Date(cert.createdAt).toLocaleDateString()}</td>
                                     <td className="px-6 py-4">
                                         <label className="relative inline-flex items-center cursor-pointer">
                                             <input
                                                 type="checkbox"
                                                 checked={cert.status}
-                                                onChange={() => toggleStatus(cert.id)}
+                                                onChange={() => toggleStatus(cert._id)}
                                                 className="sr-only peer"
                                             />
                                             <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-teal-500"></div>
@@ -559,7 +601,7 @@ export function ManageCertificate() {
                                                 <Edit className="h-4 w-4" />
                                             </button>
                                             <button
-                                                onClick={() => handleDelete(cert.id)}
+                                                onClick={() => handleDelete(cert._id)}
                                                 className="text-slate-400 hover:text-red-500 hover:bg-red-50 p-2 rounded-lg transition-all"
                                                 title="Delete Template"
                                             >
@@ -587,13 +629,13 @@ export function ManageCertificate() {
                         >
                             <X className="h-5 w-5" />
                         </button>
-                        
+
                         <div className="p-6">
-                            <h3 className="text-xl font-bold text-gray-800 mb-4">{selectedImage.name}</h3>
-                            
+                            <h3 className="text-xl font-bold text-gray-800 mb-4">{selectedImage.certificateName}</h3>
+
                             <div className="aspect-[3/2] bg-slate-100 rounded-lg border border-slate-200 overflow-hidden relative flex items-center justify-center">
                                 <div className="relative w-full h-full">
-                                    <img src={selectedImage.image} alt="Certificate" className="w-full h-full object-contain" />
+                                    <img src={selectedImage.certificateImage} alt="Certificate" className="w-full h-full object-contain" />
 
                                     {/* Dynamic Overlay Layers with actual certificate data */}
                                     {[
@@ -604,7 +646,7 @@ export function ManageCertificate() {
                                         { id: 'date', sample: 'December 25, 2024' }
                                     ].map((layer) => {
                                         const settings = selectedImage[layer.id];
-                                        if (!settings || !settings.included) return null;
+                                        if (!settings) return null; // Only check if data exists
 
                                         // Find full font family string
                                         const fontDetail = fontFamilies.find(f => f.name === settings.fontFamily);
@@ -615,10 +657,10 @@ export function ManageCertificate() {
                                                 key={layer.id}
                                                 className="absolute pointer-events-none whitespace-nowrap"
                                                 style={{
-                                                    top: settings.top,
-                                                    left: settings.left,
+                                                    top: settings.verticalPosition,
+                                                    left: settings.horizontalPosition,
                                                     transform: 'translate(-50%, -50%)',
-                                                    color: settings.color,
+                                                    color: settings.textColor,
                                                     fontSize: settings.fontSize,
                                                     fontFamily: fontStyle,
                                                     fontWeight: settings.bold ? 'bold' : 'normal',

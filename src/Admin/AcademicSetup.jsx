@@ -1,30 +1,45 @@
-import React, { useState } from 'react';
-import { Plus, Edit, Trash2, Save, X, GraduationCap, Calendar, BookOpen } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Edit, Trash2, Save, X, GraduationCap, Calendar, BookOpen, Loader2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
+import { getAllCollegesApi, createCollegeApi, updateCollegeApi, deleteCollegeApi } from '../API/college';
+import { getAcademicYearsApi, createAcademicYearApi, updateAcademicYearApi, deleteAcademicYearApi } from '../API/year';
+import { getCoursesApi, createCourseApi, updateCourseApi, deleteCourseApi } from '../API/course';
 
 export default function AcademicSetup() {
     const [activeTab, setActiveTab] = useState('colleges');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
-    const [formData, setFormData] = useState({ name: '', year: '', course: '' });
+    const [formData, setFormData] = useState({ collegeName: '', academicYear: '', course: '', location: '' });
 
-    // Sample data
-    const [colleges, setColleges] = useState([
-        { id: 1, name: 'ABC Engineering College', location: 'Mumbai' },
-        { id: 2, name: 'XYZ Institute of Technology', location: 'Delhi' }
-    ]);
+    const [loading, setLoading] = useState(true);
+    const [colleges, setColleges] = useState([]);
+    const [years, setYears] = useState([]);
+    const [courses, setCourses] = useState([]);
 
-    const [years, setYears] = useState([
-        { id: 1, year: '2024-25' },
-        { id: 2, year: '2023-24' }
-    ]);
+    useEffect(() => {
+        fetchData();
+    }, []);
 
-    const [courses, setCourses] = useState([
-        { id: 1, course: 'Computer Science Engineering' },
-        { id: 2, course: 'Information Technology' },
-        { id: 3, course: 'Electronics Engineering' }
-    ]);
+    const fetchData = async () => {
+        setLoading(true);
+        try {
+            const [collegeRes, yearRes, courseRes] = await Promise.all([
+                getAllCollegesApi(),
+                getAcademicYearsApi(),
+                getCoursesApi()
+            ]);
+
+            if (collegeRes.success) setColleges(collegeRes.colleges || []);
+            if (yearRes.success) setYears(yearRes.data || yearRes.years || []);
+            if (courseRes.success) setCourses(courseRes.data || courseRes.courses || []);
+        } catch (error) {
+            console.error("Fetch Error:", error);
+            toast.error("Failed to load academic data");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const tabs = [
         { id: 'colleges', label: 'Colleges', icon: GraduationCap, count: colleges.length },
@@ -34,63 +49,74 @@ export default function AcademicSetup() {
 
     const handleAdd = (type) => {
         setEditingItem(null);
-        setFormData({ name: '', year: '', course: '' });
+        setFormData({ collegeName: '', academicYear: '', course: '', location: '' });
         setActiveTab(type);
         setIsModalOpen(true);
     };
 
     const handleEdit = (item, type) => {
         setEditingItem({ ...item, type });
-        if (type === 'colleges') setFormData({ name: item.name, location: item.location });
-        if (type === 'years') setFormData({ year: item.year });
+        if (type === 'colleges') setFormData({ collegeName: item.collegeName, location: item.location });
+        if (type === 'years') setFormData({ academicYear: item.academicYear });
         if (type === 'courses') setFormData({ course: item.course });
         setIsModalOpen(true);
     };
 
-    const handleSave = () => {
-        if (activeTab === 'colleges') {
-            if (!formData.name || !formData.location) {
-                toast.error('College name and location are required!');
-                return;
+    const handleSave = async () => {
+        setLoading(true);
+        try {
+            if (activeTab === 'colleges') {
+                if (!formData.collegeName || !formData.location) {
+                    toast.error('College name and location are required!');
+                    return;
+                }
+                const payload = { collegeName: formData.collegeName, location: formData.location };
+                if (editingItem) {
+                    await updateCollegeApi(editingItem._id, payload);
+                    toast.success('College updated successfully');
+                } else {
+                    await createCollegeApi(payload);
+                    toast.success('College added successfully');
+                }
             }
-            if (editingItem) {
-                setColleges(colleges.map(c => c.id === editingItem.id ? { ...c, name: formData.name, location: formData.location } : c));
-                toast.success('College updated successfully');
-            } else {
-                setColleges([...colleges, { id: Date.now(), name: formData.name, location: formData.location }]);
-                toast.success('College added successfully');
+
+            if (activeTab === 'years') {
+                if (!formData.academicYear) {
+                    toast.error('Academic year is required!');
+                    return;
+                }
+                const payload = { academicYear: formData.academicYear };
+                if (editingItem) {
+                    await updateAcademicYearApi(editingItem._id, payload);
+                    toast.success('Academic year updated successfully');
+                } else {
+                    await createAcademicYearApi(payload);
+                    toast.success('Academic year added successfully');
+                }
             }
+
+            if (activeTab === 'courses') {
+                if (!formData.course) {
+                    toast.error('Course name is required!');
+                    return;
+                }
+                const payload = { course: formData.course };
+                if (editingItem) {
+                    await updateCourseApi(editingItem._id, payload);
+                    toast.success('Course updated successfully');
+                } else {
+                    await createCourseApi(payload);
+                    toast.success('Course added successfully');
+                }
+            }
+
+            await fetchData();
+            setIsModalOpen(false);
+        } catch (error) {
+            toast.error("Operation failed");
+        } finally {
+            setLoading(false);
         }
-        
-        if (activeTab === 'years') {
-            if (!formData.year) {
-                toast.error('Academic year is required!');
-                return;
-            }
-            if (editingItem) {
-                setYears(years.map(y => y.id === editingItem.id ? { ...y, year: formData.year } : y));
-                toast.success('Academic year updated successfully');
-            } else {
-                setYears([...years, { id: Date.now(), year: formData.year }]);
-                toast.success('Academic year added successfully');
-            }
-        }
-        
-        if (activeTab === 'courses') {
-            if (!formData.course) {
-                toast.error('Course name is required!');
-                return;
-            }
-            if (editingItem) {
-                setCourses(courses.map(c => c.id === editingItem.id ? { ...c, course: formData.course } : c));
-                toast.success('Course updated successfully');
-            } else {
-                setCourses([...courses, { id: Date.now(), course: formData.course }]);
-                toast.success('Course added successfully');
-            }
-        }
-        
-        setIsModalOpen(false);
     };
 
     const handleDelete = (id, type) => {
@@ -102,12 +128,20 @@ export default function AcademicSetup() {
             confirmButtonColor: '#319795',
             cancelButtonColor: '#f56565',
             confirmButtonText: 'Yes, delete it!'
-        }).then((result) => {
+        }).then(async (result) => {
             if (result.isConfirmed) {
-                if (type === 'colleges') setColleges(colleges.filter(c => c.id !== id));
-                if (type === 'years') setYears(years.filter(y => y.id !== id));
-                if (type === 'courses') setCourses(courses.filter(c => c.id !== id));
-                toast.success('Deleted successfully');
+                try {
+                    setLoading(true);
+                    if (type === 'colleges') await deleteCollegeApi(id);
+                    if (type === 'years') await deleteAcademicYearApi(id);
+                    if (type === 'courses') await deleteCourseApi(id);
+                    toast.success('Deleted successfully');
+                    await fetchData();
+                } catch (error) {
+                    toast.error("Delete failed");
+                } finally {
+                    setLoading(false);
+                }
             }
         });
     };
@@ -116,22 +150,26 @@ export default function AcademicSetup() {
         if (activeTab === 'colleges') {
             return (
                 <div className="space-y-4">
-                    {colleges.map((college) => (
-                        <div key={college.id} className="bg-white p-4 rounded-lg border border-gray-200 flex justify-between items-center">
-                            <div>
-                                <h3 className="font-bold text-gray-800">{college.name}</h3>
-                                <p className="text-sm text-gray-500">{college.location}</p>
+                    {colleges.length > 0 ? (
+                        colleges.map((college) => (
+                            <div key={college._id} className="bg-white p-4 rounded-lg border border-gray-200 flex justify-between items-center">
+                                <div>
+                                    <h3 className="font-bold text-gray-800">{college.collegeName}</h3>
+                                    <p className="text-sm text-gray-500">{college.location}</p>
+                                </div>
+                                <div className="flex gap-2">
+                                    <button onClick={() => handleEdit(college, 'colleges')} className="p-2 text-blue-600 hover:bg-blue-50 rounded">
+                                        <Edit className="h-4 w-4" />
+                                    </button>
+                                    <button onClick={() => handleDelete(college._id, 'colleges')} className="p-2 text-red-600 hover:bg-red-50 rounded">
+                                        <Trash2 className="h-4 w-4" />
+                                    </button>
+                                </div>
                             </div>
-                            <div className="flex gap-2">
-                                <button onClick={() => handleEdit(college, 'colleges')} className="p-2 text-blue-600 hover:bg-blue-50 rounded">
-                                    <Edit className="h-4 w-4" />
-                                </button>
-                                <button onClick={() => handleDelete(college.id, 'colleges')} className="p-2 text-red-600 hover:bg-red-50 rounded">
-                                    <Trash2 className="h-4 w-4" />
-                                </button>
-                            </div>
-                        </div>
-                    ))}
+                        ))
+                    ) : (
+                        <div className="text-center py-10 text-gray-500 italic">No colleges found</div>
+                    )}
                 </div>
             );
         }
@@ -139,21 +177,25 @@ export default function AcademicSetup() {
         if (activeTab === 'years') {
             return (
                 <div className="space-y-4">
-                    {years.map((year) => (
-                        <div key={year.id} className="bg-white p-4 rounded-lg border border-gray-200 flex justify-between items-center">
-                            <div>
-                                <h3 className="font-bold text-gray-800">{year.year}</h3>
+                    {years.length > 0 ? (
+                        years.map((year) => (
+                            <div key={year._id} className="bg-white p-4 rounded-lg border border-gray-200 flex justify-between items-center">
+                                <div>
+                                    <h3 className="font-bold text-gray-800">{year.academicYear}</h3>
+                                </div>
+                                <div className="flex gap-2">
+                                    <button onClick={() => handleEdit(year, 'years')} className="p-2 text-blue-600 hover:bg-blue-50 rounded">
+                                        <Edit className="h-4 w-4" />
+                                    </button>
+                                    <button onClick={() => handleDelete(year._id, 'years')} className="p-2 text-red-600 hover:bg-red-50 rounded">
+                                        <Trash2 className="h-4 w-4" />
+                                    </button>
+                                </div>
                             </div>
-                            <div className="flex gap-2">
-                                <button onClick={() => handleEdit(year, 'years')} className="p-2 text-blue-600 hover:bg-blue-50 rounded">
-                                    <Edit className="h-4 w-4" />
-                                </button>
-                                <button onClick={() => handleDelete(year.id, 'years')} className="p-2 text-red-600 hover:bg-red-50 rounded">
-                                    <Trash2 className="h-4 w-4" />
-                                </button>
-                            </div>
-                        </div>
-                    ))}
+                        ))
+                    ) : (
+                        <div className="text-center py-10 text-gray-500 italic">No academic years found</div>
+                    )}
                 </div>
             );
         }
@@ -161,21 +203,25 @@ export default function AcademicSetup() {
         if (activeTab === 'courses') {
             return (
                 <div className="space-y-4">
-                    {courses.map((course) => (
-                        <div key={course.id} className="bg-white p-4 rounded-lg border border-gray-200 flex justify-between items-center">
-                            <div>
-                                <h3 className="font-bold text-gray-800">{course.course}</h3>
+                    {courses.length > 0 ? (
+                        courses.map((course) => (
+                            <div key={course._id} className="bg-white p-4 rounded-lg border border-gray-200 flex justify-between items-center">
+                                <div>
+                                    <h3 className="font-bold text-gray-800">{course.course}</h3>
+                                </div>
+                                <div className="flex gap-2">
+                                    <button onClick={() => handleEdit(course, 'courses')} className="p-2 text-blue-600 hover:bg-blue-50 rounded">
+                                        <Edit className="h-4 w-4" />
+                                    </button>
+                                    <button onClick={() => handleDelete(course._id, 'courses')} className="p-2 text-red-600 hover:bg-red-50 rounded">
+                                        <Trash2 className="h-4 w-4" />
+                                    </button>
+                                </div>
                             </div>
-                            <div className="flex gap-2">
-                                <button onClick={() => handleEdit(course, 'courses')} className="p-2 text-blue-600 hover:bg-blue-50 rounded">
-                                    <Edit className="h-4 w-4" />
-                                </button>
-                                <button onClick={() => handleDelete(course.id, 'courses')} className="p-2 text-red-600 hover:bg-red-50 rounded">
-                                    <Trash2 className="h-4 w-4" />
-                                </button>
-                            </div>
-                        </div>
-                    ))}
+                        ))
+                    ) : (
+                        <div className="text-center py-10 text-gray-500 italic">No courses found</div>
+                    )}
                 </div>
             );
         }
@@ -198,11 +244,10 @@ export default function AcademicSetup() {
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-md font-medium text-sm transition-all ${
-                                    activeTab === tab.id
-                                        ? 'bg-white text-[#319795] shadow-sm'
-                                        : 'text-gray-600 hover:text-gray-800'
-                                }`}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-md font-medium text-sm transition-all ${activeTab === tab.id
+                                    ? 'bg-white text-[#319795] shadow-sm'
+                                    : 'text-gray-600 hover:text-gray-800'
+                                    }`}
                             >
                                 <Icon className="h-4 w-4" />
                                 {tab.label}
@@ -227,7 +272,12 @@ export default function AcademicSetup() {
             </div>
 
             {/* Content */}
-            {renderContent()}
+            {loading ? (
+                <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl border border-dashed border-gray-300">
+                    <Loader2 className="h-10 w-10 animate-spin text-[#319795] mb-4" />
+                    <p className="text-gray-500 font-medium">Loading setup data...</p>
+                </div>
+            ) : renderContent()}
 
             {/* Modal */}
             {isModalOpen && (
@@ -250,8 +300,8 @@ export default function AcademicSetup() {
                                             <label className="block text-sm font-medium text-gray-700 mb-1">College Name</label>
                                             <input
                                                 type="text"
-                                                value={formData.name || ''}
-                                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                                value={formData.collegeName || ''}
+                                                onChange={(e) => setFormData({ ...formData, collegeName: e.target.value })}
                                                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-[#319795] outline-none"
                                                 placeholder="Enter college name"
                                             />
@@ -274,8 +324,8 @@ export default function AcademicSetup() {
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Academic Year</label>
                                         <input
                                             type="text"
-                                            value={formData.year || ''}
-                                            onChange={(e) => setFormData({ ...formData, year: e.target.value })}
+                                            value={formData.academicYear || ''}
+                                            onChange={(e) => setFormData({ ...formData, academicYear: e.target.value })}
                                             className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-[#319795] outline-none"
                                             placeholder="Select Year"
                                         />

@@ -10,16 +10,36 @@ import {
     History,
     Menu,
     X,
-    GraduationCap
+    GraduationCap,
+    User
 } from 'lucide-react';
 
-import { useUser } from '../../context/UserContext';
+import { getAdminApi } from '../../API/admin';
 
 export default function AdminDashboard() {
     const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [admin, setAdmin] = useState(null);
     const navigate = useNavigate();
     const location = useLocation();
-    const { user } = useUser();
+
+    React.useEffect(() => {
+        const fetchAdmin = async () => {
+            try {
+                const response = await getAdminApi();
+                if (response.success && response.admin?.length > 0) {
+                    setAdmin(response.admin[0]);
+                }
+            } catch (error) {
+                console.error("Failed to fetch admin data:", error);
+            }
+        };
+
+        fetchAdmin();
+
+        // Listen for updates from other components (like SecuritySettings)
+        window.addEventListener('adminUpdated', fetchAdmin);
+        return () => window.removeEventListener('adminUpdated', fetchAdmin);
+    }, []);
 
     const menuItems = [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
@@ -133,14 +153,14 @@ export default function AdminDashboard() {
 
                         <div className="flex items-center gap-3">
                             <span className="text-sm font-medium hidden sm:block" style={{ color: '#2D3748' }}>
-                                {user?.name || 'Admin'}
+                                {admin?.userName || 'Admin'}
                             </span>
 
-                            <div className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" style={{ backgroundColor: '#FF7F50' }}>
-                                {user?.image ? (
-                                    <img src={user.image} alt="Profile" className="w-full h-full object-cover" />
+                            <div className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden border border-[#FF7F50] bg-[#FF7F50]" >
+                                {admin?.image ? (
+                                    <img src={admin.image} alt="Profile" className="w-full h-full object-cover" />
                                 ) : (
-                                    <Users className="h-5 w-5 text-[#E6FFFA]" />
+                                    <User className="h-5 w-5 text-[#E6FFFA]" />
                                 )}
                             </div>
                         </div>

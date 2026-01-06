@@ -12,11 +12,22 @@ export default function AdminLogin() {
     const handleSubmit = async () => {
         if (username && password) {
             try {
+                // userName uses camelCase as per your controller { userName, password }
                 const response = await adminLogin({ userName: username, password });
-                toast.success("Login Successful");
-                navigate('/admin/dashboard');
+
+                console.log("Login Response:", response);
+
+                if (response.success) {
+                    toast.success(response.message || "Login Successful");
+                    // Navigating to dashboard - browser will handle the cookie automatically
+                    navigate('/admin/dashboard');
+                } else {
+                    toast.error(response.message || "Login failed");
+                }
             } catch (error) {
-                toast.error(error.response?.data?.message || "Login failed");
+                console.error("Login Error Details:", error);
+                const errorMsg = error.response?.data?.message || "Login failed - Check CORS/Network";
+                toast.error(errorMsg);
             }
         } else {
             toast.error("Please fill in both fields");

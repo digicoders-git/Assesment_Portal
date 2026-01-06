@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { Plus, Search, Edit, Trash2, X, Copy, Link } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { getAssessmentByStatusApi, toggleAssessmentStatusApi, createAssessmentApi, updateAssessmentApi, deleteAssessmentApi } from '../API/assesment';
+import { getAllCertificatesApi } from '../API/certificate';
 
 
 
@@ -18,17 +20,17 @@ export function AssessmentHistory() {
 
 
     // Helper function to convert datetime to Kolkata timezone
-    const toKolkataTime = (dateTime) => {
-        if (!dateTime) return '';
-        const date = new Date(dateTime);
-        return new Intl.DateTimeFormat('sv-SE', {
-            timeZone: 'Asia/Kolkata',
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit'
-        }).format(date).replace(' ', 'T');
+    // Helper function to convert "DD/MM/YYYY, HH:MM:SS" to "YYYY-MM-DDTHH:MM" for input fields
+    const parseBackendDate = (dateStr) => {
+        if (!dateStr || typeof dateStr !== 'string') return '';
+        try {
+            const [datePart, timePart] = dateStr.split(', ');
+            const [day, month, year] = datePart.split('/');
+            const [hour, minute] = timePart.split(':');
+            return `${year}-${month}-${day}T${hour}:${minute}`;
+        } catch (e) {
+            return '';
+        }
     };
 
     useEffect(() => {
@@ -49,20 +51,34 @@ export function AssessmentHistory() {
 
 
     useEffect(() => {
-        const saved = localStorage.getItem('all_assessments');
-        if (saved) {
-            const parsed = JSON.parse(saved);
-            // Filter: ONLY inactive status
-            const inactiveOnes = parsed.filter(item => item.status === false);
-            setAssessments(inactiveOnes);
-        }
+        fetchAssessments();
+        fetchCertificates();
     }, []);
 
-    const updateGlobalAssessments = (newList) => {
-        localStorage.setItem('all_assessments', JSON.stringify(newList));
-        const inactiveOnes = newList.filter(item => item.status === false);
-        setAssessments(inactiveOnes);
+    const [certificateOptions, setCertificateOptions] = useState([]);
+
+    const fetchCertificates = async () => {
+        try {
+            const response = await getAllCertificatesApi();
+            if (response.success) {
+                setCertificateOptions(response.certificates || []);
+            }
+        } catch (error) {
+            console.error('Failed to fetch certificates:', error);
+        }
     };
+
+    const fetchAssessments = async () => {
+        try {
+            const response = await getAssessmentByStatusApi(false);
+            setAssessments(response.assessments || []);
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to fetch assessments');
+            setAssessments([]);
+        }
+    };
+
+
 
     const handleCopyCode = (code) => {
         navigator.clipboard.writeText(code).then(() => {
@@ -120,35 +136,30 @@ export function AssessmentHistory() {
         remark: ''
     });
 
-    // Certificate options
-    const certificateOptions = [
-        { id: 1, name: 'Default Certificate' },
-        { id: 2, name: 'Skill Up Certificate' },
-        { id: 3, name: 'Achievement Certificate' },
-        { id: 4, name: 'Completion Certificate' },
-        { id: 5, name: 'Excellence Certificate' }
-    ];
+
 
     const [certificateSearch, setCertificateSearch] = useState('');
     const [showCertificateDropdown, setShowCertificateDropdown] = useState(false);
 
     const filteredCertificates = certificateOptions.filter(cert =>
-        cert.name.toLowerCase().includes(certificateSearch.toLowerCase())
+        cert.certificateName?.toLowerCase().includes(certificateSearch.toLowerCase())
     );
 
     const handleEdit = (assessment) => {
         setEditingAssessment(assessment);
         setFormData({
-            name: assessment.name,
-            code: assessment.code,
-            totalQuestions: assessment.totalQuestions,
-            duration: assessment.duration.replace(' Min', ''),
-            startTime: toKolkataTime(assessment.startTime),
-            endTime: toKolkataTime(assessment.endTime),
-            hasCertificate: assessment.hasCertificate ? 'Yes' : 'No',
+            name: assessment.assessmentName,
+            code: assessment.assessmentCode,
+            totalQuestions: assessment.totalQuestions.toString(),
+            duration: assessment.timeDuration.toString(),
+            startTime: parseBackendDate(assessment.startDateTime),
+            endTime: parseBackendDate(assessment.endDateTime),
+            hasCertificate: assessment.generateCertificate ? 'Yes' : 'No',
             certificateType: assessment.certificateType || 'Default',
-            remark: assessment.remark
+            remark: assessment.remark,
+            certificateName: assessment.certificateName?.certificateName || ''
         });
+        setCertificateSearch(assessment.certificateName?.certificateName || '');
         setIsModalOpen(true);
     };
 
@@ -168,7 +179,7 @@ export function AssessmentHistory() {
         setIsModalOpen(true);
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         // Validate all required fields
         if (!formData.name.trim()) {
             toast.error("Assessment Name is required!");
@@ -178,11 +189,11 @@ export function AssessmentHistory() {
             toast.error("Assessment Code is required!");
             return;
         }
-        if (!formData.totalQuestions.trim()) {
+        if (!formData.totalQuestions) {
             toast.error("Total Questions is required!");
             return;
         }
-        if (!formData.duration.trim()) {
+        if (!formData.duration) {
             toast.error("Duration is required!");
             return;
         }
@@ -196,59 +207,62 @@ export function AssessmentHistory() {
         }
 
         // Validate certificate field if certificate is enabled
+        let selectedCertificateId = null;
         if (formData.hasCertificate === 'Yes') {
-            const isValidCertificate = certificateOptions.some(cert => cert.name === certificateSearch);
-            if (!isValidCertificate) {
+            const selectedCert = certificateOptions.find(cert => cert.certificateName === certificateSearch);
+            if (!selectedCert) {
                 toast.error("Please select a valid certificate from the dropdown options!");
                 return;
             }
+            selectedCertificateId = selectedCert._id;
         }
 
-        const saved = JSON.parse(localStorage.getItem('all_assessments') || '[]');
-        if (editingAssessment) {
-            const newList = saved.map(a => a.id === editingAssessment.id ? {
-                ...a,
-                name: formData.name,
-                code: formData.code,
-                totalQuestions: parseInt(formData.totalQuestions),
-                duration: `${formData.duration} Min`,
-                startTime: formData.startTime,
-                endTime: formData.endTime,
-                hasCertificate: formData.hasCertificate === 'Yes',
-                certificateType: formData.hasCertificate === 'Yes' ? formData.certificateType : null,
-                certificateName: formData.hasCertificate === 'Yes' ? certificateSearch : '',
-                remark: formData.remark
-            } : a);
-            updateGlobalAssessments(newList);
-        } else {
-            const newList = [{
-                id: Date.now(),
-                status: true, // Auto-activate
-                currentQuestions: 0,
-                totalQuestions: parseInt(formData.totalQuestions) || 0,
-                name: formData.name,
-                duration: `${formData.duration} Min`,
-                code: formData.code,
-                attempts: 0,
-                startTime: formData.startTime,
-                endTime: formData.endTime,
-                remark: formData.remark,
-                hasCertificate: formData.hasCertificate === 'Yes',
-                certificateType: formData.hasCertificate === 'Yes' ? formData.certificateType : null,
-                certificateName: formData.hasCertificate === 'Yes' ? certificateSearch : ''
-            }, ...saved];
-            updateGlobalAssessments(newList);
+        const payload = {
+            assessmentName: formData.name,
+            assessmentCode: formData.code,
+            totalQuestions: parseInt(formData.totalQuestions),
+            timeDuration: parseInt(formData.duration),
+            startDateTime: formData.startTime,
+            endDateTime: formData.endTime,
+            generateCertificate: formData.hasCertificate === 'Yes',
+            certificateName: selectedCertificateId,
+            remark: formData.remark,
+            status: false // History assessments are false
+        };
+
+        try {
+            let response;
+            if (editingAssessment) {
+                response = await updateAssessmentApi(editingAssessment._id, payload);
+            } else {
+                response = await createAssessmentApi(payload);
+            }
+
+            if (response.success) {
+                toast.success(editingAssessment ? "Assessment updated successfully!" : "Assessment added successfully!");
+                setIsModalOpen(false);
+                fetchAssessments();
+            } else {
+                toast.error(response.message || "Failed to save assessment");
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to save assessment');
         }
-        setIsModalOpen(false);
-        setCertificateSearch('');
-        setShowCertificateDropdown(false);
     };
 
-    const toggleStatus = (id) => {
-        const saved = JSON.parse(localStorage.getItem('all_assessments') || '[]');
-        const newList = saved.map(a => a.id === id ? { ...a, status: !a.status } : a);
-        updateGlobalAssessments(newList);
-        toast.info("Status updated");
+    const toggleStatus = async (id) => {
+        try {
+            const response = await toggleAssessmentStatusApi(id);
+            if (response.success || response.status) {
+                toast.success(response.message || "Assessment activated successfully");
+                // Immediately remove from History UI since it's now active
+                setAssessments(prev => prev.filter(item => item._id !== id));
+            } else {
+                toast.error(response.message || "Failed to update status");
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to update status');
+        }
     };
 
     const handleDeleteAssessment = (id) => {
@@ -260,12 +274,19 @@ export function AssessmentHistory() {
             confirmButtonColor: "#319795",
             cancelButtonColor: "#f56565",
             confirmButtonText: "Yes, delete it!"
-        }).then((result) => {
+        }).then(async (result) => {
             if (result.isConfirmed) {
-                const saved = JSON.parse(localStorage.getItem('all_assessments') || '[]');
-                const newList = saved.filter(a => a.id !== id);
-                updateGlobalAssessments(newList);
-                toast.success("Assessment deleted successfully");
+                try {
+                    const response = await deleteAssessmentApi(id);
+                    if (response.success) {
+                        toast.success("Assessment deleted successfully");
+                        fetchAssessments();
+                    } else {
+                        toast.error(response.message || "Failed to delete assessment");
+                    }
+                } catch (error) {
+                    toast.error(error.response?.data?.message || 'Failed to delete assessment');
+                }
             }
         });
     };
@@ -331,14 +352,14 @@ export function AssessmentHistory() {
                                     </td>
                                 </tr>
                             ) : assessments.map((item, index) => (
-                                <tr key={item.id}>
+                                <tr key={item._id}>
                                     <td className="px-4 py-3 align-top">{index + 1}</td>
                                     <td className="px-4 py-3 align-top">
                                         <label className="relative inline-flex items-center cursor-pointer">
                                             <input
                                                 type="checkbox"
                                                 checked={item.status}
-                                                onChange={() => toggleStatus(item.id)}
+                                                onChange={() => toggleStatus(item._id)}
                                                 className="sr-only peer"
                                             />
                                             <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#319795]"></div>
@@ -346,23 +367,23 @@ export function AssessmentHistory() {
                                     </td>
                                     <td className="px-4 py-3 align-top">
                                         <button
-                                            onClick={() => navigate(`/admin/assign-questions/${item.id}`)}
+                                            onClick={() => navigate(`/admin/assign-questions/${item._id}`)}
                                             className="bg-emerald-400 text-white px-3 py-1 rounded text-xs font-medium hover:bg-emerald-500 transition-colors"
                                         >
-                                            Questions ({localStorage.getItem(`assessment_${item.id}_questions`) || item.currentQuestions}/{item.totalQuestions})
+                                            Questions ({item.count || 0}/{item.totalQuestions})
                                         </button>
                                     </td>
                                     <td className="px-4 py-3 align-top">
-                                        <div className="font-medium text-[#2D3748]">{item.name}</div>
+                                        <div className="font-medium text-[#2D3748]">{item.assessmentName}</div>
                                         <div className="text-xs bg-[#F56565]/20 text-[#B8322F] inline-block px-1.5 rounded mt-1">
-                                            {item.duration}
+                                            {item.timeDuration} Min
                                         </div>
                                     </td>
                                     <td className="px-4 py-3 align-top">
-                                        <div className="font-medium text-[#2D3748] mb-2">{item.code}</div>
+                                        <div className="font-medium text-[#2D3748] mb-2">{item.assessmentCode}</div>
                                         <div className="flex gap-1 mb-1">
                                             <button
-                                                onClick={() => handleCopyCode(item.code)}
+                                                onClick={() => handleCopyCode(item.assessmentCode)}
                                                 className="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-600 rounded text-xs hover:bg-blue-100 transition-colors"
                                                 title="Copy Assessment Code"
                                             >
@@ -370,7 +391,7 @@ export function AssessmentHistory() {
                                                 Copy
                                             </button>
                                             <button
-                                                onClick={() => handleCopyLink(item.code)}
+                                                onClick={() => handleCopyLink(item.assessmentCode)}
                                                 className="flex items-center gap-1 px-2 py-1 bg-green-50 text-green-600 rounded text-xs hover:bg-green-100 transition-colors"
                                                 title="Copy Assessment Link"
                                             >
@@ -380,32 +401,32 @@ export function AssessmentHistory() {
                                         </div>
                                         <div className="space-y-1 space-x-1">
                                             <div className="text-xs bg-[#319795]/20 text-[#2B7A73] inline-block px-1.5 rounded">
-                                                Start: {Math.floor((item.attempts || 0) * 0.62)}
+                                                Start: {item.start || 0}
                                             </div>
                                             <div className="text-xs bg-[#F56565]/20 text-[#B8322F] inline-block px-1.5 rounded">
-                                                Submit: {Math.floor((item.attempts || 0) * 0.38)}
+                                                Submit: {item.submit || 0}
                                             </div>
                                         </div>
                                     </td>
                                     <td className="px-4 py-3 align-top text-gray-500 text-xs whitespace-nowrap">
-                                        <div>{item.startTime}</div>
-                                        <div>{item.endTime}</div>
+                                        <div>{item.startDateTime}</div>
+                                        <div>{item.endDateTime}</div>
                                     </td>
                                     <td className="px-4 py-3 align-top text-[#2D3748]">{item.remark}</td>
                                     <td className="px-4 py-3 align-top text-[#2D3748]">
-                                        <div>{item.hasCertificate ? 'Yes' : 'No'} </div>
-                                        <div className="text-xs text-gray-400">{item.name}</div>
+                                        <div>{item.generateCertificate ? 'Yes' : 'No'} </div>
+                                        <div className="text-xs text-gray-400">{item.certificateName?.certificateName || 'N/A'}</div>
                                     </td>
                                     <td className="px-4 py-3 align-top">
                                         <div className="flex flex-col gap-1.5">
                                             <button
-                                                onClick={() => navigate(`/admin/assessment/result/${item.id}`)}
+                                                onClick={() => navigate(`/admin/assessment/result/${item._id}`)}
                                                 className="border border-[#319795] text-[#319795] px-2 py-0.5 rounded text-xs hover:bg-[#E6FFFA]"
                                             >
                                                 Result
                                             </button>
                                             <button
-                                                onClick={() => navigate(`/admin/assessment/started-students/${item.id}`)}
+                                                onClick={() => navigate(`/admin/assessment/started-students/${item._id}`)}
                                                 className="border border-orange-500 text-orange-500 px-2 py-0.5 rounded text-xs hover:bg-orange-50"
                                             >
                                                 Export
@@ -419,7 +440,7 @@ export function AssessmentHistory() {
                                                     <Edit className="h-3 w-3" />
                                                 </button>
                                                 <button
-                                                    onClick={() => handleDeleteAssessment(item.id)}
+                                                    onClick={() => handleDeleteAssessment(item._id)}
                                                     className="p-1 border border-red-500 text-red-500 rounded hover:bg-red-50"
                                                     title="Delete"
                                                 >
@@ -543,15 +564,15 @@ export function AssessmentHistory() {
                                         <div className="absolute z-10 w-full bg-white border border-gray-300 rounded mt-1 max-h-40 overflow-y-auto">
                                             {filteredCertificates.map((cert) => (
                                                 <div
-                                                    key={cert.id}
+                                                    key={cert._id}
                                                     onClick={() => {
-                                                        setFormData({ ...formData, certificateName: cert.name });
-                                                        setCertificateSearch(cert.name);
+                                                        setFormData({ ...formData, certificateName: cert.certificateName });
+                                                        setCertificateSearch(cert.certificateName);
                                                         setShowCertificateDropdown(false);
                                                     }}
                                                     className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
                                                 >
-                                                    {cert.name}
+                                                    {cert.certificateName}
                                                 </div>
                                             ))}
                                             {filteredCertificates.length === 0 && (

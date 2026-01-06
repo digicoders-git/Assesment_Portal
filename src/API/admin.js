@@ -16,12 +16,11 @@ export const updateAdminApi = async (adminId, payload) => {
     }
 
     const response = await api.put(
-      `${API_BASE_URL}/admin/update/${adminId}`,
+      `/admin/update/${adminId}`,
       formData,
       {
         headers: {
           "Content-Type": "multipart/form-data",
-          Authorization: `Bearer ${token}` 
         }
       }
     );

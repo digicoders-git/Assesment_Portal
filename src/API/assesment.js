@@ -7,6 +7,15 @@ export const createAssessmentApi = async (payload) => {
   return res.data;
 };
 
+// getAll
+export const getAllAssessmentsApi = async () => {
+  const res = await api.get(
+    `/admin/assesment/get`
+  );
+  return res.data;
+};
+
+
 // Get Assessment by Status
 export const getAssessmentByStatusApi = async (status) => {
   const res = await api.get(`/admin/assesment/get/${status}`);
