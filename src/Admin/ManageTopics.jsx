@@ -47,6 +47,7 @@ export function ManageTopics() {
                 setEditingTopic(null);
                 setIsDialogOpen(false);
                 fetchTopics();
+                window.dispatchEvent(new Event('dashboardUpdated'));
             } catch (error) {
                 toast.error(editingTopic ? 'Failed to update topic' : 'Failed to add topic');
             }
@@ -58,6 +59,7 @@ export function ManageTopics() {
             const response = await toggleTopicStatusApi(topic._id);
             toast.success(response.message);
             fetchTopics();
+            window.dispatchEvent(new Event('dashboardUpdated'));
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to toggle status');
         }
@@ -85,6 +87,7 @@ export function ManageTopics() {
                 await deleteTopicApi(topic._id);
                 toast.success('Topic deleted successfully!');
                 fetchTopics();
+                window.dispatchEvent(new Event('dashboardUpdated'));
             } catch (error) {
                 toast.error('Failed to delete topic');
             }

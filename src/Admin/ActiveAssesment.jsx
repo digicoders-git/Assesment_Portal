@@ -268,6 +268,7 @@ export function ActiveAssessment() {
                 toast.success(editingAssessment ? "Assessment updated successfully!" : "Assessment added successfully!");
                 setIsModalOpen(false);
                 fetchAssessments();
+                window.dispatchEvent(new Event('dashboardUpdated'));
             } else {
                 toast.error(response.message || "Failed to save assessment");
             }
@@ -285,6 +286,7 @@ export function ActiveAssessment() {
 
                 // Immediately remove from UI without refresh
                 setAssessments(prev => prev.filter(item => item._id !== id));
+                window.dispatchEvent(new Event('dashboardUpdated'));
             } else {
                 toast.error(response.message || "Failed to update status");
             }
@@ -309,6 +311,7 @@ export function ActiveAssessment() {
                     if (response.success) {
                         toast.success("Assessment deleted successfully");
                         fetchAssessments();
+                        window.dispatchEvent(new Event('dashboardUpdated'));
                     } else {
                         toast.error(response.message || "Failed to delete assessment");
                     }

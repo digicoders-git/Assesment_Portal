@@ -6,5 +6,22 @@ export const adminLogin = async ({ userName, password }) => {
     password,
   });
 
-  return data; 
+  return data;
 };
+
+// logout
+
+export const adminLogout = async () => {
+  const { data } = await api.post("/admin/logout");
+  return data;
+};
+
+
+// dashboard-data 
+
+export const getDashboardDataApi = async () => {
+  const { data } = await api.get("/admin/dashboard-data");
+  return data;
+};
+
+

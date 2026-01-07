@@ -11,10 +11,13 @@ import {
     Menu,
     X,
     GraduationCap,
-    User
+    User,
+    LogOut
 } from 'lucide-react';
 
 import { getAdminApi } from '../../API/admin';
+import { adminLogout } from '../../API/auth';
+import Swal from 'sweetalert2';
 
 export default function AdminDashboard() {
     const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -57,6 +60,55 @@ export default function AdminDashboard() {
         if (window.innerWidth < 768) setSidebarOpen(false);
     };
 
+    const handleLogout = async () => {
+        const result = await Swal.fire({
+            title: 'Logout?',
+            text: "Are you sure you want to logout?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#319795',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, logout!',
+            background: '#FFFFFF',
+            color: '#2D3748'
+        });
+
+        if (result.isConfirmed) {
+            try {
+                const response = await adminLogout();
+                if (response.success) {
+                    Swal.fire({
+                        title: 'Logged Out!',
+                        text: 'You have been logged out successfully.',
+                        icon: 'success',
+                        timer: 1500,
+                        showConfirmButton: false,
+                        background: '#FFFFFF',
+                        color: '#2D3748'
+                    });
+                    setTimeout(() => {
+                        navigate('/admin/login');
+                    }, 1500);
+                } else {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: response.message || "Logout failed",
+                        icon: 'error',
+                        confirmButtonColor: '#319795',
+                    });
+                }
+            } catch (error) {
+                console.error("Logout error:", error);
+                Swal.fire({
+                    title: 'Error!',
+                    text: "An error occurred during logout",
+                    icon: 'error',
+                    confirmButtonColor: '#319795',
+                });
+            }
+        }
+    };
+
     return (
         <div className="min-h-screen flex" style={{ backgroundColor: '#EDF2F7' }}> {/* Soft Gray Background */}
             {/* Sidebar */}
@@ -67,7 +119,9 @@ export default function AdminDashboard() {
                     width: sidebarOpen ? '17rem' : '5rem',
                     backgroundColor: '#319795',
                     color: '#E6FFFA',
-                    transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
+                    transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+                    display: 'flex',
+                    flexDirection: 'column'
                 }}
             >
                 {/* Logo */}
@@ -98,7 +152,7 @@ export default function AdminDashboard() {
 
 
                 {/* Menu */}
-                <nav className="mt-6 px-3 space-y-2">
+                <nav className="mt-6 px-3 space-y-2 flex-grow">
                     {menuItems.map((item) => {
                         const Icon = item.icon;
                         const isActive = location.pathname === item.path || (item.id === 'dashboard' && location.pathname === '/admin/dashboard');
@@ -130,6 +184,29 @@ export default function AdminDashboard() {
                         );
                     })}
                 </nav>
+
+                {/* Logout Button */}
+                <div className="mt-auto pb-6 px-3 border-t pt-4" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
+                    <button
+                        onClick={handleLogout}
+                        className={`w-full flex items-center ${sidebarOpen ? 'px-4' : 'justify-center'} py-3.5 rounded-xl transition-all duration-300 group relative border hover:bg-zinc-200 hover:text-red-400`}
+
+                        title={!sidebarOpen ? 'Logout' : ''}
+                    >
+                        <LogOut className={`h-6 w-6 shrink-0 transition-all duration-300 text-white group-hover:scale-110 ${!sidebarOpen ? 'scale-110' : ''}`} />
+                        <span className={`text-[15px] whitespace-nowrap font-bold tracking-wide transition-all duration-500 overflow-hidden ${sidebarOpen ? 'opacity-100 ml-4 w-auto' : 'opacity-0 w-0 ml-0'}`}>
+                            Logout
+                        </span>
+
+                        {/* Tooltip for collapsed state */}
+                        {!sidebarOpen && (
+                            <div className="absolute left-full ml-2 px-3 py-2 bg-[#C53030] text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-[60] shadow-xl">
+                                Logout
+                                <div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 bg-[#C53030] rotate-45"></div>
+                            </div>
+                        )}
+                    </button>
+                </div>
             </aside>
 
             {/* Mobile Overlay */}

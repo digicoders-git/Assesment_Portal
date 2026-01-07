@@ -144,6 +144,7 @@ export default function TopicQuestions() {
                 toast.success(response.message);
                 setIsAddModalOpen(false);
                 fetchQuestions();
+                window.dispatchEvent(new Event('dashboardUpdated'));
             } catch (error) {
                 toast.error(error.response?.data?.message || 'Failed to update question');
             }
@@ -174,6 +175,7 @@ export default function TopicQuestions() {
                 toast.success(response.message);
                 setIsAddModalOpen(false);
                 fetchQuestions();
+                window.dispatchEvent(new Event('dashboardUpdated'));
             } catch (error) {
                 toast.error(error.response?.data?.message || 'Failed to create questions');
             }
@@ -211,6 +213,7 @@ export default function TopicQuestions() {
                     const response = await deleteQuestionApi(id);
                     toast.success(response.message);
                     fetchQuestions();
+                    window.dispatchEvent(new Event('dashboardUpdated'));
                 } catch (error) {
                     toast.error(error.response?.data?.message || 'Failed to delete question');
                 }
@@ -237,6 +240,7 @@ export default function TopicQuestions() {
             }
             setIsGuidanceOpen(false);
             fetchQuestions();
+            window.dispatchEvent(new Event('dashboardUpdated'));
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to import questions');
         }

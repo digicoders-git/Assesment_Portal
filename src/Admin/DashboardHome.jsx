@@ -1,20 +1,61 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Clock, Users, Award, History, FileText, BookOpen } from 'lucide-react';
+import { getDashboardDataApi } from '../API/auth';
 
 export default function DashboardHome() {
     const navigate = useNavigate();
+    const [dashboardData, setDashboardData] = useState({
+        totalStudents: 0,
+        activeAssesment: 0,
+        historyAssesment: 0,
+        results: 0,
+        activeTopics: 0,
+        inactiveTopics: 0,
+        questions: 0,
+        totalCertificates: 0
+    });
+    const [loading, setLoading] = useState(true);
+
+    const fetchDashboardData = async () => {
+        try {
+            const response = await getDashboardDataApi();
+            if (response.success) {
+                setDashboardData(response.data);
+            }
+        } catch (error) {
+            console.error("Failed to fetch dashboard data:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchDashboardData();
+
+        // Listen for updates from other components
+        window.addEventListener('dashboardUpdated', fetchDashboardData);
+        return () => window.removeEventListener('dashboardUpdated', fetchDashboardData);
+    }, []);
 
     const cards = [
-        { title: 'ACTIVE ASSESSMENT', value: '1', icon: Clock, link: '/admin/assessment' },
-        { title: 'HISTORY', value: '1', icon: History, link: '/admin/history' },
-        { title: 'TOTAL STUDENTS', value: '1314', icon: Users, link: '/admin/students' },
-        { title: 'TOTAL RESULTS', value: '6827', icon: FileText, link: '/admin/history' },
-        { title: 'ACTIVE TOPICS', value: '3', icon: BookOpen, link: '/admin/topics' },
-        { title: 'INACTIVE TOPICS', value: '0', icon: BookOpen, link: '/admin/topics' },
-        { title: 'TOTAL QUESTIONS', value: '110', icon: FileText, link: '/admin/topics' },
-        { title: 'CERTIFICATES', value: '1', icon: Award, link: '/admin/certificate' },
+        { title: 'ACTIVE ASSESSMENT', value: dashboardData.activeAssesment, icon: Clock, link: '/admin/assessment' },
+        { title: 'HISTORY', value: dashboardData.historyAssesment, icon: History, link: '/admin/history' },
+        { title: 'TOTAL STUDENTS', value: dashboardData.totalStudents, icon: Users, link: '/admin/students' },
+        { title: 'TOTAL RESULTS', value: dashboardData.results, icon: FileText, link: '/admin/history' },
+        { title: 'ACTIVE TOPICS', value: dashboardData.activeTopics, icon: BookOpen, link: '/admin/topics' },
+        { title: 'INACTIVE TOPICS', value: dashboardData.inactiveTopics, icon: BookOpen, link: '/admin/topics' },
+        { title: 'TOTAL QUESTIONS', value: dashboardData.questions, icon: FileText, link: '/admin/topics' },
+        { title: 'CERTIFICATES', value: dashboardData.totalCertificates, icon: Award, link: '/admin/certificate' },
     ];
+
+    if (loading) {
+        return (
+            <div className="p-6 bg-[#EDF2F7] min-h-full flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#319795]"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="p-6 bg-[#EDF2F7] min-h-full">

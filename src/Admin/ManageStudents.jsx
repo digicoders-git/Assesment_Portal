@@ -401,7 +401,7 @@ export function ManageStudents() {
                             <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} className="px-4 py-1.5 rounded-lg border bg-white shadow-sm font-bold hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all">Prev</button>
                             <div className="flex gap-1.5">
                                 {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
-                                    <button key={p} onClick={() => handlePageChange(p)} className={`w-9 h-9 rounded-lg font-bold shadow-sm transition-all ${currentPage === p ? 'bg-[#319795] text-white ring-2 ring-teal-200' : 'bg-white border text-gray-700 hover:bg-gray-100'}`}>{p}</button>
+                                    <button key={p} onClick={() => handlePageChange(p)} className={`w-9 h-9 rounded-lg font-bold transition-all ${currentPage === p ? 'bg-[#319795] text-white ring-2 bg-teal-400' : 'bg-white border text-gray-700 hover:bg-gray-100'}`}>{p}</button>
                                 ))}
                             </div>
                             <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages || totalPages === 0} className="px-4 py-1.5 rounded-lg border bg-white shadow-sm font-bold hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all">Next</button>

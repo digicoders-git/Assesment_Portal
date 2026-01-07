@@ -169,6 +169,7 @@ export function ManageCertificate() {
                 toast.success(editingId ? "Certificate updated successfully!" : "Certificate added successfully!");
                 fetchCertificates();
                 handleBackToList();
+                window.dispatchEvent(new Event('dashboardUpdated'));
             }
         } catch (error) {
             console.error("Save error:", error);
@@ -182,6 +183,7 @@ export function ManageCertificate() {
             if (response.success) {
                 toast.success(response.message || "Status updated successfully");
                 fetchCertificates();
+                window.dispatchEvent(new Event('dashboardUpdated'));
             }
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to update status');
@@ -204,6 +206,7 @@ export function ManageCertificate() {
                     if (response.success) {
                         toast.success("Certificate deleted successfully");
                         fetchCertificates();
+                        window.dispatchEvent(new Event('dashboardUpdated'));
                     }
                 } catch (error) {
                     toast.error(error.response?.data?.message || 'Failed to delete certificate');

@@ -242,6 +242,7 @@ export function AssessmentHistory() {
                 toast.success(editingAssessment ? "Assessment updated successfully!" : "Assessment added successfully!");
                 setIsModalOpen(false);
                 fetchAssessments();
+                window.dispatchEvent(new Event('dashboardUpdated'));
             } else {
                 toast.error(response.message || "Failed to save assessment");
             }
@@ -257,6 +258,7 @@ export function AssessmentHistory() {
                 toast.success(response.message || "Assessment activated successfully");
                 // Immediately remove from History UI since it's now active
                 setAssessments(prev => prev.filter(item => item._id !== id));
+                window.dispatchEvent(new Event('dashboardUpdated'));
             } else {
                 toast.error(response.message || "Failed to update status");
             }
@@ -281,6 +283,7 @@ export function AssessmentHistory() {
                     if (response.success) {
                         toast.success("Assessment deleted successfully");
                         fetchAssessments();
+                        window.dispatchEvent(new Event('dashboardUpdated'));
                     } else {
                         toast.error(response.message || "Failed to delete assessment");
                     }
