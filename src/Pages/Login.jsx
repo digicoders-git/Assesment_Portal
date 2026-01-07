@@ -217,7 +217,12 @@ export default function DigiCodersPortal() {
         // API Integration
         setSubmitting(true);
         try {
-            const response = await studentRegisterApi(formData);
+            // Ensure assessment code is uppercase when sent to backend
+            const payload = {
+                ...formData,
+                code: formData.code.toUpperCase()
+            };
+            const response = await studentRegisterApi(payload);
             if (response.success) {
                 // Store student data in localStorage for persistence
                 const studentData = {

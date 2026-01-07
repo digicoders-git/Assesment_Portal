@@ -18,6 +18,7 @@ export default function Assessment() {
     const [testStarted, setTestStarted] = useState(false);
     const [loading, setLoading] = useState(true);
     const [assesmentQuestionsId, setAssesmentQuestionsId] = useState(null);
+    const [certificateId, setCertificateId] = useState(null);
     const tabWarningsRef = useRef(0);
 
     const navigate = useNavigate();
@@ -43,6 +44,7 @@ export default function Assessment() {
 
                     setQuestions(mappedQuestions);
                     setAssesmentQuestionsId(response.data._id);
+                    setCertificateId(response.data.assesmentId?.certificateName);
                     const durationInMinutes = response.data.assesmentId?.timeDuration || 30;
                     setTimeLeft(durationInMinutes * 60);
                     setTotalDuration(durationInMinutes * 60);
@@ -230,12 +232,6 @@ export default function Assessment() {
             ...selectedAnswers,
             [currentQuestion]: option
         });
-        // Remove from skipped if previously skipped
-        if (skippedQuestions.has(currentQuestion)) {
-            const newSkipped = new Set(skippedQuestions);
-            newSkipped.delete(currentQuestion);
-            setSkippedQuestions(newSkipped);
-        }
     };
 
     const handleNext = () => {
@@ -244,8 +240,20 @@ export default function Assessment() {
             return;
         }
         if (currentQuestion < questions.length - 1) {
+            // Remove from skipped when moving to next via "Save & Next"
+            if (skippedQuestions.has(currentQuestion)) {
+                const newSkipped = new Set(skippedQuestions);
+                newSkipped.delete(currentQuestion);
+                setSkippedQuestions(newSkipped);
+            }
             setCurrentQuestion(currentQuestion + 1);
         } else {
+            // Also check for the last question
+            if (skippedQuestions.has(currentQuestion)) {
+                const newSkipped = new Set(skippedQuestions);
+                newSkipped.delete(currentQuestion);
+                setSkippedQuestions(newSkipped);
+            }
             handleSubmit();
         }
     };
@@ -321,15 +329,9 @@ export default function Assessment() {
         try {
             const response = await createResultApi(payload);
             if (response.success) {
-                navigate('/result', {
+                navigate(`/result/${studentId}/${assesmentQuestionsId}/${certificateId}`, {
                     state: {
-                        total: questions.length,
-                        attempted: attemptedCount,
-                        correct: correctCount,
-                        incorrect: incorrectCount,
                         submissionTime: new Date().toLocaleTimeString(),
-                        duration: duration,
-                        result: response.result
                     }
                 });
             } else {
@@ -421,8 +423,8 @@ export default function Assessment() {
     };
 
     const getQuestionStatus = (index) => {
-        if (selectedAnswers[index]) return 'attempted';
         if (skippedQuestions.has(index)) return 'skipped';
+        if (selectedAnswers[index]) return 'attempted';
         return 'unattempted';
     };
 

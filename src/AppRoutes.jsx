@@ -27,7 +27,7 @@ const AppRoutes = () => {
       {/* Public Routes */}
       <Route path="/" element={<Login />} />
       <Route path="/assessment/:code/:studentId" element={<Assessment />} />
-      <Route path="/result" element={<Result />} />
+      <Route path="/result/:studentId/:assessmentId/:certificateId" element={<Result />} />
       <Route path="/admin/login" element={<AdminLogin />} />
 
       {/* Admin Nested Routes */}
