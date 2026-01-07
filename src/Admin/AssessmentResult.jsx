@@ -323,7 +323,7 @@ export default function AssessmentResult() {
                 </div>
             </div>
 
-            <div className="overflow-y-scroll bg-white rounded-lg shadow-sm border border-gray-200 print-content flex flex-col h-[calc(100vh-120px)] sm:h-[calc(100vh-200px)]">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 print-content flex flex-col h-[calc(100vh-120px)] sm:h-[calc(100vh-200px)]">
                 <div className="p-4 border-b border-gray-200 flex-shrink-0">
                     <h2 className="text-lg font-semibold text-gray-700 uppercase">Assessment Submissions</h2>
                 </div>
@@ -417,7 +417,7 @@ export default function AssessmentResult() {
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-hidden min-h-[400px]">
+                <div className="flex-1">
                     {filteredResults.length === 0 ? (
                         <div className="flex items-center justify-center py-20">
                             <div className="text-center">
@@ -433,9 +433,9 @@ export default function AssessmentResult() {
                             </div>
                         </div>
                     ) : (
-                        <div className="h-full overflow-x-scroll overflow-y-hidden">
+                        <div className="overflow-x-auto">
                             <table className="w-full text-sm text-left min-w-[1200px]">
-                                <thead className="bg-[#f8fafc] text-gray-700 font-bold border-b-2 border-gray-200 sticky top-0 z-10 font-inter">
+                                <thead className="bg-[#f8fafc] text-gray-700 font-bold border-b-2 border-gray-200 font-inter">
                                     <tr>
                                         <th className="px-4 py-3 text-center min-w-[50px] text-xs uppercase tracking-wider">Sr.</th>
                                         {activeTab === 'first' && <th className="px-4 py-3 text-center min-w-[70px] text-xs uppercase tracking-wider">Rank</th>}
@@ -443,7 +443,7 @@ export default function AssessmentResult() {
                                         <th className="px-4 py-3 text-center min-w-[60px] text-xs uppercase tracking-wider">View</th>
                                         <th className="px-4 py-3 min-w-[120px] text-xs uppercase tracking-wider">Ref Code</th>
                                         <th className="px-4 py-3 min-w-[140px] text-xs uppercase tracking-wider">Course</th>
-                                        <th className="px-4 py-3 min-w-[90px] text-xs uppercase tracking-wider">Year</th>
+                                        <th className="px-4 py-3 text-center min-w-[120px] text-xs uppercase tracking-wider">Year</th>
                                         <th className="px-4 py-3 min-w-[120px] text-xs uppercase tracking-wider">Phone</th>
                                         <th className="px-4 py-3 min-w-[180px] text-xs uppercase tracking-wider">College</th>
                                         <th className="px-4 py-3 text-center min-w-[90px] text-xs uppercase tracking-wider">Score</th>
@@ -452,7 +452,7 @@ export default function AssessmentResult() {
                                         <th className="px-4 py-3 text-center min-w-[70px] text-xs uppercase tracking-wider">Print</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-100">
+                                <tbody className="divide-y divide-gray-100 bg-white">
                                     {currentData.map((item, index) => (
                                         <tr key={`${item.id}-${item.submission}`} className="hover:bg-blue-50/30 transition-colors group">
                                             <td className="px-4 py-3 text-center text-gray-500 font-medium">{startIndex + index + 1}</td>
@@ -493,7 +493,7 @@ export default function AssessmentResult() {
                                                     {item.course}
                                                 </span>
                                             </td>
-                                            <td className="px-4 py-3">
+                                            <td className="px-4 py-3 text-center">
                                                 <span className="bg-purple-50 text-purple-700 px-2.5 py-1 rounded text-xs font-bold border border-purple-100">
                                                     {item.year}
                                                 </span>

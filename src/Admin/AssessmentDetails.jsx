@@ -115,20 +115,24 @@ export default function AssessmentDetails() {
                                             const options = qItem.options || {};
                                             const selectedKey = qItem.selectedOption;
                                             const isCorrect = qItem.isCorrect;
+                                            
+                                            // Check if selectedOption is an actual option (A, B, C, D) or status (unattempted, skipped, unvisited)
+                                            const isActualOption = ['A', 'B', 'C', 'D'].includes(selectedKey);
+                                            const statusText = isActualOption ? (isCorrect ? 'Correct' : 'Incorrect') : selectedKey;
+                                            const statusColor = isActualOption ? (isCorrect ? 'green' : 'red') : 'orange';
 
                                             return (
                                                 <div key={qItem._id || qIndex} style={{ marginBottom: '24px', padding: '15px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
                                                     <p style={{ fontSize: '16px', marginBottom: '12px', lineHeight: '1.5' }}>
                                                         <strong>Q{qIndex + 1}. {qItem.question}</strong>
-                                                        {isCorrect ?
-                                                            <span style={{ color: 'green', marginLeft: '10px', fontWeight: 'bold' }}>✓ Correct</span> :
-                                                            <span style={{ color: 'red', marginLeft: '10px', fontWeight: 'bold' }}>✗ Incorrect</span>
-                                                        }
+                                                        <span style={{ color: statusColor, marginLeft: '10px', fontWeight: 'bold' }}>
+                                                            {isActualOption ? (isCorrect ? '✓' : '✗') : ''} {statusText}
+                                                        </span>
                                                     </p>
 
                                                     <div style={{ marginLeft: '15px' }}>
                                                         {Object.entries(options).map(([key, value]) => {
-                                                            const isUserChoice = String(key) === String(selectedKey);
+                                                            const isUserChoice = String(key) === String(selectedKey) && isActualOption;
 
                                                             let style = { padding: '8px', marginBottom: '4px', borderRadius: '4px' };
                                                             if (isUserChoice) {
