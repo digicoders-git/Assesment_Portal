@@ -158,7 +158,8 @@ export function ActiveAssessment() {
 
 
     const filteredCertificates = certificateOptions.filter(cert =>
-        cert.certificateName?.toLowerCase().includes(certificateSearch.toLowerCase())
+        cert.certificateName?.toLowerCase().includes(certificateSearch.toLowerCase()) &&
+        cert.status === true
     );
 
     const handleEdit = (assessment) => {
@@ -613,7 +614,7 @@ export function ActiveAssessment() {
                                                 ))
                                             ) : (
                                                 <div className="px-3 py-2 text-gray-500 text-sm">
-                                                    No certificates found
+                                                    No Active Certificates
                                                 </div>
                                             )}
                                         </div>

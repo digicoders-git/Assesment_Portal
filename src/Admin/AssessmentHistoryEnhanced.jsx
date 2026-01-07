@@ -142,7 +142,8 @@ export function AssessmentHistory() {
     const [showCertificateDropdown, setShowCertificateDropdown] = useState(false);
 
     const filteredCertificates = certificateOptions.filter(cert =>
-        cert.certificateName?.toLowerCase().includes(certificateSearch.toLowerCase())
+        cert.certificateName?.toLowerCase().includes(certificateSearch.toLowerCase()) &&
+        cert.status === true
     );
 
     const handleEdit = (assessment) => {
