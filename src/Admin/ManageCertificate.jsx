@@ -555,7 +555,17 @@ export function ManageCertificate() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
-                            {certificates.map((cert, index) => (
+                            {certificates.length === 0 ? (
+                                <tr>
+                                    <td colSpan="6" className="px-6 py-20 text-center">
+                                        <div className="flex flex-col items-center justify-center text-gray-400">
+                                            <ImageIcon className="h-12 w-12 mb-4 opacity-20" />
+                                            <p className="text-lg font-bold">No Certificates Available</p>
+                                            <p className="text-sm">Create your first certificate template to get started.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : certificates.map((cert, index) => (
                                 <tr key={cert._id} className="hover:bg-slate-50 transition-colors group">
                                     <td className="px-6 py-4">
                                         <div className="font-bold text-gray-800">{cert.certificateName}</div>

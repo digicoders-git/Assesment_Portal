@@ -37,7 +37,6 @@ export function ManageStudents() {
             await fetchStudents();
         } catch (error) {
             console.error("Initial Fetch Error:", error);
-            toast.error("Failed to load assessments");
         } finally {
             setLoading(false);
         }
