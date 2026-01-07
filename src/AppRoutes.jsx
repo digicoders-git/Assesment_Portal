@@ -26,7 +26,7 @@ const AppRoutes = () => {
     <Routes>
       {/* Public Routes */}
       <Route path="/" element={<Login />} />
-      <Route path="/assessment" element={<Assessment />} />
+      <Route path="/assessment/:code/:studentId" element={<Assessment />} />
       <Route path="/result" element={<Result />} />
       <Route path="/admin/login" element={<AdminLogin />} />
 
@@ -50,7 +50,7 @@ const AppRoutes = () => {
         <Route path="edit/:topicId" element={<EditQuestions />} />
         <Route path="assessment/started-students/:id" element={<StartedStudents />} />
       </Route>
-      
+
       {/* Catch-all route for assessment codes */}
       <Route path="/:code" element={<Login />} />
     </Routes>

@@ -2,28 +2,71 @@ import { Clock, ChevronLeft, ChevronRight, SkipForward, Menu, X } from 'lucide-r
 import { useEffect, useState, useRef } from 'react';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
+import { getAssessmentByCodeApi } from '../API/assesmentQuestions';
+import { createResultApi } from '../API/result';
 
 export default function Assessment() {
-    // 20 Dummy Questions
-    const dummyQuestions = Array.from({ length: 20 }, (_, i) => ({
-        id: i + 1,
-        question: `Question ${i + 1}: Which of the following is a valid React Hook?`,
-        options: ['useState', 'usePizza', 'useCoffee', 'useSleep'],
-        correct: 'useState'
-    }));
-
-    const [questions, setQuestions] = useState(dummyQuestions);
+    const [questions, setQuestions] = useState([]);
     const [currentQuestion, setCurrentQuestion] = useState(0);
     const [selectedAnswers, setSelectedAnswers] = useState({});
     const [skippedQuestions, setSkippedQuestions] = useState(new Set());
     const [isPaletteOpen, setIsPaletteOpen] = useState(false);
-    const [timeLeft, setTimeLeft] = useState(2 * 60); // 30 minutes in seconds
+    const [timeLeft, setTimeLeft] = useState(0);
+    const [totalDuration, setTotalDuration] = useState(0);
     const [visitedQuestions, setVisitedQuestions] = useState(new Set([0]));
     const [testStarted, setTestStarted] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [assesmentQuestionsId, setAssesmentQuestionsId] = useState(null);
     const tabWarningsRef = useRef(0);
 
     const navigate = useNavigate();
+    const { code, studentId } = useParams();
+
+    useEffect(() => {
+        const fetchAssessment = async () => {
+            try {
+                if (!code) {
+                    throw new Error("Assessment code missing");
+                }
+                const response = await getAssessmentByCodeApi(code);
+
+                if (response.success && response.data) {
+                    const mappedQuestions = response.data.questionIds.map((q, idx) => ({
+                        id: idx + 1,
+                        _id: q._id,
+                        question: q.question,
+                        options: [q.options.A, q.options.B, q.options.C, q.options.D],
+                        correct: q.options[q.correctOption], // Store the actual text of correct option
+                        correctKey: q.correctOption // Store the key (A, B, C, D) just in case
+                    }));
+
+                    setQuestions(mappedQuestions);
+                    setAssesmentQuestionsId(response.data._id);
+                    const durationInMinutes = response.data.assesmentId?.timeDuration || 30;
+                    setTimeLeft(durationInMinutes * 60);
+                    setTotalDuration(durationInMinutes * 60);
+                    setLoading(false);
+                } else {
+                    throw new Error(response.message || "Invalid assessment code");
+                }
+            } catch (error) {
+                console.error("Assessment fetch error:", error);
+                setLoading(false);
+                Swal.fire({
+                    title: 'Invalid Assessment!',
+                    text: error.message || 'The assessment code provided is invalid or has expired.',
+                    icon: 'error',
+                    confirmButtonColor: '#0D9488',
+                    allowOutsideClick: false
+                }).then(() => {
+                    navigate('/');
+                });
+            }
+        };
+
+        fetchAssessment();
+    }, [code, navigate]);
 
     // Initial Guidance Modal
     useEffect(() => {
@@ -61,11 +104,11 @@ export default function Assessment() {
     // Security & Timer Logic
     // Timer & Alerts Logic
     useEffect(() => {
-        if (!testStarted) return; // Don't start timer until test is started
-        
-        const totalTime = 2 * 60; // 1800 seconds
-        const ninetyPercentTime = totalTime * 0.1; // 10% remaining = 180s
-        const ninetyFivePercentTime = totalTime * 0.05; // 5% remaining = 90s
+        if (!testStarted || questions.length === 0) return; // Don't start timer until test is started
+
+        const totalTime = totalDuration;
+        const ninetyPercentTime = totalTime * 0.1; // 10% remaining
+        const ninetyFivePercentTime = totalTime * 0.05; // 5% remaining
         const oneMinute = 60;
 
         const formatDuration = (seconds) => {
@@ -116,14 +159,6 @@ export default function Assessment() {
     }, [timeLeft, testStarted]);
 
     useEffect(() => {
-        // Protect Route & Security Logic
-        const user = localStorage.getItem('digi_user');
-        if (!user) {
-            toast.error("Please Login first!");
-            navigate('/');
-            return;
-        }
-
         const handleContextMenu = (e) => e.preventDefault();
         const handleCopyCutPaste = (e) => {
             e.preventDefault();
@@ -147,7 +182,6 @@ export default function Assessment() {
                         allowOutsideClick: false
                     });
                 } else {
-                    localStorage.removeItem('digi_user');
                     toast.error("Tab switching detected again! Test Terminated.", { autoClose: 5000, position: "top-center", theme: "colored" });
                     navigate('/');
                 }
@@ -224,37 +258,92 @@ export default function Assessment() {
         }
     };
 
-    const finalizeSubmission = () => {
+    const finalizeSubmission = async () => {
         let correctCount = 0;
         let incorrectCount = 0;
         let attemptedCount = 0;
+        const answersArray = [];
 
         questions.forEach((q, index) => {
-            const userAnswer = selectedAnswers[index];
-            if (userAnswer && !skippedQuestions.has(index)) {
+            const userAnswerText = selectedAnswers[index];
+            const isAttempted = !!userAnswerText;
+
+            if (isAttempted) {
                 attemptedCount++;
-                if (userAnswer === q.correct) {
+                const optionLetters = ['A', 'B', 'C', 'D'];
+                const selectedIdx = q.options.indexOf(userAnswerText);
+                const selectedOptionKey = optionLetters[selectedIdx];
+                const isCorrect = selectedOptionKey === q.correctKey;
+
+                if (isCorrect) {
                     correctCount++;
                 } else {
                     incorrectCount++;
                 }
+
+                answersArray.push({
+                    question: q._id,
+                    selectedOption: selectedOptionKey,
+                    isCorrect: isCorrect
+                });
+            } else {
+                let status = "unattempted";
+                if (skippedQuestions.has(index)) {
+                    status = "skip";
+                } else if (!visitedQuestions.has(index)) {
+                    status = "unvisited";
+                }
+
+                answersArray.push({
+                    question: q._id,
+                    selectedOption: status,
+                    isCorrect: false
+                });
             }
         });
 
-        const totalTime = 2 * 60; // 2 minutes in seconds
-        const timeTaken = totalTime - timeLeft;
+        const timeTaken = totalDuration - timeLeft;
         const duration = `${Math.floor(timeTaken / 60)}:${(timeTaken % 60).toString().padStart(2, '0')}`;
 
-        navigate('/result', {
-            state: {
-                total: questions.length,
-                attempted: attemptedCount,
-                correct: correctCount,
-                incorrect: incorrectCount,
-                submissionTime: new Date().toLocaleTimeString(),
-                duration: duration
+        const payload = {
+            student: studentId,
+            assesmentQuestions: assesmentQuestionsId,
+            answers: answersArray,
+            total: String(questions.length),
+            attempted: String(attemptedCount),
+            unattempted: String(questions.length - attemptedCount),
+            correct: String(correctCount),
+            incorrect: String(incorrectCount),
+            marks: String(correctCount), // Assuming 1 mark per correct answer
+            duration: duration
+        };
+
+        try {
+            const response = await createResultApi(payload);
+            if (response.success) {
+                navigate('/result', {
+                    state: {
+                        total: questions.length,
+                        attempted: attemptedCount,
+                        correct: correctCount,
+                        incorrect: incorrectCount,
+                        submissionTime: new Date().toLocaleTimeString(),
+                        duration: duration,
+                        result: response.result
+                    }
+                });
+            } else {
+                throw new Error(response.message || "Failed to submit result");
             }
-        });
+        } catch (error) {
+            console.error("Result submission error:", error);
+            Swal.fire({
+                title: 'Submission Error!',
+                text: error.response?.data?.message || error.message || 'An error occurred while submitting your result. Please contact support.',
+                icon: 'error',
+                confirmButtonColor: '#0D9488'
+            });
+        }
     };
 
     const handleAutoSubmit = () => {
@@ -339,6 +428,17 @@ export default function Assessment() {
 
 
 
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-[#F1F5F9] flex items-center justify-center">
+                <div className="text-center">
+                    <div className="w-16 h-16 border-4 border-[#0D9488] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-[#1F2937] font-bold text-lg">Loading Assessment...</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-[#F1F5F9] p-4 font-sans select-none">
             {/* Header */}
@@ -379,7 +479,7 @@ export default function Assessment() {
                                     Q-{currentQuestion + 1}/{questions.length}
                                 </span>
                                 <h2 className="text-xl md:text-2xl font-bold text-[#1F2937] leading-relaxed pt-1">
-                                    {questions[currentQuestion].question}
+                                    {questions[currentQuestion]?.question}
                                 </h2>
                             </div>
                         </div>
@@ -387,7 +487,7 @@ export default function Assessment() {
                         {/* Options */}
                         <div className="p-8 flex-1">
                             <div className="grid gap-4">
-                                {questions[currentQuestion].options.map((option, idx) => (
+                                {questions[currentQuestion]?.options?.map((option, idx) => (
                                     <div
                                         key={idx}
                                         onClick={() => handleOptionSelect(option)}

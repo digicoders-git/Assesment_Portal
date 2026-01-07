@@ -3,7 +3,7 @@ import { User, Phone, GraduationCap, Calendar, BookOpen, Key, Sparkles, ArrowRig
 import { toast } from 'react-toastify';
 import { useNavigate, useParams } from 'react-router-dom';
 import Swal from 'sweetalert2';
-import { useUser } from '../context/UserContext';
+import { getAcademicDataApi, studentRegisterApi } from '../API/student';
 
 export default function DigiCodersPortal() {
     const [formData, setFormData] = useState({
@@ -19,60 +19,49 @@ export default function DigiCodersPortal() {
     const [collegeSearch, setCollegeSearch] = useState('');
     const [showCollegeDropdown, setShowCollegeDropdown] = useState(false);
     const collegeDropdownRef = useRef(null);
-    
+
     const [yearSearch, setYearSearch] = useState('');
     const [showYearDropdown, setShowYearDropdown] = useState(false);
     const yearDropdownRef = useRef(null);
-    
+
     const [courseSearch, setCourseSearch] = useState('');
     const [showCourseDropdown, setShowCourseDropdown] = useState(false);
     const courseDropdownRef = useRef(null);
 
-    const colleges = [
-        'DigiCoders Technologies',
-        'Government Polytechnic Unnao',
-        'Government Polytechnic Lucknow',
-        'RRIMT',
-        'MJP Rohilkhand University',
-        'Integral University',
-        'Amity University',
-        'Lucknow University',
-        'AKTU (UPTU)',
-        'IIT Kanpur',
-        'NIT Allahabad',
-        'BIT Mesra',
-        'Jamia Millia Islamia',
-        'Aligarh Muslim University',
-        'Banaras Hindu University',
-        'Other'
-    ];
-    
-    const years = [
-        '1st Year',
-        '2nd Year', 
-        '3rd Year',
-        '4th Year',
-        'Passout'
-    ];
-    
-    const courses = [
-        'B.Tech [CSE/IT/Electronics]',
-        'B.Tech [ME/EE/CE]',
-        'BCA',
-        'MCA',
-        'M.Tech',
-        'Diploma [CS/IT/PGDCA]',
-        'Diploma [Electronics]',
-        'Diploma [Other]',
-        'Other Course'
-    ];
+    const [academicData, setAcademicData] = useState({
+        colleges: [],
+        years: [],
+        courses: []
+    });
+    const [loadingAcademic, setLoadingAcademic] = useState(true);
+
+    useEffect(() => {
+        const fetchAcademicData = async () => {
+            try {
+                const response = await getAcademicDataApi();
+                if (response.success) {
+                    setAcademicData({
+                        colleges: response.colleges || [],
+                        years: response.years || [],
+                        courses: response.course || [] // API uses 'course' (singular) for the array
+                    });
+                }
+            } catch (error) {
+                console.error("Failed to fetch academic data:", error);
+                toast.error("Failed to load college and course data");
+            } finally {
+                setLoadingAcademic(false);
+            }
+        };
+        fetchAcademicData();
+    }, []);
 
     const digi = "{Coders}"
     const navigate = useNavigate();
     const { code } = useParams();
-    const { login } = useUser();
 
     const [focusedField, setFocusedField] = useState(null);
+    const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
         // Auto-fill assessment code from URL parameter
@@ -106,35 +95,35 @@ export default function DigiCodersPortal() {
 
     const handleCollegeSelect = (college) => {
         setFormData({ ...formData, college });
-        setCollegeSearch(college);
+        setCollegeSearch('');
         setShowCollegeDropdown(false);
     };
-    
+
     const handleYearSelect = (year) => {
         setFormData({ ...formData, year });
-        setYearSearch(year);
+        setYearSearch('');
         setShowYearDropdown(false);
     };
-    
+
     const handleCourseSelect = (course) => {
         setFormData({ ...formData, course });
-        setCourseSearch(course);
+        setCourseSearch('');
         setShowCourseDropdown(false);
     };
 
-    const filteredColleges = colleges.filter(college =>
-        college.toLowerCase().includes(collegeSearch.toLowerCase())
-    );
-    
-    const filteredYears = years.filter(year =>
-        year.toLowerCase().includes(yearSearch.toLowerCase())
-    );
-    
-    const filteredCourses = courses.filter(course =>
-        course.toLowerCase().includes(courseSearch.toLowerCase())
+    const filteredColleges = (academicData.colleges || []).filter(item =>
+        item.collegeName?.toLowerCase().includes(collegeSearch.toLowerCase())
     );
 
-    const handleSubmit = () => {
+    const filteredYears = (academicData.years || []).filter(item =>
+        item.academicYear?.toLowerCase().includes(yearSearch.toLowerCase())
+    );
+
+    const filteredCourses = (academicData.courses || []).filter(item =>
+        item.course?.toLowerCase().includes(courseSearch.toLowerCase())
+    );
+
+    const handleSubmit = async () => {
         // Helper function for alerting and focusing
         const alertAndFocus = (message, fieldName) => {
             Swal.fire({
@@ -188,7 +177,8 @@ export default function DigiCodersPortal() {
 
         // College validation
         if (!formData.college.trim()) return alertAndFocus('Please select your College.', 'college');
-        if (!colleges.includes(formData.college)) {
+        const collegeExists = academicData.colleges.some(c => c.collegeName === formData.college);
+        if (!collegeExists) {
             Swal.fire({
                 title: 'Invalid College!',
                 text: 'Please select a college from the dropdown list.',
@@ -197,10 +187,11 @@ export default function DigiCodersPortal() {
             });
             return;
         }
-        
+
         // Year validation
         if (!formData.year.trim()) return alertAndFocus('Please select your Current Year.', 'year');
-        if (!years.includes(formData.year)) {
+        const yearExists = academicData.years.some(y => y.academicYear === formData.year);
+        if (!yearExists) {
             Swal.fire({
                 title: 'Invalid Year!',
                 text: 'Please select a year from the dropdown list.',
@@ -209,10 +200,11 @@ export default function DigiCodersPortal() {
             });
             return;
         }
-        
+
         // Course validation
         if (!formData.course.trim()) return alertAndFocus('Please select your Course.', 'course');
-        if (!courses.includes(formData.course)) {
+        const courseExists = academicData.courses.some(c => c.course === formData.course);
+        if (!courseExists) {
             Swal.fire({
                 title: 'Invalid Course!',
                 text: 'Please select a course from the dropdown list.',
@@ -221,27 +213,58 @@ export default function DigiCodersPortal() {
             });
             return;
         }
-        
-        // Code validation
-        if (!formData.code.trim()) return alertAndFocus('Please enter the Assessment Code.', 'code');
-       
 
-        // Simulating Login Success
-        console.log('Form submitted:', formData);
+        // API Integration
+        setSubmitting(true);
+        try {
+            const response = await studentRegisterApi(formData);
+            if (response.success) {
+                // Store student data in localStorage for persistence
+                const studentData = {
+                    name: response.newStudent.name,
+                    mobile: response.newStudent.mobile,
+                    email: response.newStudent.email,
+                    college: response.newStudent.college,
+                    year: response.newStudent.year,
+                    course: response.newStudent.course,
+                    code: response.newStudent.code,
+                    id: response.newStudent._id,
+                    submissionDate: response.newStudent.createdAt,
+                    isLoggedIn: true
+                };
 
-        // SAVE USER TO CONTEXT
-        login({
-            name: formData.name,
-            mobile: formData.mobile,
-            code: formData.code,
-            submissionDate: new Date().toISOString(),
-            isLoggedIn: true
-        });
+                Swal.fire({
+                    title: 'Registration Successful!',
+                    text: response.message || 'Starting Assessment...',
+                    icon: 'success',
+                    timer: 1500,
+                    showConfirmButton: false,
+                    background: '#FFFFFF',
+                    color: '#2D3748'
+                });
 
-        toast.success('🎉 Assessment Started Successfully!');
-        setTimeout(() => {
-            navigate('/assessment');
-        }, 1500);
+                setTimeout(() => {
+                    navigate(`/assessment/${studentData.code}/${studentData.id}`);
+                }, 1500);
+            } else {
+                Swal.fire({
+                    title: 'Registration Failed!',
+                    text: response.message || 'Something went wrong',
+                    icon: 'error',
+                    confirmButtonColor: '#0D9488',
+                });
+            }
+        } catch (error) {
+            console.error('Registration error:', error);
+            Swal.fire({
+                title: 'Error!',
+                text: error.response?.data?.message || 'An error occurred during registration. Please check your assessment code or try again.',
+                icon: 'error',
+                confirmButtonColor: '#0D9488',
+            });
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     return (
@@ -363,42 +386,56 @@ export default function DigiCodersPortal() {
                                 <div className="relative">
                                     <input
                                         type="text"
-                                        value={collegeSearch}
-                                        onChange={(e) => {
-                                            setCollegeSearch(e.target.value);
-                                            setFormData({ ...formData, college: e.target.value });
-                                            setShowCollegeDropdown(true);
-                                        }}
+                                        readOnly
+                                        value={formData.college}
+                                        onClick={() => setShowCollegeDropdown(true)}
                                         onFocus={() => {
                                             setFocusedField('college');
                                             setShowCollegeDropdown(true);
                                         }}
                                         onBlur={() => setFocusedField(null)}
-                                        placeholder="Search or select college"
-                                        className={`w-full px-4 py-2 md:px-4 md:py-3 bg-gray-50 border-2 ${focusedField === 'college' ? 'border-[#0D9488]' : 'border-gray-200'} rounded-2xl text-[#1F2937] placeholder-gray-400 focus:outline-none transition-all duration-300 hover:border-gray-300 text-sm md:text-base pr-10`}
+                                        placeholder="Choose College"
+                                        className={`w-full px-4 py-2 md:px-4 md:py-3 bg-gray-50 border-2 ${focusedField === 'college' ? 'border-[#0D9488]' : 'border-gray-200'} rounded-2xl text-[#1F2937] placeholder-gray-400 focus:outline-none transition-all duration-300 hover:border-gray-300 text-sm md:text-base pr-10 cursor-pointer`}
                                     />
-                                    <ChevronDown 
+                                    <ChevronDown
                                         className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 transition-transform ${showCollegeDropdown ? 'rotate-180' : ''}`}
                                         onClick={() => setShowCollegeDropdown(!showCollegeDropdown)}
                                     />
-                                    
+
                                     {showCollegeDropdown && (
-                                        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
-                                            {filteredColleges.length > 0 ? (
-                                                filteredColleges.map((college, index) => (
-                                                    <div
-                                                        key={index}
-                                                        onClick={() => handleCollegeSelect(college)}
-                                                        className="px-4 py-3 hover:bg-gray-50 cursor-pointer text-sm border-b border-gray-100 last:border-b-0 transition-colors"
-                                                    >
-                                                        {college}
-                                                    </div>
-                                                ))
-                                            ) : (
-                                                <div className="px-4 py-3 text-gray-500 text-sm">
-                                                    No colleges found
+                                        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-68 overflow-hidden flex flex-col">
+                                            {/* Internal Search */}
+                                            <div className="p-2 border-b border-gray-100 bg-gray-50 sticky top-0 z-20">
+                                                <div className="relative">
+                                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                                    <input
+                                                        type="text"
+                                                        value={collegeSearch}
+                                                        onChange={(e) => setCollegeSearch(e.target.value)}
+                                                        placeholder="Search college..."
+                                                        className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0D9488] bg-white"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    />
                                                 </div>
-                                            )}
+                                            </div>
+
+                                            <div className="overflow-y-auto max-h-52 custom-scrollbar">
+                                                {filteredColleges.length > 0 ? (
+                                                    filteredColleges.map((item, index) => (
+                                                        <div
+                                                            key={item._id || index}
+                                                            onClick={() => handleCollegeSelect(item.collegeName)}
+                                                            className="px-4 py-3 hover:bg-teal-50 hover:text-teal-700 cursor-pointer text-sm border-b border-gray-100 last:border-b-0 transition-colors"
+                                                        >
+                                                            {item.collegeName}
+                                                        </div>
+                                                    ))
+                                                ) : (
+                                                    <div className="px-4 py-3 text-gray-500 text-sm text-center">
+                                                        No colleges found
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     )}
                                 </div>
@@ -413,42 +450,56 @@ export default function DigiCodersPortal() {
                                     <div className="relative">
                                         <input
                                             type="text"
-                                            value={yearSearch}
-                                            onChange={(e) => {
-                                                setYearSearch(e.target.value);
-                                                setFormData({ ...formData, year: e.target.value });
-                                                setShowYearDropdown(true);
-                                            }}
+                                            readOnly
+                                            value={formData.year}
+                                            onClick={() => setShowYearDropdown(true)}
                                             onFocus={() => {
                                                 setFocusedField('year');
                                                 setShowYearDropdown(true);
                                             }}
                                             onBlur={() => setFocusedField(null)}
-                                            placeholder="Search or select year"
-                                            className={`w-full px-4 py-2 md:px-4 md:py-3 bg-gray-50 border-2 ${focusedField === 'year' ? 'border-[#0D9488]' : 'border-gray-200'} rounded-2xl text-[#1F2937] placeholder-gray-400 focus:outline-none transition-all duration-300 hover:border-gray-300 text-sm md:text-base pr-10`}
+                                            placeholder="Choose Year"
+                                            className={`w-full px-4 py-2 md:px-4 md:py-3 bg-gray-50 border-2 ${focusedField === 'year' ? 'border-[#0D9488]' : 'border-gray-200'} rounded-2xl text-[#1F2937] placeholder-gray-400 focus:outline-none transition-all duration-300 hover:border-gray-300 text-sm md:text-base pr-10 cursor-pointer`}
                                         />
-                                        <ChevronDown 
+                                        <ChevronDown
                                             className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 transition-transform ${showYearDropdown ? 'rotate-180' : ''}`}
                                             onClick={() => setShowYearDropdown(!showYearDropdown)}
                                         />
-                                        
+
                                         {showYearDropdown && (
-                                            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
-                                                {filteredYears.length > 0 ? (
-                                                    filteredYears.map((year, index) => (
-                                                        <div
-                                                            key={index}
-                                                            onClick={() => handleYearSelect(year)}
-                                                            className="px-4 py-3 hover:bg-gray-50 cursor-pointer text-sm border-b border-gray-100 last:border-b-0 transition-colors"
-                                                        >
-                                                            {year}
-                                                        </div>
-                                                    ))
-                                                ) : (
-                                                    <div className="px-4 py-3 text-gray-500 text-sm">
-                                                        No years found
+                                            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-68 overflow-hidden flex flex-col">
+                                                {/* Internal Search */}
+                                                <div className="p-2 border-b border-gray-100 bg-gray-50 sticky top-0 z-20">
+                                                    <div className="relative">
+                                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                                        <input
+                                                            type="text"
+                                                            value={yearSearch}
+                                                            onChange={(e) => setYearSearch(e.target.value)}
+                                                            placeholder="Search year..."
+                                                            className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0D9488] bg-white"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                        />
                                                     </div>
-                                                )}
+                                                </div>
+
+                                                <div className="overflow-y-auto max-h-52 custom-scrollbar">
+                                                    {filteredYears.length > 0 ? (
+                                                        filteredYears.map((item, index) => (
+                                                            <div
+                                                                key={item._id || index}
+                                                                onClick={() => handleYearSelect(item.academicYear)}
+                                                                className="px-4 py-3 hover:bg-teal-50 hover:text-teal-700 cursor-pointer text-sm border-b border-gray-100 last:border-b-0 transition-colors"
+                                                            >
+                                                                {item.academicYear}
+                                                            </div>
+                                                        ))
+                                                    ) : (
+                                                        <div className="px-4 py-3 text-gray-500 text-sm text-center">
+                                                            No years found
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         )}
                                     </div>
@@ -461,49 +512,63 @@ export default function DigiCodersPortal() {
                                     <div className="relative">
                                         <input
                                             type="text"
-                                            value={courseSearch}
-                                            onChange={(e) => {
-                                                setCourseSearch(e.target.value);
-                                                setFormData({ ...formData, course: e.target.value });
-                                                setShowCourseDropdown(true);
-                                            }}
+                                            readOnly
+                                            value={formData.course}
+                                            onClick={() => setShowCourseDropdown(true)}
                                             onFocus={() => {
                                                 setFocusedField('course');
                                                 setShowCourseDropdown(true);
                                             }}
                                             onBlur={() => setFocusedField(null)}
-                                            placeholder="Search or select course"
-                                            className={`w-full px-4 py-2 md:px-4 md:py-3 bg-gray-50 border-2 ${focusedField === 'course' ? 'border-[#0D9488]' : 'border-gray-200'} rounded-2xl text-[#1F2937] placeholder-gray-400 focus:outline-none transition-all duration-300 hover:border-gray-300 text-sm md:text-base pr-10`}
+                                            placeholder="Choose Course"
+                                            className={`w-full px-4 py-2 md:px-4 md:py-3 bg-gray-50 border-2 ${focusedField === 'course' ? 'border-[#0D9488]' : 'border-gray-200'} rounded-2xl text-[#1F2937] placeholder-gray-400 focus:outline-none transition-all duration-300 hover:border-gray-300 text-sm md:text-base pr-10 cursor-pointer`}
                                         />
-                                        <ChevronDown 
+                                        <ChevronDown
                                             className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 transition-transform ${showCourseDropdown ? 'rotate-180' : ''}`}
                                             onClick={() => setShowCourseDropdown(!showCourseDropdown)}
                                         />
-                                        
+
                                         {showCourseDropdown && (
-                                            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
-                                                {filteredCourses.length > 0 ? (
-                                                    filteredCourses.map((course, index) => (
-                                                        <div
-                                                            key={index}
-                                                            onClick={() => handleCourseSelect(course)}
-                                                            className="px-4 py-3 hover:bg-gray-50 cursor-pointer text-sm border-b border-gray-100 last:border-b-0 transition-colors"
-                                                        >
-                                                            {course}
-                                                        </div>
-                                                    ))
-                                                ) : (
-                                                    <div className="px-4 py-3 text-gray-500 text-sm">
-                                                        No courses found
+                                            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-68 overflow-hidden flex flex-col">
+                                                {/* Internal Search */}
+                                                <div className="p-2 border-b border-gray-100 bg-gray-50 sticky top-0 z-20">
+                                                    <div className="relative">
+                                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                                        <input
+                                                            type="text"
+                                                            value={courseSearch}
+                                                            onChange={(e) => setCourseSearch(e.target.value)}
+                                                            placeholder="Search course..."
+                                                            className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0D9488] bg-white"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                        />
                                                     </div>
-                                                )}
+                                                </div>
+
+                                                <div className="overflow-y-auto max-h-52 custom-scrollbar">
+                                                    {filteredCourses.length > 0 ? (
+                                                        filteredCourses.map((item, index) => (
+                                                            <div
+                                                                key={item._id || index}
+                                                                onClick={() => handleCourseSelect(item.course)}
+                                                                className="px-4 py-3 hover:bg-teal-50 hover:text-teal-700 cursor-pointer text-sm border-b border-gray-100 last:border-b-0 transition-colors"
+                                                            >
+                                                                {item.course}
+                                                            </div>
+                                                        ))
+                                                    ) : (
+                                                        <div className="px-4 py-3 text-gray-500 text-sm text-center">
+                                                            No courses found
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         )}
                                     </div>
                                 </div>
                             </div>
 
-                         
+
 
                             {/* Assessment Code */}
                             <div className="group">
@@ -527,11 +592,21 @@ export default function DigiCodersPortal() {
                             {/* Submit Button */}
                             <button
                                 onClick={handleSubmit}
-                                className="group relative w-full bg-[#0D9488] hover:bg-[#115E59] text-white font-black py-2 px-4 md:py-3 md:px-6 rounded-2xl transform hover:scale-[1.02] active:scale-95 transition-all duration-300 text-base md:text-lg mt-5 md:mt-6 overflow-hidden"
+                                disabled={submitting}
+                                className={`group relative w-full ${submitting ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#0D9488] hover:bg-[#115E59]'} text-white font-black py-2 px-4 md:py-3 md:px-6 rounded-2xl transform hover:scale-[1.02] active:scale-95 transition-all duration-300 text-base md:text-lg mt-5 md:mt-6 overflow-hidden`}
                             >
                                 <span className="relative z-10 flex items-center justify-center gap-3">
-                                    START ASSESSMENT
-                                    <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
+                                    {submitting ? (
+                                        <>
+                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                            REGISTERING...
+                                        </>
+                                    ) : (
+                                        <>
+                                            START ASSESSMENT
+                                            <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
+                                        </>
+                                    )}
                                 </span>
                             </button>
 

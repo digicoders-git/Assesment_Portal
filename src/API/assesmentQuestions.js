@@ -17,6 +17,16 @@ export const getAssessmentQuestionsApi = async (assesmentQuestionId) => {
   return res.data;
 };
 
+// Get assessment questions by assessment code (for student login)
+export const getAssessmentByCodeApi = async (code) => {
+  const res = await api.get(
+    `/admin/assesment/get-question/${code}`
+  );
+
+  return res.data;
+};
+
+
 // Delete single question from assessment
 export const deleteQuestionFromAssessmentApi = async (
   assesmentQuestionId,

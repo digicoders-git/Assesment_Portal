@@ -29,3 +29,12 @@ export const getStudentByAssessmentApi = async (assesmentCode) => {
   const res = await api.get(`/registration/admin/getByAssesment/${assesmentCode}`);
   return res.data;
 };
+
+
+// Academic data
+
+export const getAcademicDataApi = async () => {
+  const { data } = await api.get("/registration/admin/getAcademicData");
+  return data;
+};
+

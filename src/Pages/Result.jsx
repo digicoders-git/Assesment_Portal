@@ -6,7 +6,6 @@ import { Download, Home, FileText } from 'lucide-react';
 import { toast } from 'react-toastify';
 import domtoimage from 'dom-to-image-more';
 import { useRef } from 'react';
-import { useUser } from '../context/UserContext';
 
 export default function Result() {
     const { width, height } = useWindowSize();
@@ -16,32 +15,29 @@ export default function Result() {
     const resultRef = useRef(null);
 
     // Get data passed from Assessment page
-    const { total, attempted, correct, incorrect, duration } = location.state || {};
-
+    const { total, attempted, correct, incorrect, duration, result } = location.state || {};
     const [userName, setUserName] = useState('');
     const [assessmentCode, setAssessmentCode] = useState('');
-    const { user } = useUser();
 
     useEffect(() => {
-        // 1. Check Login and Assessment Code
-        if (!user || !user.code) {
-            toast.error("Assessment code not found! Please login first.");
+        // Check if accessed directly without submission or result data
+        if (!location.state || !result) {
+            toast.error("Result not found! Please complete the assessment first.");
             navigate('/');
             return;
         }
 
-        setUserName(user.name);
-        setAssessmentCode(user.code);
-
-        // 2. Check if accessed directly without submission
-        if (!location.state) {
-            toast.error("Please complete the assessment first!");
-            navigate('/assessment');
-            return;
+        // Extract student and assessment info from the saved result
+        if (result.student) {
+            setUserName(result.student.name || 'Student');
         }
-    }, [user, location.state, navigate]);
 
-    if (!user || !user.code || !location.state) return null; // Prevent flicker
+        // We can get the code from the result or state
+        setAssessmentCode(result.assessmentCode || result.assesmentQuestions?.assessmentCode || 'TEST');
+
+    }, [location.state, result, navigate]);
+
+    if (!location.state || !result) return null; // Prevent flicker
 
     const digi = "{Coders}";
 
@@ -112,7 +108,7 @@ export default function Result() {
             // Show action buttons again in case of error
             const actionButtons = document.getElementById('action-buttons');
             if (actionButtons) actionButtons.style.display = 'flex';
-            
+
             console.error("Screenshot failed:", error);
             toast.update(toastId, {
                 render: `Failed to save result: ${error.message}`,
@@ -148,7 +144,7 @@ export default function Result() {
                         </div>
 
                         <p className="text-gray-500 text-base">You have successfully completed the assessment.</p>
-                        
+
                         {/* Assessment Details Table */}
                         <div className="mt-4 mb-6">
                             {/* Desktop Table */}
@@ -165,14 +161,14 @@ export default function Result() {
                                     <tbody>
                                         <tr>
                                             <td className="py-3 px-4 text-center font-medium text-gray-600">{assessmentCode}</td>
-                                            <td className="py-3 px-4 text-center font-medium text-gray-600">{user.submissionDate ? new Date(user.submissionDate).toLocaleDateString() : new Date().toLocaleDateString()}</td>
+                                            <td className="py-3 px-4 text-center font-medium text-gray-600">{result.createdAt ? new Date(result.createdAt).toLocaleDateString() : new Date().toLocaleDateString()}</td>
                                             <td className="py-3 px-4 text-center font-medium text-gray-600">{location.state.submissionTime || new Date().toLocaleTimeString()}</td>
-                                            <td className="py-3 px-4 text-center font-medium text-gray-600">{duration || 'N/A'}</td>
+                                            <td className="py-3 px-4 text-center font-medium text-gray-600">{duration || result.duration || 'N/A'}</td>
                                         </tr>
                                     </tbody>
                                 </table>
                             </div>
-                            
+
                             {/* Mobile Compact Layout - Labels Left, Values Right */}
                             <div className="md:hidden border border-gray-300 rounded-lg p-3 space-y-2">
                                 <div className="flex justify-between items-center">
@@ -181,7 +177,7 @@ export default function Result() {
                                 </div>
                                 <div className="flex justify-between items-center">
                                     <span className="font-bold text-gray-700 text-sm">Date:</span>
-                                    <span className="font-medium text-gray-600 text-sm">{user.submissionDate ? new Date(user.submissionDate).toLocaleDateString() : new Date().toLocaleDateString()}</span>
+                                    <span className="font-medium text-gray-600 text-sm">{result.createdAt ? new Date(result.createdAt).toLocaleDateString() : new Date().toLocaleDateString()}</span>
                                 </div>
                                 <div className="flex justify-between items-center">
                                     <span className="font-bold text-gray-700 text-sm">Time:</span>
@@ -189,7 +185,7 @@ export default function Result() {
                                 </div>
                                 <div className="flex justify-between items-center">
                                     <span className="font-bold text-gray-700 text-sm">Duration:</span>
-                                    <span className="font-medium text-gray-600 text-sm">{duration || 'N/A'}</span>
+                                    <span className="font-medium text-gray-600 text-sm">{duration || result.duration || 'N/A'}</span>
                                 </div>
                             </div>
                         </div>
