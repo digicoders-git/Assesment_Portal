@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
-import { Plus, Edit, Trash2, X } from 'lucide-react';
+import { Plus, Edit, Trash2, X, Loader2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { createTopicApi, getAllTopicsApi, updateTopicApi, deleteTopicApi, toggleTopicStatusApi } from '../API/topic';
 
@@ -11,6 +11,8 @@ export function ManageTopics() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [topicName, setTopicName] = useState('');
     const [topics, setTopics] = useState([]);
+
+    const [loading, setLoading] = useState(true);
     const [editingTopic, setEditingTopic] = useState(null);
 
     useEffect(() => {
@@ -18,14 +20,16 @@ export function ManageTopics() {
     }, []);
 
     const fetchTopics = async () => {
+        setLoading(true);
         try {
             const response = await getAllTopicsApi();
             const topicsData = response.topics;
-            // console.log(response.topics)
             setTopics(Array.isArray(topicsData) ? topicsData : []);
         } catch (error) {
             toast.error('Failed to fetch topics');
             setTopics([]);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -132,88 +136,96 @@ export function ManageTopics() {
             </div>
 
             {/* Table */}
-            <div className="bg-white rounded-lg overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full whitespace-nowrap">
-                        <thead>
-                            <tr className="bg-[#E6FFFA] border-b border-[#B2F5EA]">
-                                <th className="text-left px-6 py-4 text-sm font-semibold text-[#2D3748]">Sr.No.</th>
-                                <th className="text-left px-6 py-4 text-sm font-semibold text-[#2D3748]">Status</th>
-                                <th className="text-left px-6 py-4 text-sm font-semibold text-[#2D3748]">Topic Name</th>
-                                <th className="text-left px-6 py-4 text-sm font-semibold text-[#2D3748]">Add Question</th>
-                                <th className="text-left px-6 py-4 text-sm font-semibold text-[#2D3748]">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filteredTopics.length === 0 ? (
-                                <tr>
-                                    <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
-                                        No topics found
-                                    </td>
-                                </tr>
-                            ) : (
-                                filteredTopics.map((topic, index) => (
-                                    <tr key={topic._id} className="border-b border-gray-100 hover:bg-[#E6FFFA] transition-colors">
-                                        <td className="px-6 py-4 text-[#2D3748]">{index + 1}</td>
-                                        <td className="px-6 py-4">
-                                            <label className="relative inline-flex items-center cursor-pointer">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={topic.status}
-                                                    onChange={() => handleToggleStatus(topic)}
-                                                    className="sr-only peer"
-                                                />
-                                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#319795]"></div>
-                                            </label>
-                                        </td>
-                                        <td className="px-6 py-4 text-[#2D3748]">{topic.topicName}</td>
-
-                                        <td className="px-6 py-4">
-                                            <button
-                                                onClick={() => navigate(`/admin/topic-questions/${topic._id}`)}
-                                                className="bg-[#319795] hover:bg-[#2B7A73] text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-                                            >
-                                                Questions ({topic.questionCout || 0})
-                                            </button>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-2">
-                                                <button
-                                                    onClick={() => navigate(`/admin/print/${topic._id}`)}
-                                                    className="text-[#319795] hover:text-[#2B7A73] border border-[#319795] hover:border-[#2B7A73] px-3 py-1.5 rounded text-sm font-medium transition-colors"
-                                                >
-                                                    Print
-                                                </button>
-                                                <button
-                                                    onClick={() => handleEdit(topic)}
-                                                    className="text-blue-600 hover:text-blue-700 border border-blue-600 hover:border-blue-700 p-1.5 rounded transition-colors"
-                                                >
-                                                    <Edit className="h-4 w-4" />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(topic)}
-                                                    className="text-red-600 hover:text-red-700 border border-red-600 hover:border-red-700 p-1.5 rounded transition-colors"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-
-                {/* Pagination */}
-                <div className="px-6 py-4 border-t border-gray-200 flex justify-between items-center text-sm text-gray-600">
-                    <div>Showing 1 to {filteredTopics.length} of {topics.length} entries</div>
-                    <div className="flex items-center gap-2">
-                        <button className="px-3 py-1 hover:bg-gray-100 rounded transition-colors">Previous</button>
-                        <button className="px-3 py-1 bg-[#319795] text-white rounded">1</button>
-                        <button className="px-3 py-1 hover:bg-gray-100 rounded transition-colors">Next</button>
+            <div className="bg-white rounded-lg overflow-hidden border border-gray-200 min-h-[400px]">
+                {loading ? (
+                    <div className="flex flex-col items-center justify-center py-20">
+                        <Loader2 className="h-10 w-10 animate-spin text-[#319795] mb-4" />
+                        <p className="text-gray-500 font-medium font-inter">Loading topics...</p>
                     </div>
-                </div>
+                ) : (
+                    <>
+                        <div className="overflow-x-auto">
+                            <table className="w-full whitespace-nowrap">
+                                <thead>
+                                    <tr className="bg-[#E6FFFA] border-b border-[#B2F5EA]">
+                                        <th className="text-left px-6 py-4 text-sm font-semibold text-[#2D3748]">Sr.No.</th>
+                                        <th className="text-left px-6 py-4 text-sm font-semibold text-[#2D3748]">Status</th>
+                                        <th className="text-left px-6 py-4 text-sm font-semibold text-[#2D3748]">Topic Name</th>
+                                        <th className="text-left px-6 py-4 text-sm font-semibold text-[#2D3748]">Add Question</th>
+                                        <th className="text-left px-6 py-4 text-sm font-semibold text-[#2D3748]">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredTopics.length === 0 ? (
+                                        <tr>
+                                            <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
+                                                No topics found
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        filteredTopics.map((topic, index) => (
+                                            <tr key={topic._id} className="border-b border-gray-100 hover:bg-[#E6FFFA] transition-colors">
+                                                <td className="px-6 py-4 text-[#2D3748]">{index + 1}</td>
+                                                <td className="px-6 py-4">
+                                                    <label className="relative inline-flex items-center cursor-pointer">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={topic.status}
+                                                            onChange={() => handleToggleStatus(topic)}
+                                                            className="sr-only peer"
+                                                        />
+                                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#319795]"></div>
+                                                    </label>
+                                                </td>
+                                                <td className="px-6 py-4 text-[#2D3748]">{topic.topicName}</td>
+                                                <td className="px-6 py-4">
+                                                    <button
+                                                        onClick={() => navigate(`/admin/topic-questions/${topic._id}`)}
+                                                        className="bg-[#319795] hover:bg-[#2B7A73] text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                                                    >
+                                                        Questions ({topic.questionCout || 0})
+                                                    </button>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-2">
+                                                        <button
+                                                            onClick={() => navigate(`/admin/print/${topic._id}`)}
+                                                            className="text-[#319795] hover:text-[#2B7A73] border border-[#319795] hover:border-[#2B7A73] px-3 py-1.5 rounded text-sm font-medium transition-colors"
+                                                        >
+                                                            Print
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleEdit(topic)}
+                                                            className="text-blue-600 hover:text-blue-700 border border-blue-600 hover:border-blue-700 p-1.5 rounded transition-colors"
+                                                        >
+                                                            <Edit className="h-4 w-4" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDelete(topic)}
+                                                            className="text-red-600 hover:text-red-700 border border-red-600 hover:border-red-700 p-1.5 rounded transition-colors"
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Pagination */}
+                        <div className="px-6 py-4 border-t border-gray-200 flex justify-between items-center text-sm text-gray-600">
+                            <div>Showing 1 to {filteredTopics.length} of {topics.length} entries</div>
+                            <div className="flex items-center gap-2">
+                                <button className="px-3 py-1 hover:bg-gray-100 rounded transition-colors">Previous</button>
+                                <button className="px-3 py-1 bg-[#319795] text-white rounded">1</button>
+                                <button className="px-3 py-1 hover:bg-gray-100 rounded transition-colors">Next</button>
+                            </div>
+                        </div>
+                    </>
+                )}
             </div>
 
             {/* Add Topic Dialog */}

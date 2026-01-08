@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Search, ArrowLeft, Download, Loader2 } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { getResultsByAssessmentIdApi } from '../API/result';
+import { getStudentByAssessmentApi } from '../API/student';
 
 export default function StartedStudents() {
-    // Route parameter is :id, not :assessmentId
+    // Route parameter is :id, but we need code passed via state
     const { id: assessmentId } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
     const [searchQuery, setSearchQuery] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
@@ -16,26 +17,31 @@ export default function StartedStudents() {
 
     useEffect(() => {
         const fetchResults = async () => {
-            if (!assessmentId) return;
+            const code = location.state?.assessmentCode;
+            if (!code) {
+                toast.error("Assessment Code missing. Please navigate from Assessment page.");
+                setLoading(false);
+                return;
+            }
+
             setLoading(true);
             try {
-                const response = await getResultsByAssessmentIdApi(assessmentId);
-                // console.log("Results Response:", response);
+                // Using getStudentByAssessmentApi instead of result API
+                const response = await getStudentByAssessmentApi(code);
 
                 if (response.success) {
-                    // Use 'firstSubmission' array as requested from your sample structure
-                    const submissions = response.firstSubmission || [];
+                    // Response key is 'student' which is an array
+                    const studentsList = response.student || [];
 
-                    const mappedData = submissions.map(res => ({
-                        id: res._id,
-                        name: res.student?.name || "N/A",
-                        phone: res.student?.mobile || "N/A",
-                        college: res.student?.college || "N/A",
-                        course: res.student?.course || "N/A",
-                        year: res.student?.year || "N/A",
-                        // Displaying marks in marks/total format
-                        marks: `${res.marks || 0}/${res.total || 0}`,
-                        dateTime: res.createdAt ? new Date(res.createdAt).toLocaleString() : "N/A"
+                    const mappedData = studentsList.map(stu => ({
+                        id: stu._id,
+                        name: stu.name || "N/A",
+                        phone: stu.mobile || "N/A",
+                        college: stu.college || "N/A",
+                        course: stu.course || "N/A",
+                        year: stu.year || "N/A",
+                        // Marks not available in this API
+                        dateTime: stu.createdAt ? new Date(stu.createdAt).toLocaleString() : "N/A"
                     }));
 
                     setStartedStudents(mappedData);
@@ -49,7 +55,7 @@ export default function StartedStudents() {
         };
 
         fetchResults();
-    }, [assessmentId]);
+    }, [assessmentId, location.state]);
 
     const filteredStudents = startedStudents.filter(student =>
         student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -66,7 +72,7 @@ export default function StartedStudents() {
     };
 
     const downloadExcel = () => {
-        const headers = ["Sr No.", "Name", "Phone", "College", "Course", "Year", "Marks", "Date-Time"];
+        const headers = ["Sr No.", "Name", "Phone", "College", "Course", "Year", "Date-Time"];
         let htmlTable = '<table border="1"><tr>' + headers.map(h => `<th style="background-color: #E6FFFA; padding: 8px;">${h}</th>`).join('') + '</tr>';
 
         filteredStudents.forEach((student, index) => {
@@ -77,7 +83,6 @@ export default function StartedStudents() {
                 <td>${student.college}</td>
                 <td>${student.course}</td>
                 <td>${student.year}</td>
-                <td>${student.marks}</td>
                 <td>${student.dateTime}</td>
             </tr>`;
         });
@@ -156,7 +161,6 @@ export default function StartedStudents() {
                                 <th className="px-6 py-4">College</th>
                                 <th className="px-6 py-4">Course</th>
                                 <th className="px-6 py-4">Year</th>
-                                <th className="px-6 py-4">Marks</th>
                                 <th className="px-6 py-4">Date-Time</th>
                             </tr>
                         </thead>
@@ -185,11 +189,6 @@ export default function StartedStudents() {
                                     <td className="px-6 py-4 text-[#4A5568]">
                                         <span className="bg-purple-50 text-purple-700 py-1 px-3 rounded-full text-xs font-bold border border-purple-100 uppercase tracking-wide">
                                             {student.year}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-[#4A5568]">
-                                        <span className="bg-orange-100 text-orange-700 font-bold py-1 px-3 rounded text-xs border border-orange-200">
-                                            {student.marks}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 text-[#718096] text-xs">

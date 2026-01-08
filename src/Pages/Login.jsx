@@ -3,7 +3,8 @@ import { User, Phone, GraduationCap, Calendar, BookOpen, Key, Sparkles, ArrowRig
 import { toast } from 'react-toastify';
 import { useNavigate, useParams } from 'react-router-dom';
 import Swal from 'sweetalert2';
-import { getAcademicDataApi, studentRegisterApi } from '../API/student';
+import { getAcademicDataApi, studentRegisterApi, existStudentApi } from '../API/student';
+import { getAssessmentByCodeApi } from '../API/assesmentQuestions';
 
 export default function DigiCodersPortal() {
     const [formData, setFormData] = useState({
@@ -43,7 +44,7 @@ export default function DigiCodersPortal() {
                     setAcademicData({
                         colleges: response.colleges || [],
                         years: response.years || [],
-                        courses: response.course || [] // API uses 'course' (singular) for the array
+                        courses: response.course || []
                     });
                 }
             } catch (error) {
@@ -70,6 +71,53 @@ export default function DigiCodersPortal() {
         }
     }, [code]);
 
+    // Check for existing student when mobile number is valid
+    useEffect(() => {
+        const checkExistingStudent = async () => {
+            const mobile = formData.mobile;
+            // Validate: 10 digits and starts with 6, 7, 8, or 9
+            if (/^[6-9]\d{9}$/.test(mobile)) {
+                try {
+                    const response = await existStudentApi({ mobile });
+                    if (response.success && response.existMobile) {
+                        const student = response.existMobile;
+
+                        // Show welcome message
+                        Swal.fire({
+                            title: `Welcome ${student.name}`,
+                            text: 'Welcome to DigiCoders!',
+                            icon: 'success',
+                            timer: 3000,
+                            showConfirmButton: false,
+                            toast: true,
+                            position: 'top-end',
+                            background: '#fff',
+                            color: '#0D9488'
+                        });
+
+                        // Auto-fill form data
+                        setFormData(prev => ({
+                            ...prev,
+                            name: student.name || prev.name,
+                            email: student.email || prev.email,
+                            college: student.college || prev.college,
+                            year: student.year || prev.year,
+                            course: student.course || prev.course,
+                            code: student.code || prev.code
+                        }));
+                    }
+                } catch (error) {
+                    // console.log("New student or error checking mobile:", error);
+                    // No action needed specifically for failure/new student as per requirements
+                }
+            }
+        };
+
+        if (formData.mobile) {
+            checkExistingStudent();
+        }
+    }, [formData.mobile]);
+
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (collegeDropdownRef.current && !collegeDropdownRef.current.contains(event.target)) {
@@ -87,9 +135,15 @@ export default function DigiCodersPortal() {
     }, []);
 
     const handleChange = (e) => {
+        const { name, value } = e.target;
+        // Restrict mobile input to 10 characters
+        if (name === 'mobile' && value.length > 10) {
+            return;
+        }
+
         setFormData({
             ...formData,
-            [e.target.name]: e.target.value
+            [name]: value
         });
     };
 
@@ -217,10 +271,106 @@ export default function DigiCodersPortal() {
         // API Integration
         setSubmitting(true);
         try {
+            // First validate assessment details
+            const enteredCode = formData.code.toUpperCase().trim();
+            const startCheckResponse = await getAssessmentByCodeApi(enteredCode);
+
+            if (!startCheckResponse.success || !startCheckResponse.data) {
+                Swal.fire({
+                    title: 'Assessment Not Found!',
+                    text: 'The assessment code provided is invalid.',
+                    icon: 'error',
+                    confirmButtonColor: '#0D9488',
+                });
+                setSubmitting(false);
+                return;
+            }
+
+            // Access nested assessment details object (handling 'assesmentId' key from populated response)
+            // Fallback to data itself if not nested (safety check)
+            const assessmentData = startCheckResponse.data.assesmentId || startCheckResponse.data;
+
+            if (!assessmentData) {
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'Assessment data is missing or malformed.',
+                    icon: 'error',
+                    confirmButtonColor: '#0D9488',
+                });
+                setSubmitting(false);
+                return;
+            }
+
+            const { startDateTime, endDateTime, status } = assessmentData;
+            const now = new Date();
+
+            // Helper to parse "DD/MM/YYYY, HH:mm:ss"
+            const parseAssessmentDate = (dateStr) => {
+                if (!dateStr) return new Date();
+                try {
+                    // Check if it's in a format with comma like "06/01/2026, 11:20:00"
+                    if (dateStr.includes(',')) {
+                        const [datePart, timePart] = dateStr.split(',').map(s => s.trim());
+                        // STRICTLY DD/MM/YYYY format based on Jan 6th being "06/01"
+                        const [dayStr, monthStr, yearStr] = datePart.split('/');
+                        const [hours, minutes, seconds] = timePart.split(':').map(Number);
+
+                        const day = parseInt(dayStr, 10);
+                        const month = parseInt(monthStr, 10);
+                        const year = parseInt(yearStr, 10);
+
+                        if (day && month && year) {
+                            return new Date(year, month - 1, day, hours || 0, minutes || 0, seconds || 0);
+                        }
+                    }
+                    // Fallback to standard parsing
+                    return new Date(dateStr);
+                } catch (e) {
+                    console.error("Date parsing error:", e);
+                    return new Date(dateStr);
+                }
+            };
+
+            const start = parseAssessmentDate(startDateTime);
+            const end = parseAssessmentDate(endDateTime);
+
+            if (!status) {
+                Swal.fire({
+                    title: 'Assessment Inactive!',
+                    text: 'This assessment is currently not active.',
+                    icon: 'warning',
+                    confirmButtonColor: '#0D9488',
+                });
+                setSubmitting(false);
+                return;
+            }
+
+            if (now < start) {
+                Swal.fire({
+                    title: 'Assessment Not Started!',
+                    text: `Please wait. Assessment will start at ${start.toLocaleString()}`,
+                    icon: 'info',
+                    confirmButtonColor: '#0D9488',
+                });
+                setSubmitting(false);
+                return;
+            }
+
+            if (now > end) {
+                Swal.fire({
+                    title: 'Assessment Ended!',
+                    text: `This assessment ended at ${end.toLocaleString()}`,
+                    icon: 'error',
+                    confirmButtonColor: '#0D9488',
+                });
+                setSubmitting(false);
+                return;
+            }
+
             // Ensure assessment code is uppercase when sent to backend
             const payload = {
                 ...formData,
-                code: formData.code.toUpperCase()
+                code: enteredCode
             };
             const response = await studentRegisterApi(payload);
             if (response.success) {
@@ -337,7 +487,7 @@ export default function DigiCodersPortal() {
                                         MOBILE NUMBER <span className="text-pink-500 ml-1">*</span>
                                     </label>
                                     <input
-                                        type="number"
+                                        type="text"
                                         name="mobile"
                                         value={formData.mobile}
                                         onChange={handleChange}

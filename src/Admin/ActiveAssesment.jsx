@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
-import { Plus, Search, Edit, Trash2, X, Copy, Link } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, X, Copy, Link, Loader2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { getAssessmentByStatusApi, toggleAssessmentStatusApi, createAssessmentApi, updateAssessmentApi, deleteAssessmentApi } from '../API/assesment';
 import { getAllCertificatesApi } from '../API/certificate';
@@ -13,6 +13,7 @@ export function ActiveAssessment() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingAssessment, setEditingAssessment] = useState(null);
     const [assessments, setAssessments] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [certificateSearch, setCertificateSearch] = useState('');
     const [showCertificateDropdown, setShowCertificateDropdown] = useState(false);
     const certificateRef = useRef(null);
@@ -66,12 +67,15 @@ export function ActiveAssessment() {
     };
 
     const fetchAssessments = async () => {
+        setLoading(true);
         try {
             const response = await getAssessmentByStatusApi(true);
             setAssessments(response.assessments || []);
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to fetch assessments');
             setAssessments([]);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -346,305 +350,316 @@ export function ActiveAssessment() {
             </div>
 
             {/* Table */}
-            <div className="bg-white rounded-lg border border-[#E6FFFA] overflow-hidden">
-                <div className="overflow-x-auto custom-scrollbar ">
-                    <table className="w-full text-sm text-left whitespace-nowrap">
-                        <thead className="bg-[#E6FFFA] text-[#2D3748] font-semibold border-b border-[#319795]">
-                            <tr>
-                                <th className="px-4 py-3 w-16">Sr No.</th>
-                                <th className="px-4 py-3 w-20">Status</th>
-                                <th className="px-4 py-3">Questions</th>
-                                <th className="px-4 py-3">Assessment Name</th>
-                                <th className="px-4 py-3">Assessment Code</th>
-                                <th className="px-4 py-3">Date-Time</th>
-                                <th className="px-4 py-3">Remark</th>
-                                <th className="px-4 py-3">Certificate</th>
-                                <th className="px-4 py-3">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-[#E6FFFA]">
-                            {assessments.length === 0 ? (
-                                <tr>
-                                    <td colSpan="9" className="px-4 py-20 text-center">
-                                        <div className="flex flex-col items-center justify-center text-gray-400">
-                                            <Search className="h-12 w-12 mb-4 opacity-20" />
-                                            <p className="text-lg font-bold">No Active Assessments</p>
-                                            <p className="text-sm">Activate an assessment from history to see it here.</p>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ) : assessments.map((item, index) => (
-                                <tr key={item._id} >
-                                    <td className="px-4 py-3 align-top">{index + 1}</td>
-                                    <td className="px-4 py-3 align-top">
-                                        <label className="relative inline-flex items-center cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={item.status}
-                                                onChange={() => toggleStatus(item._id)}
-                                                className="sr-only peer"
-                                            />
-                                            <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#319795]"></div>
-                                        </label>
-                                    </td>
-                                    <td className="px-4 py-3 align-top">
-                                        <button
-                                            onClick={() => navigate(`/admin/assign-questions/${item._id}`)}
-                                            className="bg-emerald-400 text-white px-3 py-1 rounded text-xs font-medium hover:bg-emerald-500 transition-colors"
-                                        >
-                                            Questions ({item.count || 0}/{item.totalQuestions})
-                                        </button>
-                                    </td>
-                                    <td className="px-4 py-3 align-top">
-                                        <div className="font-medium text-[#2D3748]">{item.assessmentName}</div>
-                                        <div className="text-xs bg-[#F56565]/20 text-[#B8322F] inline-block px-1.5 rounded mt-1">
-                                            {item.timeDuration} Min
-                                        </div>
-                                    </td>
-                                    <td className="px-4 py-3 align-top">
-                                        <div className="font-medium text-[#2D3748] mb-2">{item.assessmentCode}</div>
-                                        <div className="flex gap-1 mb-1">
-                                            <button
-                                                onClick={() => handleCopyCode(item.assessmentCode)}
-                                                className="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-600 rounded text-xs hover:bg-blue-100 transition-colors"
-                                                title="Copy Assessment Code"
-                                            >
-                                                <Copy className="h-3 w-3" />
-                                                Copy
-                                            </button>
-                                            <button
-                                                onClick={() => handleCopyLink(item.assessmentCode)}
-                                                className="flex items-center gap-1 px-2 py-1 bg-green-50 text-green-600 rounded text-xs hover:bg-green-100 transition-colors"
-                                                title="Copy Assessment Link"
-                                            >
-                                                <Link className="h-3 w-3" />
-                                                Copy Link
-                                            </button>
-                                        </div>
-                                        <div className="space-y-1 space-x-1">
-                                            <div className="text-xs bg-[#319795]/20 text-[#2B7A73] inline-block px-1.5 rounded">
-                                                Start: {item.start || 0}
-                                            </div>
-                                            <div className="text-xs bg-[#F56565]/20 text-[#B8322F] inline-block px-1.5 rounded">
-                                                Submit: {item.submit || 0}
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-4 py-3 align-top text-gray-500 text-xs whitespace-nowrap">
-                                        <div>{item.startDateTime}</div>
-                                        <div>{item.endDateTime}</div>
-                                    </td>
-                                    <td className="px-4 py-3 align-top text-[#2D3748]">{item.remark}</td>
-                                    <td className="px-4 py-3 align-top text-[#2D3748]">
-                                        <div>{item.generateCertificate ? 'Yes' : 'No'}</div>
-                                        <div className="text-xs text-gray-400">{item.certificateName?.certificateName || 'N/A'}</div>
-                                    </td>
-                                    <td className="px-4 py-3 align-top">
-                                        <div className="flex flex-col gap-1.5">
-                                            <button
-                                                onClick={() => navigate(`/admin/assessment/result/${item._id}`)}
-                                                className="border border-[#319795] text-[#319795] px-2 py-0.5 rounded text-xs hover:bg-[#E6FFFA]"
-                                            >
-                                                Result
-                                            </button>
-                                            <button
-                                                onClick={() => navigate(`/admin/assessment/started-students/${item._id}`)}
-                                                className="border border-orange-500 text-orange-500 px-2 py-0.5 rounded text-xs hover:bg-orange-50"
-                                            >
-                                                Export
-                                            </button>
-                                            <div className="flex items-center gap-1">
-                                                <button
-                                                    onClick={() => handleEdit(item)}
-                                                    className="p-1 border border-blue-500 text-blue-500 rounded hover:bg-blue-50"
-                                                    title="Edit"
-                                                >
-                                                    <Edit className="h-3 w-3" />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDeleteAssessment(item._id)}
-                                                    className="p-1 border border-red-500 text-red-500 rounded hover:bg-red-50"
-                                                    title="Delete"
-                                                >
-                                                    <Trash2 className="h-3 w-3" />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-                <div className="px-4 py-3 border-t border-[#E6FFFA] text-xs text-[#2D3748] flex justify-between items-center">
-                    <span>Showing 1 to {assessments.length} of {assessments.length} entries</span>
-                    <div className="flex gap-1">
-                        <span className="text-gray-400">Previous</span>
-                        <span className="font-medium text-[#2D3748]">1</span>
-                        <span className="text-gray-400">Next</span>
+            <div className="bg-white rounded-lg border border-[#E6FFFA] overflow-hidden min-h-[400px]">
+                {loading ? (
+                    <div className="flex flex-col items-center justify-center py-20">
+                        <Loader2 className="h-10 w-10 animate-spin text-[#319795] mb-4" />
+                        <p className="text-gray-500 font-medium font-inter">Loading assessments...</p>
                     </div>
-                </div>
+                ) : (
+                    <>
+                        <div className="overflow-x-auto custom-scrollbar ">
+                            <table className="w-full text-sm text-left whitespace-nowrap">
+                                <thead className="bg-[#E6FFFA] text-[#2D3748] font-semibold border-b border-[#319795]">
+                                    <tr>
+                                        <th className="px-4 py-3 w-16">Sr No.</th>
+                                        <th className="px-4 py-3 w-20">Status</th>
+                                        <th className="px-4 py-3">Questions</th>
+                                        <th className="px-4 py-3">Assessment Name</th>
+                                        <th className="px-4 py-3">Assessment Code</th>
+                                        <th className="px-4 py-3">Date-Time</th>
+                                        <th className="px-4 py-3">Remark</th>
+                                        <th className="px-4 py-3">Certificate</th>
+                                        <th className="px-4 py-3">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-[#E6FFFA]">
+                                    {assessments.length === 0 ? (
+                                        <tr>
+                                            <td colSpan="9" className="px-4 py-20 text-center">
+                                                <div className="flex flex-col items-center justify-center text-gray-400">
+                                                    <Search className="h-12 w-12 mb-4 opacity-20" />
+                                                    <p className="text-lg font-bold">No Active Assessments</p>
+                                                    <p className="text-sm">Activate an assessment from history to see it here.</p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ) : assessments.map((item, index) => (
+                                        <tr key={item._id} >
+                                            <td className="px-4 py-3 align-top">{index + 1}</td>
+                                            <td className="px-4 py-3 align-top">
+                                                <label className="relative inline-flex items-center cursor-pointer">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={item.status}
+                                                        onChange={() => toggleStatus(item._id)}
+                                                        className="sr-only peer"
+                                                    />
+                                                    <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#319795]"></div>
+                                                </label>
+                                            </td>
+                                            <td className="px-4 py-3 align-top">
+                                                <button
+                                                    onClick={() => navigate(`/admin/assign-questions/${item._id}`, { state: { assessmentCode: item.assessmentCode } })}
+                                                    className="bg-emerald-400 text-white px-3 py-1 rounded text-xs font-medium hover:bg-emerald-500 transition-colors"
+                                                >
+                                                    Questions ({item.count || 0}/{item.totalQuestions})
+                                                </button>
+                                            </td>
+                                            <td className="px-4 py-3 align-top">
+                                                <div className="font-medium text-[#2D3748]">{item.assessmentName}</div>
+                                                <div className="text-xs bg-[#F56565]/20 text-[#B8322F] inline-block px-1.5 rounded mt-1">
+                                                    {item.timeDuration} Min
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3 align-top">
+                                                <div className="font-medium text-[#2D3748] mb-2">{item.assessmentCode}</div>
+                                                <div className="flex gap-1 mb-1">
+                                                    <button
+                                                        onClick={() => handleCopyCode(item.assessmentCode)}
+                                                        className="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-600 rounded text-xs hover:bg-blue-100 transition-colors"
+                                                        title="Copy Assessment Code"
+                                                    >
+                                                        <Copy className="h-3 w-3" />
+                                                        Copy
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleCopyLink(item.assessmentCode)}
+                                                        className="flex items-center gap-1 px-2 py-1 bg-green-50 text-green-600 rounded text-xs hover:bg-green-100 transition-colors"
+                                                        title="Copy Assessment Link"
+                                                    >
+                                                        <Link className="h-3 w-3" />
+                                                        Copy Link
+                                                    </button>
+                                                </div>
+                                                <div className="space-y-1 space-x-1">
+                                                    <div className="text-xs bg-[#319795]/20 text-[#2B7A73] inline-block px-1.5 rounded">
+                                                        Start: {item.start || 0}
+                                                    </div>
+                                                    <div className="text-xs bg-[#F56565]/20 text-[#B8322F] inline-block px-1.5 rounded">
+                                                        Submit: {item.submit || 0}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3 align-top text-gray-500 text-xs whitespace-nowrap">
+                                                <div>{item.startDateTime}</div>
+                                                <div>{item.endDateTime}</div>
+                                            </td>
+                                            <td className="px-4 py-3 align-top text-[#2D3748]">{item.remark}</td>
+                                            <td className="px-4 py-3 align-top text-[#2D3748]">
+                                                <div>{item.generateCertificate ? 'Yes' : 'No'}</div>
+                                                <div className="text-xs text-gray-400">{item.certificateName?.certificateName || 'N/A'}</div>
+                                            </td>
+                                            <td className="px-4 py-3 align-top">
+                                                <div className="flex flex-col gap-1.5">
+                                                    <button
+                                                        onClick={() => navigate(`/admin/assessment/result/${item._id}`)}
+                                                        className="border border-[#319795] text-[#319795] px-2 py-0.5 rounded text-xs hover:bg-[#E6FFFA]"
+                                                    >
+                                                        Result
+                                                    </button>
+                                                    <button
+                                                        onClick={() => navigate(`/admin/assessment/started-students/${item._id}`, { state: { assessmentCode: item.assessmentCode } })}
+                                                        className="border border-orange-500 text-orange-500 px-2 py-0.5 rounded text-xs hover:bg-orange-50"
+                                                    >
+                                                        Export
+                                                    </button>
+                                                    <div className="flex items-center gap-1">
+                                                        <button
+                                                            onClick={() => handleEdit(item)}
+                                                            className="p-1 border border-blue-500 text-blue-500 rounded hover:bg-blue-50"
+                                                            title="Edit"
+                                                        >
+                                                            <Edit className="h-3 w-3" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDeleteAssessment(item._id)}
+                                                            className="p-1 border border-red-500 text-red-500 rounded hover:bg-red-50"
+                                                            title="Delete"
+                                                        >
+                                                            <Trash2 className="h-3 w-3" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div className="px-4 py-3 border-t border-[#E6FFFA] text-xs text-[#2D3748] flex justify-between items-center">
+                            <span>Showing 1 to {assessments.length} of {assessments.length} entries</span>
+                            <div className="flex gap-1">
+                                <span className="text-gray-400">Previous</span>
+                                <span className="font-medium text-[#2D3748]">1</span>
+                                <span className="text-gray-400">Next</span>
+                            </div>
+                        </div>
+                    </>
+                )}
             </div>
 
             {/* Modal */}
-            {isModalOpen && (
-                <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
-                        <div className="bg-[#319795] text-[#E6FFFA] px-6 py-4 flex justify-between items-center">
-                            <h3 className="font-semibold text-lg">{editingAssessment ? 'Edit Assessment Schedule' : 'Add Assessment Schedule'}</h3>
-                            <button onClick={() => setIsModalOpen(false)} className="text-[#E6FFFA] hover:text-[#B2F5EA]">
-                                <X className="h-5 w-5" />
-                            </button>
-                        </div>
+            {
+                isModalOpen && (
+                    <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-lg w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+                            <div className="bg-[#319795] text-[#E6FFFA] px-6 py-4 flex justify-between items-center">
+                                <h3 className="font-semibold text-lg">{editingAssessment ? 'Edit Assessment Schedule' : 'Add Assessment Schedule'}</h3>
+                                <button onClick={() => setIsModalOpen(false)} className="text-[#E6FFFA] hover:text-[#B2F5EA]">
+                                    <X className="h-5 w-5" />
+                                </button>
+                            </div>
 
-                        <div className="p-6 overflow-y-auto custom-scrollbar space-y-4">
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1">Assessment Name<span className="text-red-500">*</span></label>
-                                <input
-                                    type="text"
-                                    value={formData.name}
-                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#319795]"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1">Assessment Code<span className="text-red-500">*</span></label>
-                                <input
-                                    type="text"
-                                    value={formData.code}
-                                    onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#319795]"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1">Total Question<span className="text-red-500">*</span></label>
-                                <input
-                                    type="number"
-                                    value={formData.totalQuestions}
-                                    onChange={(e) => setFormData({ ...formData, totalQuestions: e.target.value })}
-                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#319795]"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1">Time Duration (Min)<span className="text-red-500">*</span></label>
-                                <input
-                                    type="text"
-                                    value={formData.duration}
-                                    onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#319795]"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1">Start Date-Time<span className="text-red-500">*</span></label>
-                                <input
-                                    type="datetime-local"
-                                    value={formData.startTime}
-                                    onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#319795]"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1">End Date-Time<span className="text-red-500">*</span></label>
-                                <input
-                                    type="datetime-local"
-                                    value={formData.endTime}
-                                    onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#319795]"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1">Generate Certificate</label>
-                                <div className="flex gap-4">
-                                    <label className="flex items-center gap-2 text-sm text-gray-600">
-                                        <input
-                                            type="radio"
-                                            name="cert_active"
-                                            checked={formData.hasCertificate === 'Yes'}
-                                            onChange={() => setFormData({ ...formData, hasCertificate: 'Yes' })}
-                                            className="text-[#319795] focus:ring-[#319795]"
-                                        /> Yes
-                                    </label>
-                                    <label className="flex items-center gap-2 text-sm text-gray-600">
-                                        <input
-                                            type="radio"
-                                            name="cert_active"
-                                            checked={formData.hasCertificate === 'No'}
-                                            onChange={() => setFormData({ ...formData, hasCertificate: 'No' })}
-                                            className="text-[#319795] focus:ring-[#319795]"
-                                        /> No
-                                    </label>
-                                </div>
-                            </div>
-                            {formData.hasCertificate === 'Yes' && (
-                                <div className="relative" ref={certificateRef}>
-                                    <label className="block text-xs font-semibold text-gray-600 mb-1">
-                                        Choose Certificate Name
-                                    </label>
-
+                            <div className="p-6 overflow-y-auto custom-scrollbar space-y-4">
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Assessment Name<span className="text-red-500">*</span></label>
                                     <input
                                         type="text"
-                                        value={certificateSearch}
-                                        onChange={(e) => {
-                                            setCertificateSearch(e.target.value);
-                                            setShowCertificateDropdown(true);
-                                        }}
-                                        onFocus={() => setShowCertificateDropdown(true)}
-                                        placeholder="Search certificate..."
+                                        value={formData.name}
+                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                         className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#319795]"
                                     />
-
-                                    {showCertificateDropdown && (
-                                        <div className="absolute z-10 w-full bg-white border border-gray-300 rounded mt-1 max-h-40 overflow-y-auto">
-                                            {filteredCertificates.length > 0 ? (
-                                                filteredCertificates.map((cert) => (
-                                                    <div
-                                                        key={cert._id}
-                                                        onClick={() => {
-                                                            setCertificateSearch(cert.certificateName);
-                                                            setFormData({
-                                                                ...formData,
-                                                                certificateName: cert.certificateName
-                                                            });
-                                                            setShowCertificateDropdown(false);
-                                                        }}
-                                                        className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
-                                                    >
-                                                        {cert.certificateName}
-                                                    </div>
-                                                ))
-                                            ) : (
-                                                <div className="px-3 py-2 text-gray-500 text-sm">
-                                                    No Active Certificates
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
                                 </div>
-                            )}
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Assessment Code<span className="text-red-500">*</span></label>
+                                    <input
+                                        type="text"
+                                        value={formData.code}
+                                        onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                                        className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#319795]"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Total Question<span className="text-red-500">*</span></label>
+                                    <input
+                                        type="number"
+                                        value={formData.totalQuestions}
+                                        onChange={(e) => setFormData({ ...formData, totalQuestions: e.target.value })}
+                                        className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#319795]"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Time Duration (Min)<span className="text-red-500">*</span></label>
+                                    <input
+                                        type="text"
+                                        value={formData.duration}
+                                        onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                                        className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#319795]"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Start Date-Time<span className="text-red-500">*</span></label>
+                                    <input
+                                        type="datetime-local"
+                                        value={formData.startTime}
+                                        onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                                        className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#319795]"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-600 mb-1">End Date-Time<span className="text-red-500">*</span></label>
+                                    <input
+                                        type="datetime-local"
+                                        value={formData.endTime}
+                                        onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                                        className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#319795]"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Generate Certificate</label>
+                                    <div className="flex gap-4">
+                                        <label className="flex items-center gap-2 text-sm text-gray-600">
+                                            <input
+                                                type="radio"
+                                                name="cert_active"
+                                                checked={formData.hasCertificate === 'Yes'}
+                                                onChange={() => setFormData({ ...formData, hasCertificate: 'Yes' })}
+                                                className="text-[#319795] focus:ring-[#319795]"
+                                            /> Yes
+                                        </label>
+                                        <label className="flex items-center gap-2 text-sm text-gray-600">
+                                            <input
+                                                type="radio"
+                                                name="cert_active"
+                                                checked={formData.hasCertificate === 'No'}
+                                                onChange={() => setFormData({ ...formData, hasCertificate: 'No' })}
+                                                className="text-[#319795] focus:ring-[#319795]"
+                                            /> No
+                                        </label>
+                                    </div>
+                                </div>
+                                {formData.hasCertificate === 'Yes' && (
+                                    <div className="relative" ref={certificateRef}>
+                                        <label className="block text-xs font-semibold text-gray-600 mb-1">
+                                            Choose Certificate Name
+                                        </label>
 
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1">Remark</label>
-                                <input
-                                    type="text"
-                                    value={formData.remark}
-                                    onChange={(e) => setFormData({ ...formData, remark: e.target.value })}
-                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#319795]"
-                                />
+                                        <input
+                                            type="text"
+                                            value={certificateSearch}
+                                            onChange={(e) => {
+                                                setCertificateSearch(e.target.value);
+                                                setShowCertificateDropdown(true);
+                                            }}
+                                            onFocus={() => setShowCertificateDropdown(true)}
+                                            placeholder="Search certificate..."
+                                            className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#319795]"
+                                        />
+
+                                        {showCertificateDropdown && (
+                                            <div className="absolute z-10 w-full bg-white border border-gray-300 rounded mt-1 max-h-40 overflow-y-auto">
+                                                {filteredCertificates.length > 0 ? (
+                                                    filteredCertificates.map((cert) => (
+                                                        <div
+                                                            key={cert._id}
+                                                            onClick={() => {
+                                                                setCertificateSearch(cert.certificateName);
+                                                                setFormData({
+                                                                    ...formData,
+                                                                    certificateName: cert.certificateName
+                                                                });
+                                                                setShowCertificateDropdown(false);
+                                                            }}
+                                                            className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                                                        >
+                                                            {cert.certificateName}
+                                                        </div>
+                                                    ))
+                                                ) : (
+                                                    <div className="px-3 py-2 text-gray-500 text-sm">
+                                                        No Active Certificates
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Remark</label>
+                                    <input
+                                        type="text"
+                                        value={formData.remark}
+                                        onChange={(e) => setFormData({ ...formData, remark: e.target.value })}
+                                        className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#319795]"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="bg-[#EDF2F7] px-6 py-4 flex justify-start">
+                                <button
+                                    onClick={handleSave}
+                                    className="bg-[#319795] hover:bg-[#2c7a7b] text-white px-4 py-2 rounded text-sm font-medium flex items-center gap-2 transition-colors"
+                                >
+                                    <span className="bg-white text-[#319795] rounded-full w-4 h-4 flex items-center justify-center text-[10px]">✓</span>
+                                    {editingAssessment ? 'Update' : 'Add'}
+                                </button>
                             </div>
                         </div>
-
-                        <div className="bg-[#EDF2F7] px-6 py-4 flex justify-start">
-                            <button
-                                onClick={handleSave}
-                                className="bg-[#319795] hover:bg-[#2c7a7b] text-white px-4 py-2 rounded text-sm font-medium flex items-center gap-2 transition-colors"
-                            >
-                                <span className="bg-white text-[#319795] rounded-full w-4 h-4 flex items-center justify-center text-[10px]">✓</span>
-                                {editingAssessment ? 'Update' : 'Add'}
-                            </button>
-                        </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 }

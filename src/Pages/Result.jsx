@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { getResultsByStudentApi } from '../API/result';
 import { getSingleCertificateApi } from '../API/certificate';
+import { uploadStudentCertificateApi } from '../API/student';
 import Confetti from 'react-confetti';
 import { useWindowSize } from 'react-use';
 import { Download, Home, FileText } from 'lucide-react';
@@ -21,50 +22,52 @@ export default function Result() {
     const [certificateData, setCertificateData] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchResult = async () => {
-            try {
-                if (!studentId || !assessmentId) {
-                    throw new Error("Missing result identification");
-                }
+    const fetchResult = async () => {
+        try {
+            if (!studentId || !assessmentId) {
+                return;
+            }
 
-                const response = await getResultsByStudentApi(studentId);
+            // Don't set loading true here to avoid UI flickering during background refresh
+            // But if it's the first load (resultData is null), we might want to show loading
+            if (!resultData) setLoading(true);
 
-                if (response.success && response.results) {
+            const response = await getResultsByStudentApi(studentId);
 
-                    const currentResult = response.results.find(res => {
-                        const targetId = res.assesmentQuestions?._id || res.assesmentQuestions || res.assessmentQuestions?._id || res.assessmentQuestions;
-                        return targetId === assessmentId;
-                    });
+            if (response.success && response.results) {
 
-                    if (currentResult) {
-                        setResultData(currentResult);
+                const currentResult = response.results.find(res => {
+                    const targetId = res.assesmentQuestions?._id || res.assesmentQuestions || res.assessmentQuestions?._id || res.assessmentQuestions;
+                    return targetId === assessmentId;
+                });
 
-                        // Also fetch certificate data if certificateId exists
-                        if (certificateId && certificateId !== 'null' && certificateId !== 'undefined') {
-                            try {
-                                const certResp = await getSingleCertificateApi(certificateId);
-                                if (certResp) {
-                                    setCertificateData(certResp);
-                                }
-                            } catch (error) {
-                                console.error("Certificate fetch error:", error);
+                if (currentResult) {
+                    setResultData(currentResult);
+
+                    // Also fetch certificate data if certificateId exists
+                    if (certificateId && certificateId !== 'null' && certificateId !== 'undefined') {
+                        try {
+                            const certResp = await getSingleCertificateApi(certificateId);
+                            if (certResp) {
+                                setCertificateData(certResp);
                             }
+                        } catch (error) {
+                            console.error("Certificate fetch error:", error);
                         }
-                    } else {
-                        throw new Error("Result not found for this assessment");
                     }
                 } else {
-                    throw new Error(response.message || "Failed to fetch results");
+                    console.error("Result not found for this assessment");
                 }
-            } catch (error) {
-                console.error("Fetch result error:", error);
-                toast.error(error.message || "Something went wrong while fetching your result");
-            } finally {
-                setLoading(false);
             }
-        };
+        } catch (error) {
+            console.error("Fetch result error:", error);
+            // toast.error(error.message || "Something went wrong while fetching your result");
+        } finally {
+            setLoading(false);
+        }
+    };
 
+    useEffect(() => {
         fetchResult();
     }, [studentId, assessmentId]);
 
@@ -169,6 +172,34 @@ export default function Result() {
             return;
         }
 
+        // 1. Check if certificate already exists
+        if (resultData.student?.certificate) {
+            try {
+                // Determine if we can download it directly (if cross-origin issues allow) or if we need to open it
+                // For a specialized experience requested: "url milega usme ek image hogi usi ko download kre"
+
+                // Attempt to fetch and download as blob to force 'Download' behavior instead of 'Open'
+                const response = await fetch(resultData.student.certificate);
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `DigiCoders_Certificate_${(resultData.student?.name || 'Student').replace(/\s+/g, '_')}.jpg`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
+
+                toast.success("Certificate downloaded successfully!");
+                return;
+            } catch (e) {
+                console.error("Error downloading existing certificate:", e);
+                // Fallback: just open it if fetch fails (likely due to CORS if not configured)
+                window.open(resultData.student.certificate, '_blank');
+                return;
+            }
+        }
+
         const toastId = toast.loading("Generating your certificate...");
 
         try {
@@ -189,50 +220,53 @@ export default function Result() {
 
             // Draw Base Image
             ctx.drawImage(img, 0, 0);
+            await document.fonts.ready;
+
 
             // Function to draw styled text
             const drawText = (text, style) => {
                 if (!style || !text) return;
 
-                // Setup Font
                 const weight = style.bold ? 'bold ' : '';
                 const italic = style.italic ? 'italic ' : '';
-                const fontSize = style.fontSize || '20px';
                 const fontFamily = style.fontFamily || 'Inter, sans-serif';
-                ctx.font = `${weight}${italic}${fontSize} ${fontFamily}`;
 
-                // Color and Alignment
-                ctx.fillStyle = style.textColor || '#000000';
+                const getFontSizePx = (size, canvasWidth) => {
+                    if (size?.includes('%')) {
+                        return (parseFloat(size) / 100) * canvasWidth;
+                    }
+                    return parseFloat(size);
+                };
+
+                const fontSizePx = getFontSizePx(style.fontSize, canvas.width);
+
+                ctx.font = `${weight}${italic}${fontSizePx}px ${fontFamily}`;
+                ctx.fillStyle = style.textColor || '#000';
                 ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
+                ctx.textBaseline = 'alphabetic';
 
-                // Position (positions usually come as strings like "50%")
                 const parsePos = (pos, base) => {
+                    if (!pos) return base / 2;
                     const val = parseFloat(pos);
-                    return isNaN(val) ? base / 2 : (val / 100) * base;
+                    if (isNaN(val)) return base / 2;
+
+                    return pos.toString().includes('%')
+                        ? (val / 100) * base
+                        : val;
                 };
 
                 const x = parsePos(style.horizontalPosition, canvas.width);
-                const y = parsePos(style.verticalPosition, canvas.height);
+                const y =
+                    parsePos(style.verticalPosition, canvas.height) +
+                    fontSizePx * 0.35;
 
-                // Add underline if needed
-                if (style.underline) {
-                    const metrics = ctx.measureText(text);
-                    const textWidth = metrics.width;
-                    ctx.fillText(text, x, y);
-                    ctx.beginPath();
-                    ctx.strokeStyle = ctx.fillStyle;
-                    ctx.lineWidth = 2;
-                    ctx.moveTo(x - textWidth / 2, y + parseInt(fontSize) / 2);
-                    ctx.lineTo(x + textWidth / 2, y + parseInt(fontSize) / 2);
-                    ctx.stroke();
-                } else {
-                    ctx.fillText(text, x, y);
-                }
+                ctx.fillText(text, x, y);
             };
 
+
+
             // Overlay Data
-            // 1. Student Name (Always required)
+            // 1. Student Name
             drawText(resultData.student?.name, certificateData.studentName);
 
             // 2. Assessment Name (Optional)
@@ -260,17 +294,39 @@ export default function Result() {
                 drawText(formattedDate, certificateData.date);
             }
 
-            // Download
+            // Generate Data URL
             const dataUrl = canvas.toDataURL('image/jpeg', 1.0);
+
+            // Convert Data URL to File for Upload
+            const blob = await (await fetch(dataUrl)).blob();
+            const fileName = `DigiCoders_Certificate_${(resultData.student?.name || 'Student').replace(/\s+/g, '_')}.jpg`;
+            const file = new File([blob], fileName, { type: "image/jpeg" });
+
+            // Upload the certificate
+            if (resultData.student?._id) {
+                try {
+                    await uploadStudentCertificateApi(resultData.student._id, file);
+                    console.log("Certificate uploaded successfully");
+
+                    // Refresh result data from server to ensure state is in sync with the new certificate URL
+                    await fetchResult();
+
+                } catch (uploadError) {
+                    console.error("Failed to upload certificate:", uploadError);
+                    // Proceed to download anyway so user gets their file
+                }
+            }
+
+            // Trigger Download
             const link = document.createElement('a');
             link.href = dataUrl;
-            link.download = `DigiCoders_Certificate_${(resultData.student?.name || 'Student').replace(/\s+/g, '_')}.jpg`;
+            link.download = fileName;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
 
             toast.update(toastId, {
-                render: "Certificate downloaded successfully!",
+                render: "Certificate downloaded and saved!",
                 type: "success",
                 isLoading: false,
                 autoClose: 3000

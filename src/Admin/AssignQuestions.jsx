@@ -1,15 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronRight, Save, Search, CheckCircle2, Circle, BookOpen, Download, ArrowLeft, Trash2 } from 'lucide-react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { ChevronRight, Save, Search, CheckCircle2, Circle, BookOpen, Download, ArrowLeft, Trash2, Loader2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 import { getAllTopicsApi } from '../API/topic';
 import { getQuestionsByTopicApi } from '../API/question';
-import { addQuestionsToAssessmentApi, getAssessmentQuestionsApi, deleteQuestionFromAssessmentApi } from '../API/assesmentQuestions';
+import { getAssessmentByStatusApi } from '../API/assesment'; // Or wherever getById is
+import { addQuestionsToAssessmentApi, getAssessmentQuestionsApi, deleteQuestionFromAssessmentApi, getAssessmentByCodeApi } from '../API/assesmentQuestions';
 
 export default function AssignQuestions() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
     const [selectedTopic, setSelectedTopic] = useState('');
     const [selectedQuestions, setSelectedQuestions] = useState([]);
     const [isTopicDropdownOpen, setIsTopicDropdownOpen] = useState(false);
@@ -22,7 +24,30 @@ export default function AssignQuestions() {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
     const [loading, setLoading] = useState(false);
+    const [loadingAssigned, setLoadingAssigned] = useState(false);
     const [junctionId, setJunctionId] = useState(null);
+    const [isExpired, setIsExpired] = useState(false);
+
+    // Helper function to convert "DD/MM/YYYY, HH:MM:SS" to Date object
+    const parseBackendDate = (dateStr) => {
+        if (!dateStr || typeof dateStr !== 'string') return null;
+        try {
+            const parts = dateStr.includes(', ') ? dateStr.split(', ') : [dateStr];
+            if (parts.length < 2 && dateStr.includes('T')) return new Date(dateStr); // ISO format fallback
+
+            const [datePart, timePart] = parts;
+            const [day, month, year] = datePart.split('/').map(Number);
+
+            let hours = 0, minutes = 0, seconds = 0;
+            if (timePart) {
+                [hours, minutes, seconds] = timePart.split(':').map(Number);
+            }
+
+            return new Date(year, month - 1, day, hours, minutes, seconds || 0);
+        } catch (e) {
+            return null;
+        }
+    };
 
 
     useEffect(() => {
@@ -60,34 +85,49 @@ export default function AssignQuestions() {
     };
 
     const fetchAssignedQuestions = async () => {
+        setLoadingAssigned(true);
         try {
-            if (!id) return;
-            const response = await getAssessmentQuestionsApi(id);
+            // We now require assessmentCode which is passed via state
+            const code = location.state?.assessmentCode;
+            if (!code) {
+                console.warn("Assessment Code not found in state");
+            }
 
+            if (!code) {
+                toast.error("Assessment validation failed: Missing Code.");
+                return;
+            }
+
+            const response = await getAssessmentByCodeApi(code);
 
             if (response && response.success) {
                 let list = [];
                 let jId = null;
+                let assessmentDetails = null;
+
+                // Extract assessment details to check expiry
+                if (response.data) {
+                    assessmentDetails = response.data;
+                }
+
+                if (assessmentDetails && assessmentDetails.endDateTime) {
+                    const expiryDate = parseBackendDate(assessmentDetails.endDateTime);
+                    if (expiryDate && new Date() > expiryDate) {
+                        setIsExpired(true);
+                    } else {
+                        setIsExpired(false);
+                    }
+                }
 
                 // 1. Logic to extract the junction document ID and the questions array
-                // Case A: The junction doc itself is in response.questions
-                if (response.questions && typeof response.questions === 'object' && !Array.isArray(response.questions)) {
-                    jId = response.questions._id || response.questions.id;
-                    list = response.questions.questionIds || response.questions.questions || [];
+                if (response.data) {
+                    jId = response.data._id || null;
+                    list = response.data.questionIds || response.data.questions || [];
+                } else if (response.questions) {
+                    // Fallback if structure matches getAssessmentQuestionsApi
+                    jId = response.questions._id;
+                    list = response.questions.questionIds || [];
                 }
-                // Case B: response.questions is a direct array (as per your sample)
-                else if (Array.isArray(response.questions)) {
-                    list = response.questions;
-                    // Try to find the junction ID in common places
-                    jId = response.assesmentQuestionId || response._id || response.id || (response.data ? response.data._id : null);
-                }
-                // Case C: Data is in response.data
-                else if (response.data) {
-                    jId = response.data._id || response._id || null;
-                    list = response.data.questionIds || response.data.questions || (Array.isArray(response.data) ? response.data : []);
-                }
-
-
 
                 setJunctionId(jId);
                 setAssignedQuestions(Array.isArray(list) ? list : []);
@@ -98,6 +138,8 @@ export default function AssignQuestions() {
                 setAssignedQuestions([]);
                 setJunctionId(null);
             }
+        } finally {
+            setLoadingAssigned(false);
         }
     };
 
@@ -126,6 +168,7 @@ export default function AssignQuestions() {
 
 
     const toggleQuestion = (qId) => {
+        if (isExpired) return;
         setSelectedQuestions(prev =>
             prev.includes(qId)
                 ? prev.filter(q_id => q_id !== qId)
@@ -134,6 +177,7 @@ export default function AssignQuestions() {
     };
 
     const handleSelectAll = () => {
+        if (isExpired) return;
         const availableIds = finalAvailableQuestions.map(q => q._id);
         const allSelected = availableIds.every(q_id => selectedQuestions.includes(q_id));
 
@@ -147,6 +191,7 @@ export default function AssignQuestions() {
     };
 
     const handleRemoveQuestion = (questionId) => {
+        if (isExpired) return;
         Swal.fire({
             title: 'Remove Question?',
             text: 'Are you sure you want to remove this question from the assessment?',
@@ -178,6 +223,7 @@ export default function AssignQuestions() {
     };
 
     const handleSave = async () => {
+        if (isExpired) return;
         if (selectedQuestions.length === 0) {
             toast.error("Please select at least one question!");
             return;
@@ -304,10 +350,11 @@ export default function AssignQuestions() {
                             )}
                             <button
                                 onClick={handleSave}
-                                className="bg-[#319795] hover:bg-[#2B7A73] text-white px-6 py-2.5 rounded-lg font-bold text-sm transition-all flex items-center gap-2"
+                                disabled={isExpired}
+                                className={`px-6 py-2.5 rounded-lg font-bold text-sm transition-all flex items-center gap-2 ${isExpired ? 'bg-gray-400 cursor-not-allowed text-gray-200' : 'bg-[#319795] hover:bg-[#2B7A73] text-white'}`}
                             >
                                 <Save className="h-4 w-4" />
-                                Assign Now
+                                {isExpired ? 'Expired' : 'Assign Now'}
                             </button>
                         </div>
                     </div>
@@ -357,7 +404,10 @@ export default function AssignQuestions() {
                         <p className="text-gray-500 text-sm mt-1">Please choose a topic from the dropdown to see questions.</p>
                     </div>
                 ) : loading ? (
-                    <div className="p-10 text-center text-gray-400 font-bold">Loading questions...</div>
+                    <div className="flex flex-col items-center justify-center p-10">
+                        <Loader2 className="h-8 w-8 animate-spin text-[#319795] mb-2" />
+                        <p className="text-gray-400 font-bold">Loading questions...</p>
+                    </div>
                 ) : finalAvailableQuestions.length === 0 ? (
                     <div className="p-10 text-center text-gray-400 font-bold">No questions available in this topic.</div>
                 ) : (
@@ -366,7 +416,8 @@ export default function AssignQuestions() {
                         <div className="mb-4">
                             <button
                                 onClick={handleSelectAll}
-                                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors"
+                                disabled={isExpired}
+                                className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${isExpired ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600 text-white'}`}
                             >
                                 {finalAvailableQuestions.every(q => selectedQuestions.includes(q._id)) ? 'Deselect All' : 'Select All'}
                             </button>
@@ -375,9 +426,10 @@ export default function AssignQuestions() {
                             <div
                                 key={q._id}
                                 onClick={() => toggleQuestion(q._id)}
-                                className={`p-5 rounded-xl border-2 transition-all cursor-pointer flex items-center justify-between group ${selectedQuestions.includes(q._id)
-                                    ? 'border-[#319795] bg-teal-50'
-                                    : 'border-white bg-white hover:border-gray-100'
+                                className={`p-5 rounded-xl border-2 transition-all flex items-center justify-between group ${isExpired ? 'cursor-not-allowed opacity-60 border-gray-100 bg-gray-50' :
+                                    selectedQuestions.includes(q._id)
+                                        ? 'border-[#319795] bg-teal-50 cursor-pointer'
+                                        : 'border-white bg-white hover:border-gray-100 cursor-pointer'
                                     }`}
                             >
                                 <div className="flex items-center gap-4">
@@ -413,8 +465,13 @@ export default function AssignQuestions() {
                         )}
                     </div>
 
-                    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                        {assignedQuestions.length === 0 ? (
+                    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden min-h-[200px]">
+                        {loadingAssigned ? (
+                            <div className="flex flex-col items-center justify-center py-20">
+                                <Loader2 className="h-10 w-10 animate-spin text-[#319795] mb-4" />
+                                <p className="text-gray-500 font-medium font-inter">Loading assigned questions...</p>
+                            </div>
+                        ) : assignedQuestions.length === 0 ? (
                             <div className="p-20 text-center border-2 border-dashed border-gray-100 m-4 rounded-xl">
                                 <Search className="h-10 w-10 mx-auto mb-4 text-gray-300" />
                                 <h3 className="text-gray-500 font-bold">No questions assigned yet</h3>
@@ -464,8 +521,9 @@ export default function AssignQuestions() {
                                                     <td className="px-4 py-3 text-center">
                                                         <button
                                                             onClick={() => handleRemoveQuestion(q._id)}
-                                                            className="text-red-600 hover:text-red-800 p-2 hover:bg-red-50 rounded-lg transition-colors"
-                                                            title="Delete Question"
+                                                            disabled={isExpired}
+                                                            className={`p-2 rounded-lg transition-colors ${isExpired ? 'text-gray-400 cursor-not-allowed' : 'text-red-600 hover:text-red-800 hover:bg-red-50'}`}
+                                                            title={isExpired ? "Assessment Expired" : "Delete Question"}
                                                         >
                                                             <Trash2 className="h-4 w-4" />
                                                         </button>

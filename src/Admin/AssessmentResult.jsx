@@ -5,6 +5,7 @@ import { Download, Search, FileText, FileSpreadsheet, ChevronDown, ArrowLeft, Ey
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { getResultsByAssessmentIdApi } from '../API/result';
+import { getSingleStudentApi } from '../API/student';
 
 export default function AssessmentResult() {
     const { id } = useParams();
@@ -107,48 +108,44 @@ export default function AssessmentResult() {
         }
     };
 
-    const downloadStudentResult = (student) => {
+    const downloadStudentResult = async (studentItem) => {
+        if (!studentItem.studentId) {
+            toast.error("Invalid Student ID");
+            return;
+        }
+
         try {
-            const doc = new jsPDF();
-            doc.setFontSize(20);
-            doc.setTextColor(20, 184, 166);
-            doc.text("Assessment Result", 105, 20, { align: 'center' });
-            doc.setDrawColor(20, 184, 166);
-            doc.line(20, 25, 190, 25);
-            doc.setFontSize(12);
-            doc.setTextColor(100);
-            doc.text(`Generated on: ${new Date().toLocaleString()}`, 190, 32, { align: 'right' });
+            const response = await getSingleStudentApi(studentItem.studentId);
 
-            const data = [
-                ["Student ID", student.id.toString()],
-                ["Student Name", student.name],
-                ["Phone", student.phone],
-                ["Course", student.course],
-                ["Year", student.year],
-                ["College/Institute", student.college],
-                ["Obtained Marks", student.marks],
-                ["Submission Date", student.time]
-            ];
+            if (response.success && response.student && response.student.certificate) {
+                const certUrl = response.student.certificate;
 
-            autoTable(doc, {
-                startY: 40,
-                head: [["Field", "Information"]],
-                body: data,
-                theme: 'striped',
-                headStyles: { fillColor: [20, 184, 166], textColor: 255 },
-                styles: { fontSize: 11, cellPadding: 5 },
-                columnStyles: {
-                    0: { fontStyle: 'bold', width: 60 },
-                    1: { cellWidth: 'auto' }
+                // Fetch the image to force download
+                const imageResponse = await fetch(certUrl);
+                if (!imageResponse.ok) {
+                    throw new Error("Failed to fetch certificate image");
                 }
-            });
 
-            const fileName = `${student.name.replace(/\s+/g, '_')}_result.pdf`;
-            doc.save(fileName);
-            toast.success("Student PDF Downloaded successfully!");
+                const blob = await imageResponse.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                // Extract extension or default to jpg
+                const ext = certUrl.split('.').pop().split('?')[0] || 'jpg';
+                a.download = `Certificate_${studentItem.name.replace(/\s+/g, '_')}.${ext}`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+
+                toast.success("Certificate downloaded successfully!");
+            } else {
+                toast.error("Certificate not generated for this student");
+            }
         } catch (error) {
-            console.error("Single PDF Error:", error);
-            toast.error("Failed to generate PDF");
+            console.error("Certificate Download Error:", error);
+            toast.error("Failed to download certificate. It might not be available.");
         }
     };
 

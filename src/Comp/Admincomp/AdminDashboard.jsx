@@ -25,24 +25,56 @@ export default function AdminDashboard() {
     const navigate = useNavigate();
     const location = useLocation();
 
+    const [isLoading, setIsLoading] = useState(true);
+
     React.useEffect(() => {
+        const verifySession = async () => {
+            try {
+                // If the cookie is HttpOnly, we can't read it via document.cookie.
+                // We rely on the API validation instead.
+                const response = await getAdminApi();
+                if (response.success && response.admin?.length > 0) {
+                    setAdmin(response.admin[0]);
+                } else {
+                    // If API returns success: false, it implies not authenticated or other issue
+                    throw new Error("Session invalid");
+                }
+            } catch (error) {
+                console.error("Auth verification failed:", error);
+                // Redirect if authentication fails (401 or generic error implying no session)
+                navigate('/admin/login');
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        verifySession();
+
         const fetchAdmin = async () => {
+            // Re-fetch for updates, redundant if verifySession does it, but kept for the event listener
             try {
                 const response = await getAdminApi();
                 if (response.success && response.admin?.length > 0) {
                     setAdmin(response.admin[0]);
                 }
-            } catch (error) {
-                console.error("Failed to fetch admin data:", error);
-            }
-        };
+            } catch (e) { console.error(e); }
+        }
 
-        fetchAdmin();
-
-        // Listen for updates from other components (like SecuritySettings)
         window.addEventListener('adminUpdated', fetchAdmin);
         return () => window.removeEventListener('adminUpdated', fetchAdmin);
-    }, []);
+    }, [navigate]);
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-100">
+                <div className="text-teal-600 font-semibold flex flex-col items-center">
+                    {/* Simple spinner or text */}
+                    <div className="w-8 h-8 border-4 border-teal-600 border-t-transparent rounded-full animate-spin mb-2"></div>
+                    Verifying Session...
+                </div>
+            </div>
+        );
+    }
 
     const menuItems = [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/admin' },

@@ -12,6 +12,25 @@ export const updateStudentApi = async (id, payload) => {
   return res.data;
 };
 
+// update student certificaet 
+export const uploadStudentCertificateApi = async (id, file) => {
+  const formData = new FormData();
+  formData.append("certificate", file);
+
+  const res = await api.put(
+    `/registration/admin/update/${id}`,
+    formData,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data"
+      }
+    }
+  );
+
+  return res.data;
+};
+
+
 // Check Existing Student (by mobile)
 export const existStudentApi = async (payload) => {
   const res = await api.post("/registration/exist", payload);
@@ -21,6 +40,12 @@ export const existStudentApi = async (payload) => {
 // Get All Students
 export const getAllStudentApi = async () => {
   const res = await api.get("/registration/admin/getAll");
+  return res.data;
+};
+
+// getSingle
+export const getSingleStudentApi = async (id) => {
+  const res = await api.get(`/registration/admin/getSingle/${id}`);
   return res.data;
 };
 

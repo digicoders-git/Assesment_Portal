@@ -2,21 +2,32 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { toast } from 'react-toastify';
-import { ArrowLeft, Save, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Save, Plus, Trash2, Loader2 } from 'lucide-react';
 
 export default function EditQuestions() {
     const { topicId } = useParams();
     const navigate = useNavigate();
 
     // Mock initial questions
-    const [questions, setQuestions] = useState([
-        {
-            id: 1,
-            text: "Who is known as the father of computer?",
-            options: ["Dennis Ritchie", "Bill Gates", "Charles Babbage", "James Gosling"],
-            correct: 2
-        }
-    ]);
+    const [loading, setLoading] = useState(true);
+    // Mock initial questions
+    const [questions, setQuestions] = useState([]);
+
+    React.useEffect(() => {
+        // Simulate fetch
+        const timer = setTimeout(() => {
+            setQuestions([
+                {
+                    id: 1,
+                    text: "Who is known as the father of computer?",
+                    options: ["Dennis Ritchie", "Bill Gates", "Charles Babbage", "James Gosling"],
+                    correct: 2
+                }
+            ]);
+            setLoading(false);
+        }, 1000);
+        return () => clearTimeout(timer);
+    }, [topicId]);
 
     const handleAddQuestion = () => {
         setQuestions([
@@ -61,6 +72,17 @@ export default function EditQuestions() {
             }
         });
     };
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="flex flex-col items-center">
+                    <Loader2 className="h-10 w-10 animate-spin text-teal-500 mb-4" />
+                    <p className="text-gray-500 font-medium">Loading questions...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gray-50 p-6">

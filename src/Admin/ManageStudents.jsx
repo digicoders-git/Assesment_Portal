@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import Swal from 'sweetalert2';
-import { getAllStudentApi, getStudentByAssessmentApi } from '../API/student';
+import { getAllStudentApi, getStudentByAssessmentApi, updateStudentApi } from '../API/student';
 import { getAllAssessmentsApi } from '../API/assesment';
 
 export function ManageStudents() {
@@ -100,7 +100,8 @@ export function ManageStudents() {
         try {
             const response = await getStudentByAssessmentApi(selectedAssessment.assessmentCode);
             if (response.success) {
-                mapAndSetStudents(response.students || []);
+                // The API returns 'student' array, not 'students'
+                mapAndSetStudents(response.student || response.students || []);
                 setLastFetchedAsmt(selectedAssessment.assessmentCode);
                 toast.success(`Students for ${selectedAssessment.assessmentName} loaded`);
             } else {
@@ -160,14 +161,36 @@ export function ManageStudents() {
         setIsEditModalOpen(true);
     };
 
-    const handleSaveStudent = () => {
+    const handleSaveStudent = async () => {
         if (!editingStudent.name || !editingStudent.phone || !editingStudent.email || !editingStudent.college || !editingStudent.course || !editingStudent.year) {
             toast.error("All fields are required!");
             return;
         }
-        setStudents(students.map(s => s.id === editingStudent.id ? editingStudent : s));
-        setIsEditModalOpen(false);
-        toast.success("Student updated successfully! (Local Update)");
+
+        try {
+            const payload = {
+                name: editingStudent.name,
+                mobile: editingStudent.phone,
+                email: editingStudent.email,
+                college: editingStudent.college,
+                course: editingStudent.course,
+                year: editingStudent.year
+                // Include other fields if necessary
+            };
+
+            const response = await updateStudentApi(editingStudent.id, payload);
+
+            if (response.success) {
+                setStudents(students.map(s => s.id === editingStudent.id ? editingStudent : s));
+                setIsEditModalOpen(false);
+                toast.success("Student updated successfully!");
+            } else {
+                toast.error(response.message || "Failed to update student");
+            }
+        } catch (error) {
+            console.error("Update Error:", error);
+            toast.error(error.response?.data?.message || "Failed to update student");
+        }
     };
 
     const handleDeleteStudent = (student) => {

@@ -10,9 +10,9 @@ export const addQuestionsToAssessmentApi = async (assessmentId, payload) => {
 };
 
 // Get assessment questions by assesmentQuestionId
-export const getAssessmentQuestionsApi = async (assesmentQuestionId) => {
+export const getAssessmentQuestionsApi = async (assesmentCode) => {
   const res = await api.get(
-    `/admin/assesment/get-question/${assesmentQuestionId}`
+    `/admin/assesment/get-question/${assesmentCode}`
   );
   return res.data;
 };

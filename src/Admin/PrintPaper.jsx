@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Printer, ArrowLeft } from 'lucide-react';
+import { Printer, ArrowLeft, Loader2 } from 'lucide-react';
 import { getQuestionsByTopicApi } from '../API/question';
 import { toast } from 'react-toastify';
 
@@ -33,7 +33,7 @@ export default function PrintPaper() {
         return (
             <div className="min-h-screen bg-white flex items-center justify-center">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-500 mx-auto mb-4"></div>
+                    <Loader2 className="h-10 w-10 animate-spin text-teal-500 mx-auto mb-4" />
                     <p className="text-gray-600">Loading questions...</p>
                 </div>
             </div>

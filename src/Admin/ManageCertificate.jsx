@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
-import { Plus, Search, Edit, Trash2, X, Eye, ArrowLeft, Save, Image as ImageIcon, Type, Layout, Grid } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, X, Eye, ArrowLeft, Save, Image as ImageIcon, Type, Layout, Grid, Loader2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useUser } from '../context/UserContext';
 import { getAllCertificatesApi, toggleCertificateStatusApi, deleteCertificateApi, getSingleCertificateApi, createCertificateApi, updateCertificateApi } from '../API/certificate';
@@ -27,12 +27,14 @@ export function ManageCertificate() {
     }, []);
 
     const [certificates, setCertificates] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         fetchCertificates();
     }, []);
 
     const fetchCertificates = async () => {
+        setLoading(true);
         try {
             const response = await getAllCertificatesApi();
             if (response.success) {
@@ -40,6 +42,8 @@ export function ManageCertificate() {
             }
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to fetch certificates');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -306,11 +310,11 @@ export function ManageCertificate() {
 
                         {/* Text Layer Components */}
                         {[
-                            { id: 'studentName', label: 'Student Name', sample: 'John Doe' },
-                            { id: 'assessmentName', label: 'Assessment Name', sample: 'Full Stack Development Quiz' },
-                            { id: 'assessmentCode', label: 'Assessment Code', sample: 'DCT-2025-001' },
-                            { id: 'collegeName', label: 'College Name', sample: 'ABC Engineering College' },
-                            { id: 'date', label: 'Date', sample: 'December 25, 2024' }
+                            { id: 'studentName', label: 'Student Name', sample: 'stu' },
+                            { id: 'assessmentName', label: 'Assessment Name', sample: 'asmnt' },
+                            { id: 'assessmentCode', label: 'Assessment Code', sample: 'cd' },
+                            { id: 'collegeName', label: 'College Name', sample: 'clg' },
+                            { id: 'date', label: 'Date', sample: 'dt' }
                         ].map((layer) => (
                             <div key={layer.id} className="bg-white rounded-xl border border-gray-200 p-6">
                                 <div className="flex items-center justify-between mb-4">
@@ -447,15 +451,15 @@ export function ManageCertificate() {
                             <div className="aspect-[3/2] bg-slate-100 rounded-lg border-4 border-slate-200 overflow-hidden relative flex items-center justify-center">
                                 {formData.image ? (
                                     <div className="relative w-full h-full">
-                                        <img src={formData.image} alt="Template" className="w-full h-full object-contain" />
+                                        <img src={formData.image} alt="Template" className="w-full h-full object-fill" />
 
                                         {/* Dynamic Overlay Layers */}
                                         {[
-                                            { id: 'studentName', sample: 'Sample Student Name' },
-                                            { id: 'assessmentName', sample: 'Sample Assessment Name' },
-                                            { id: 'assessmentCode', sample: 'DCT-2025-XXXX' },
-                                            { id: 'collegeName', sample: 'Sample College Name' },
-                                            { id: 'date', sample: 'December 25, 2024' }
+                                            { id: 'studentName', sample: 'stu' },
+                                            { id: 'assessmentName', sample: 'asmnt' },
+                                            { id: 'assessmentCode', sample: 'cd' },
+                                            { id: 'collegeName', sample: 'clg' },
+                                            { id: 'date', sample: 'dt' }
                                         ].map((layer) => {
                                             const settings = formData[layer.id];
                                             if (!settings.status) return null;
@@ -529,7 +533,7 @@ export function ManageCertificate() {
             </div>
 
             {/* List Table */}
-            <div className="bg-white rounded-xl overflow-hidden border border-gray-200">
+            <div className="bg-white rounded-xl overflow-hidden border border-gray-200 min-h-[400px]">
                 <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-white">
                     <h3 className="text-gray-700 font-bold uppercase text-xs tracking-widest">Available Templates</h3>
                     <div className="relative">
@@ -542,91 +546,98 @@ export function ManageCertificate() {
                     </div>
                 </div>
 
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-left whitespace-nowrap">
-                        <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-gray-100 uppercase text-[10px] tracking-wider">
-                            <tr>
-                                <th className="px-6 py-4">Certificate Identity</th>
-                                <th className="px-6 py-4">Visual Preview</th>
-                                <th className="px-6 py-4">Assignments</th>
-                                <th className="px-6 py-4">Enrollment</th>
-                                <th className="px-6 py-4">Status</th>
-                                <th className="px-6 py-4 text-center">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-50">
-                            {certificates.length === 0 ? (
+                {loading ? (
+                    <div className="flex flex-col items-center justify-center py-20">
+                        <Loader2 className="h-10 w-10 animate-spin text-[#319795] mb-4" />
+                        <p className="text-gray-500 font-medium font-inter">Loading certificates...</p>
+                    </div>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm text-left whitespace-nowrap">
+                            <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-gray-100 uppercase text-[10px] tracking-wider">
                                 <tr>
-                                    <td colSpan="6" className="px-6 py-20 text-center">
-                                        <div className="flex flex-col items-center justify-center text-gray-400">
-                                            <ImageIcon className="h-12 w-12 mb-4 opacity-20" />
-                                            <p className="text-lg font-bold">No Certificates Available</p>
-                                            <p className="text-sm">Create your first certificate template to get started.</p>
-                                        </div>
-                                    </td>
+                                    <th className="px-6 py-4">Certificate Identity</th>
+                                    <th className="px-6 py-4">Visual Preview</th>
+                                    <th className="px-6 py-4">Assignments</th>
+                                    <th className="px-6 py-4">Enrollment</th>
+                                    <th className="px-6 py-4">Status</th>
+                                    <th className="px-6 py-4 text-center">Action</th>
                                 </tr>
-                            ) : certificates.map((cert, index) => (
-                                <tr key={cert._id} className="hover:bg-slate-50 transition-colors group">
-                                    <td className="px-6 py-4">
-                                        <div className="font-bold text-gray-800">{cert.certificateName}</div>
-                                        <div className="text-[10px] text-gray-400 mt-0.5">ID: {cert._id.slice(-6).toUpperCase()}</div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="h-10 w-16 bg-slate-100 border border-slate-200 rounded overflow-hidden flex items-center justify-center relative group-hover:ring-2 ring-teal-500/20 transition-all">
-                                            {cert.certificateImage ? (
-                                                <img src={cert.certificateImage} alt="cert" className="w-full h-full object-cover" />
-                                            ) : (
-                                                <ImageIcon className="h-4 w-4 text-slate-300" />
-                                            )}
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className="bg-slate-100 text-slate-600 py-1 px-3 rounded-full text-xs font-medium border border-slate-200">
-                                            {cert.usedIn || 0} Assessments
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-gray-500 text-xs">{new Date(cert.createdAt).toLocaleDateString()}</td>
-                                    <td className="px-6 py-4">
-                                        <label className="relative inline-flex items-center cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={cert.status}
-                                                onChange={() => toggleStatus(cert._id)}
-                                                className="sr-only peer"
-                                            />
-                                            <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-teal-500"></div>
-                                        </label>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center justify-center gap-2 transition-opacity">
-                                            <button
-                                                onClick={() => handlePreviewModal(cert)}
-                                                className="text-slate-400 hover:text-teal-600 hover:bg-teal-50 p-2 rounded-lg transition-all"
-                                                title="Preview Full Size"
-                                            >
-                                                <Eye className="h-4 w-4" />
-                                            </button>
-                                            <button
-                                                onClick={() => handleEdit(cert)}
-                                                className="text-slate-400 hover:text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition-all"
-                                                title="Edit Template"
-                                            >
-                                                <Edit className="h-4 w-4" />
-                                            </button>
-                                            <button
-                                                onClick={() => handleDelete(cert._id)}
-                                                className="text-slate-400 hover:text-red-500 hover:bg-red-50 p-2 rounded-lg transition-all"
-                                                title="Delete Template"
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                            </thead>
+                            <tbody className="divide-y divide-gray-50">
+                                {certificates.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="6" className="px-6 py-20 text-center">
+                                            <div className="flex flex-col items-center justify-center text-gray-400">
+                                                <ImageIcon className="h-12 w-12 mb-4 opacity-20" />
+                                                <p className="text-lg font-bold">No Certificates Available</p>
+                                                <p className="text-sm">Create your first certificate template to get started.</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ) : certificates.map((cert, index) => (
+                                    <tr key={cert._id} className="hover:bg-slate-50 transition-colors group">
+                                        <td className="px-6 py-4">
+                                            <div className="font-bold text-gray-800">{cert.certificateName}</div>
+                                            <div className="text-[10px] text-gray-400 mt-0.5">ID: {cert._id.slice(-6).toUpperCase()}</div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="h-10 w-16 bg-slate-100 border border-slate-200 rounded overflow-hidden flex items-center justify-center relative group-hover:ring-2 ring-teal-500/20 transition-all">
+                                                {cert.certificateImage ? (
+                                                    <img src={cert.certificateImage} alt="cert" className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <ImageIcon className="h-4 w-4 text-slate-300" />
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className="bg-slate-100 text-slate-600 py-1 px-3 rounded-full text-xs font-medium border border-slate-200">
+                                                {cert.usedIn || 0} Assessments
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-gray-500 text-xs">{new Date(cert.createdAt).toLocaleDateString()}</td>
+                                        <td className="px-6 py-4">
+                                            <label className="relative inline-flex items-center cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={cert.status}
+                                                    onChange={() => toggleStatus(cert._id)}
+                                                    className="sr-only peer"
+                                                />
+                                                <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-teal-500"></div>
+                                            </label>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center justify-center gap-2 transition-opacity">
+                                                <button
+                                                    onClick={() => handlePreviewModal(cert)}
+                                                    className="text-slate-400 hover:text-teal-600 hover:bg-teal-50 p-2 rounded-lg transition-all"
+                                                    title="Preview Full Size"
+                                                >
+                                                    <Eye className="h-4 w-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleEdit(cert)}
+                                                    className="text-slate-400 hover:text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition-all"
+                                                    title="Edit Template"
+                                                >
+                                                    <Edit className="h-4 w-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(cert._id)}
+                                                    className="text-slate-400 hover:text-red-500 hover:bg-red-50 p-2 rounded-lg transition-all"
+                                                    title="Delete Template"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
             </div>
 
             {/* Enhanced Preview Modal */}
@@ -652,11 +663,11 @@ export function ManageCertificate() {
 
                                     {/* Dynamic Overlay Layers with actual certificate data */}
                                     {[
-                                        { id: 'studentName', sample: 'John Doe Smith' },
-                                        { id: 'assessmentName', sample: 'Full Stack Development Assessment' },
-                                        { id: 'assessmentCode', sample: 'DCT-2025-001' },
-                                        { id: 'collegeName', sample: 'ABC Engineering College' },
-                                        { id: 'date', sample: 'December 25, 2024' }
+                                        { id: 'studentName', sample: 'stu' },
+                                        { id: 'assessmentName', sample: 'asmnt' },
+                                        { id: 'assessmentCode', sample: 'Cd' },
+                                        { id: 'collegeName', sample: 'clg' },
+                                        { id: 'date', sample: 'Dt' }
                                     ].map((layer) => {
                                         const settings = selectedImage[layer.id];
                                         if (!settings) return null; // Only check if data exists
