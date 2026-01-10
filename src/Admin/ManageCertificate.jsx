@@ -28,6 +28,9 @@ export function ManageCertificate() {
 
     const [certificates, setCertificates] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
         fetchCertificates();
@@ -541,6 +544,11 @@ export function ManageCertificate() {
                         <input
                             type="text"
                             placeholder="Search..."
+                            value={searchQuery}
+                            onChange={(e) => {
+                                setSearchQuery(e.target.value);
+                                setCurrentPage(1);
+                            }}
                             className="pl-9 pr-4 py-1.5 border border-gray-200 rounded-lg text-sm focus:border-teal-500 outline-none"
                         />
                     </div>
@@ -565,79 +573,138 @@ export function ManageCertificate() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50">
-                                {certificates.length === 0 ? (
-                                    <tr>
-                                        <td colSpan="6" className="px-6 py-20 text-center">
-                                            <div className="flex flex-col items-center justify-center text-gray-400">
-                                                <ImageIcon className="h-12 w-12 mb-4 opacity-20" />
-                                                <p className="text-lg font-bold">No Certificates Available</p>
-                                                <p className="text-sm">Create your first certificate template to get started.</p>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ) : certificates.map((cert, index) => (
-                                    <tr key={cert._id} className="hover:bg-slate-50 transition-colors group">
-                                        <td className="px-6 py-4">
-                                            <div className="font-bold text-gray-800">{cert.certificateName}</div>
-                                            <div className="text-[10px] text-gray-400 mt-0.5">ID: {cert._id.slice(-6).toUpperCase()}</div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="h-10 w-16 bg-slate-100 border border-slate-200 rounded overflow-hidden flex items-center justify-center relative group-hover:ring-2 ring-teal-500/20 transition-all">
-                                                {cert.certificateImage ? (
-                                                    <img src={cert.certificateImage} alt="cert" className="w-full h-full object-cover" />
-                                                ) : (
-                                                    <ImageIcon className="h-4 w-4 text-slate-300" />
-                                                )}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className="bg-slate-100 text-slate-600 py-1 px-3 rounded-full text-xs font-medium border border-slate-200">
-                                                {cert.usedIn || 0} Assessments
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-gray-500 text-xs">{new Date(cert.createdAt).toLocaleDateString()}</td>
-                                        <td className="px-6 py-4">
-                                            <label className="relative inline-flex items-center cursor-pointer">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={cert.status}
-                                                    onChange={() => toggleStatus(cert._id)}
-                                                    className="sr-only peer"
-                                                />
-                                                <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-teal-500"></div>
-                                            </label>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center justify-center gap-2 transition-opacity">
-                                                <button
-                                                    onClick={() => handlePreviewModal(cert)}
-                                                    className="text-slate-400 hover:text-teal-600 hover:bg-teal-50 p-2 rounded-lg transition-all"
-                                                    title="Preview Full Size"
-                                                >
-                                                    <Eye className="h-4 w-4" />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleEdit(cert)}
-                                                    className="text-slate-400 hover:text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition-all"
-                                                    title="Edit Template"
-                                                >
-                                                    <Edit className="h-4 w-4" />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(cert._id)}
-                                                    className="text-slate-400 hover:text-red-500 hover:bg-red-50 p-2 rounded-lg transition-all"
-                                                    title="Delete Template"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
+                                {(() => {
+                                    const filtered = certificates.filter(cert =>
+                                        cert.certificateName.toLowerCase().includes(searchQuery.toLowerCase())
+                                    );
+                                    const totalPages = Math.ceil(filtered.length / itemsPerPage);
+                                    const paginated = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+                                    if (paginated.length === 0) {
+                                        return (
+                                            <tr>
+                                                <td colSpan="6" className="px-6 py-20 text-center">
+                                                    <div className="flex flex-col items-center justify-center text-gray-400">
+                                                        <ImageIcon className="h-12 w-12 mb-4 opacity-20" />
+                                                        <p className="text-lg font-bold">No Certificates Available</p>
+                                                        <p className="text-sm">Adjust your search or create a new template.</p>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    }
+
+                                    return (
+                                        <>
+                                            {paginated.map((cert, index) => (
+                                                <tr key={cert._id} className="hover:bg-slate-50 transition-colors group">
+                                                    <td className="px-6 py-4">
+                                                        <div className="font-bold text-gray-800">{cert.certificateName}</div>
+                                                        <div className="text-[10px] text-gray-400 mt-0.5">ID: {cert._id.slice(-6).toUpperCase()}</div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="h-10 w-16 bg-slate-100 border border-slate-200 rounded overflow-hidden flex items-center justify-center relative group-hover:ring-2 ring-teal-500/20 transition-all">
+                                                            {cert.certificateImage ? (
+                                                                <img src={cert.certificateImage} alt="cert" className="w-full h-full object-cover" />
+                                                            ) : (
+                                                                <ImageIcon className="h-4 w-4 text-slate-300" />
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className="bg-slate-100 text-slate-600 py-1 px-3 rounded-full text-xs font-medium border border-slate-200">
+                                                            {cert.usedIn || 0} Assessments
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-gray-500 text-xs">{new Date(cert.createdAt).toLocaleDateString()}</td>
+                                                    <td className="px-6 py-4">
+                                                        <label className="relative inline-flex items-center cursor-pointer">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={cert.status}
+                                                                onChange={() => toggleStatus(cert._id)}
+                                                                className="sr-only peer"
+                                                            />
+                                                            <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-teal-500"></div>
+                                                        </label>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center justify-center gap-2 transition-opacity">
+                                                            <button
+                                                                onClick={() => handlePreviewModal(cert)}
+                                                                className="text-slate-400 hover:text-teal-600 hover:bg-teal-50 p-2 rounded-lg transition-all"
+                                                                title="Preview Full Size"
+                                                            >
+                                                                <Eye className="h-4 w-4" />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleEdit(cert)}
+                                                                className="text-slate-400 hover:text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition-all"
+                                                                title="Edit Template"
+                                                            >
+                                                                <Edit className="h-4 w-4" />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleDelete(cert._id)}
+                                                                className="text-slate-400 hover:text-red-500 hover:bg-red-50 p-2 rounded-lg transition-all"
+                                                                title="Delete Template"
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            {/* Pagination Footer - Added inside tbody to span columns or moved outside if structure allows */}
+                                        </>
+                                    );
+                                })()}
                             </tbody>
                         </table>
                     </div>
                 )}
+
+                {/* Pagination Controls outside overflow container */}
+                {(() => {
+                    const filtered = certificates.filter(cert =>
+                        cert.certificateName.toLowerCase().includes(searchQuery.toLowerCase())
+                    );
+                    const totalPages = Math.ceil(filtered.length / itemsPerPage);
+                    if (totalPages <= 1) return null;
+
+                    return (
+                        <div className="px-6 py-4 border-t border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4 bg-gray-50/50">
+                            <p className="text-xs text-gray-500">
+                                Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filtered.length)} of {filtered.length} templates
+                            </p>
+                            <div className="flex gap-1.5">
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                    disabled={currentPage === 1}
+                                    className={`px-3 py-1 text-xs font-bold rounded-lg border transition-all ${currentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-100 active:scale-95 shadow-sm'}`}
+                                >
+                                    Prev
+                                </button>
+                                {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                                    <button
+                                        key={p}
+                                        onClick={() => setCurrentPage(p)}
+                                        className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${currentPage === p ? 'bg-teal-500 text-white shadow-md' : 'bg-white border text-gray-600 hover:bg-gray-100'}`}
+                                    >
+                                        {p}
+                                    </button>
+                                ))}
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                    disabled={currentPage === totalPages}
+                                    className={`px-3 py-1 text-xs font-bold rounded-lg border transition-all ${currentPage === totalPages ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-100 active:scale-95 shadow-sm'}`}
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        </div>
+                    );
+                })()}
             </div>
 
             {/* Enhanced Preview Modal */}

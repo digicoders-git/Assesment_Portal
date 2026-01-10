@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { Plus, Trash2, Edit, X, FileSpreadsheet, ArrowLeft, Loader2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { createQuestionsApi, getQuestionsByTopicApi, deleteQuestionApi, updateQuestionApi, importQuestionsFromExcelApi } from '../API/question';
+import { getAllTopicsApi } from '../API/topic';
 
 export default function TopicQuestions() {
     const { topicId } = useParams();
     const navigate = useNavigate();
-
-    const [topicName] = useState('TECHNICAL TEST');
+    const location = useLocation();
+    const [topicName, setTopicName] = useState(location.state?.topicName || 'Loading...');
     const [searchQuery, setSearchQuery] = useState('');
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isGuidanceOpen, setIsGuidanceOpen] = useState(false);
@@ -17,16 +18,47 @@ export default function TopicQuestions() {
 
     const [questions, setQuestions] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+
+    const formatTopicName = (name) => {
+        if (!name) return '';
+        return name.toLowerCase().split(' ').map(word =>
+            word.charAt(0).toUpperCase() + word.slice(1)
+        ).join(' ');
+    };
 
     useEffect(() => {
         fetchQuestions();
+        if (!location.state?.topicName) {
+            fetchTopicName();
+        }
     }, [topicId]);
+
+    const fetchTopicName = async () => {
+        try {
+            const response = await getAllTopicsApi();
+            if (response.success && response.topics) {
+                const topic = response.topics.find(t => t._id === topicId);
+                if (topic) {
+                    setTopicName(topic.topicName);
+                }
+            }
+        } catch (error) {
+            console.error("Failed to fetch topic name:", error);
+            setTopicName('Topic Questions');
+        }
+    };
 
     const fetchQuestions = async () => {
         try {
             setLoading(true);
             const response = await getQuestionsByTopicApi(topicId);
             setQuestions(response.questions || []);
+            // Some APIs might return topic details along with questions
+            if (response.topicName && !location.state?.topicName) {
+                setTopicName(response.topicName);
+            }
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to fetch questions');
             setQuestions([]);
@@ -251,13 +283,16 @@ export default function TopicQuestions() {
         q.question.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    const totalPages = Math.ceil(filteredQuestions.length / itemsPerPage);
+    const paginatedQuestions = filteredQuestions.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
     return (
         <div className="p-3 sm:p-6 bg-[#EDF2F7] min-h-screen">
             {/* Header */}
             <div className="mb-4 sm:mb-6">
                 <div className="flex items-center gap-4 mb-4">
                     <button
-                        onClick={() => navigate(-1)}
+                        onClick={() => navigate('/admin/topics')}
                         className="flex items-center gap-2 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium transition-all active:scale-95"
                     >
                         <ArrowLeft className="h-4 w-4" />
@@ -266,10 +301,10 @@ export default function TopicQuestions() {
                     <div className="flex items-center gap-2 text-sm">
                         <button onClick={() => navigate('/admin/topics')} className="text-[#319795] hover:underline">Topics</button>
                         <span>/</span>
-                        <span className="text-gray-700">{topicName}</span>
+                        <span className="text-gray-700">{formatTopicName(topicName)}</span>
                     </div>
                 </div>
-                <h1 className="text-xl sm:text-2xl font-bold text-gray-800">{topicName} Questions</h1>
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-800">{formatTopicName(topicName)} Questions</h1>
             </div>
 
             {/* Controls */}
@@ -304,7 +339,10 @@ export default function TopicQuestions() {
                     type="text"
                     placeholder="Search questions..."
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={(e) => {
+                        setSearchQuery(e.target.value);
+                        setCurrentPage(1);
+                    }}
                     className="bg-zinc-100 border border-gray-300 rounded px-3 py-2 w-full sm:w-64"
                 />
             </div>
@@ -332,9 +370,9 @@ export default function TopicQuestions() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200">
-                                {filteredQuestions.map((q, index) => (
+                                {paginatedQuestions.map((q, index) => (
                                     <tr key={q._id} className="hover:bg-gray-50">
-                                        <td className="px-4 py-4 text-sm text-gray-900">{index + 1}</td>
+                                        <td className="px-4 py-4 text-sm text-gray-900">{(currentPage - 1) * itemsPerPage + index + 1}</td>
                                         <td className="px-4 py-4 text-sm text-gray-900">{q.question}</td>
                                         <td className="px-4 py-4 text-sm text-gray-600">{q.options?.A}</td>
                                         <td className="px-4 py-4 text-sm text-gray-600">{q.options?.B}</td>
@@ -369,10 +407,10 @@ export default function TopicQuestions() {
 
                     {/* Mobile Cards */}
                     <div className="lg:hidden space-y-4">
-                        {filteredQuestions.map((q, index) => (
+                        {paginatedQuestions.map((q, index) => (
                             <div key={q._id} className="bg-white rounded-lg p-4 shadow-sm">
                                 <div className="flex justify-between items-start mb-3">
-                                    <span className="text-sm font-medium text-gray-500">Q{index + 1}</span>
+                                    <span className="text-sm font-medium text-gray-500">Q{(currentPage - 1) * itemsPerPage + index + 1}</span>
                                     <div className="flex gap-2">
                                         <button
                                             onClick={() => handleEdit(q)}
@@ -405,6 +443,38 @@ export default function TopicQuestions() {
                                 </div>
                             </div>
                         ))}
+                    </div>
+
+                    {/* Pagination */}
+                    <div className="mt-6 flex flex-col sm:flex-row justify-between items-center bg-white p-4 rounded-lg border border-gray-200 gap-4">
+                        <p className="text-sm text-gray-600">
+                            Showing <span className="font-medium">{paginatedQuestions.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0}</span> to <span className="font-medium">{Math.min(currentPage * itemsPerPage, filteredQuestions.length)}</span> of <span className="font-medium">{filteredQuestions.length}</span> questions
+                        </p>
+                        <div className="flex gap-1.5">
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                disabled={currentPage === 1}
+                                className={`px-3 py-1.5 rounded-md border text-sm font-medium transition-all ${currentPage === 1 ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50 active:scale-95'}`}
+                            >
+                                Previous
+                            </button>
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                <button
+                                    key={page}
+                                    onClick={() => setCurrentPage(page)}
+                                    className={`w-9 h-9 flex items-center justify-center rounded-md text-sm font-bold transition-all ${currentPage === page ? 'bg-[#319795] text-white' : 'bg-white border text-gray-600 hover:bg-gray-50'}`}
+                                >
+                                    {page}
+                                </button>
+                            ))}
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                disabled={currentPage === totalPages || totalPages === 0}
+                                className={`px-3 py-1.5 rounded-md border text-sm font-medium transition-all ${currentPage === totalPages || totalPages === 0 ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50 active:scale-95'}`}
+                            >
+                                Next
+                            </button>
+                        </div>
                     </div>
                 </>
             )
@@ -658,10 +728,10 @@ export default function TopicQuestions() {
                                     />
                                 </div>
                             </div>
-                            <div className="p-4 sm:p-6 border-t flex justify-end">
+                            <div className="p-4 sm:p-6 flex justify-end">
                                 <button
                                     onClick={() => setIsGuidanceOpen(false)}
-                                    className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                                    className="px-2 py-1 border-2 rounded-xl text-red-400 hover:text-red-600"
                                 >
                                     Close
                                 </button>

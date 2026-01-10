@@ -14,6 +14,8 @@ export function ActiveAssessment() {
     const [editingAssessment, setEditingAssessment] = useState(null);
     const [assessments, setAssessments] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
     const [certificateSearch, setCertificateSearch] = useState('');
     const [showCertificateDropdown, setShowCertificateDropdown] = useState(false);
     const certificateRef = useRef(null);
@@ -97,6 +99,9 @@ export function ActiveAssessment() {
 
 
 
+
+    const totalPages = Math.ceil(assessments.length / itemsPerPage);
+    const paginatedAssessments = assessments.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     const handleCopyCode = (code) => {
         navigator.clipboard.writeText(code).then(() => {
@@ -374,7 +379,7 @@ export function ActiveAssessment() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-[#E6FFFA]">
-                                    {assessments.length === 0 ? (
+                                    {paginatedAssessments.length === 0 ? (
                                         <tr>
                                             <td colSpan="9" className="px-4 py-20 text-center">
                                                 <div className="flex flex-col items-center justify-center text-gray-400">
@@ -384,9 +389,9 @@ export function ActiveAssessment() {
                                                 </div>
                                             </td>
                                         </tr>
-                                    ) : assessments.map((item, index) => (
+                                    ) : paginatedAssessments.map((item, index) => (
                                         <tr key={item._id} >
-                                            <td className="px-4 py-3 align-top">{index + 1}</td>
+                                            <td className="px-4 py-3 align-top">{(currentPage - 1) * itemsPerPage + index + 1}</td>
                                             <td className="px-4 py-3 align-top">
                                                 <label className="relative inline-flex items-center cursor-pointer">
                                                     <input
@@ -487,12 +492,36 @@ export function ActiveAssessment() {
                                 </tbody>
                             </table>
                         </div>
-                        <div className="px-4 py-3 border-t border-[#E6FFFA] text-xs text-[#2D3748] flex justify-between items-center">
-                            <span>Showing 1 to {assessments.length} of {assessments.length} entries</span>
-                            <div className="flex gap-1">
-                                <span className="text-gray-400">Previous</span>
-                                <span className="font-medium text-[#2D3748]">1</span>
-                                <span className="text-gray-400">Next</span>
+                        <div className="px-4 py-3 border-t border-[#E6FFFA] text-xs text-[#2D3748] flex flex-col sm:flex-row justify-between items-center gap-4">
+                            <span>
+                                Showing {paginatedAssessments.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} to {Math.min(currentPage * itemsPerPage, assessments.length)} of {assessments.length} entries
+                            </span>
+                            <div className="flex items-center gap-1">
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                    disabled={currentPage === 1}
+                                    className={`px-3 py-1.5 rounded transition-colors ${currentPage === 1 ? 'text-gray-400 cursor-not-allowed' : 'hover:bg-gray-100 text-[#319795] font-medium'}`}
+                                >
+                                    Previous
+                                </button>
+
+                                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                    <button
+                                        key={page}
+                                        onClick={() => setCurrentPage(page)}
+                                        className={`w-8 h-8 rounded transition-all duration-200 ${currentPage === page ? 'bg-[#319795] text-white shadow-md' : 'hover:bg-gray-100 text-gray-600'}`}
+                                    >
+                                        {page}
+                                    </button>
+                                ))}
+
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                    disabled={currentPage === totalPages || totalPages === 0}
+                                    className={`px-3 py-1.5 rounded transition-colors ${currentPage === totalPages || totalPages === 0 ? 'text-gray-400 cursor-not-allowed' : 'hover:bg-gray-100 text-[#319795] font-medium'}`}
+                                >
+                                    Next
+                                </button>
                             </div>
                         </div>
                     </>

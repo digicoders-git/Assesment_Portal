@@ -84,7 +84,7 @@ export default function AdminDashboard() {
         { id: 'students', label: 'Manage Students', icon: Users, path: '/admin/students' },
         { id: 'certificate', label: 'Manage Certificates', icon: Award, path: '/admin/certificate' },
         { id: 'academic', label: 'Academic Setup', icon: GraduationCap, path: '/admin/academic' },
-        { id: 'security', label: 'Security Settings', icon: Shield, path: '/admin/security' },
+        { id: 'security', label: 'Profile', icon: Shield, path: '/admin/security' },
     ];
 
     const handleNavigation = (path) => {

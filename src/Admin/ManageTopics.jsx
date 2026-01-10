@@ -193,7 +193,6 @@ export function ManageTopics() {
                     </div>
 
                     <div className="relative flex items-center bg-white border-2 border-gray-100 rounded-lg px-3 py-0.5 focus-within:border-[#319795] transition-all shadow-sm">
-                        <span className="text-[10px] font-black text-gray-400 mr-2 uppercase tracking-tighter">Search</span>
                         <input
                             type="text"
                             value={searchQuery}
@@ -256,7 +255,7 @@ export function ManageTopics() {
                                                 <td className="px-6 py-4 text-[#2D3748]">{topic.topicName}</td>
                                                 <td className="px-6 py-4">
                                                     <button
-                                                        onClick={() => navigate(`/admin/topic-questions/${topic._id}`)}
+                                                        onClick={() => navigate(`/admin/topic-questions/${topic._id}`, { state: { topicName: topic.topicName } })}
                                                         className="bg-[#319795] hover:bg-[#2B7A73] text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
                                                     >
                                                         Questions ({topic.questionCout || 0})
@@ -349,7 +348,7 @@ export function ManageTopics() {
                                 type="text"
                                 value={topicName}
                                 onChange={(e) => setTopicName(e.target.value)}
-                                placeholder="Assessment Name"
+                                placeholder="Topic Name"
                                 className="w-full border border-gray-300 rounded px-4 py-2.5 focus:outline-none focus:border-[#319795] transition-colors"
                                 autoFocus
                             />

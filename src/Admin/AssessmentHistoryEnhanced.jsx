@@ -17,6 +17,8 @@ export function AssessmentHistory() {
     const [editingAssessment, setEditingAssessment] = useState(null);
     const [assessments, setAssessments] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
     const certificateRef = useRef(null);
 
 
@@ -81,6 +83,14 @@ export function AssessmentHistory() {
             setLoading(false);
         }
     };
+
+    const filteredAssessments = assessments.filter(assessment =>
+        assessment.assessmentName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        assessment.assessmentCode?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    const totalPages = Math.ceil(filteredAssessments.length / itemsPerPage);
+    const paginatedAssessments = filteredAssessments.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
 
 
@@ -344,7 +354,10 @@ export function AssessmentHistory() {
                     <input
                         type="text"
                         value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onChange={(e) => {
+                            setSearchQuery(e.target.value);
+                            setCurrentPage(1);
+                        }}
                         className="border border-gray-300 rounded px-3 py-1.5 w-64 focus:outline-none focus:border-[#319795] transition-colors text-sm"
                     />
                 </div>
@@ -358,157 +371,191 @@ export function AssessmentHistory() {
                         <p className="text-gray-500 font-medium font-inter">Loading history...</p>
                     </div>
                 ) : (
-                    <div className="overflow-x-auto custom-scrollbar">
-                        <table className="w-full text-sm text-left whitespace-nowrap">
-                            <thead className="bg-[#E6FFFA] text-[#2D3748] font-semibold border-b border-[#319795]">
-                                <tr>
-                                    <th className="px-4 py-3 w-16">Sr No.</th>
-                                    <th className="px-4 py-3 w-20">Status</th>
-                                    <th className="px-4 py-3">Questions</th>
-                                    <th className="px-4 py-3">Assessment Name</th>
-                                    <th className="px-4 py-3">Assessment Code</th>
-                                    <th className="px-4 py-3">Date-Time</th>
-                                    <th className="px-4 py-3">Remark</th>
-                                    <th className="px-4 py-3">Certificate</th>
-                                    <th className="px-4 py-3">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-[#E6FFFA]">
-                                {assessments.length === 0 ? (
+                    <>
+                        <div className="overflow-x-auto custom-scrollbar">
+                            <table className="w-full text-sm text-left whitespace-nowrap">
+                                <thead className="bg-[#E6FFFA] text-[#2D3748] font-semibold border-b border-[#319795]">
                                     <tr>
-                                        <td colSpan="9" className="px-4 py-20 text-center">
-                                            <div className="flex flex-col items-center justify-center text-gray-400">
-                                                <Search className="h-12 w-12 mb-4 opacity-20" />
-                                                <p className="text-lg font-bold">No Assessment History</p>
-                                                <p className="text-sm">Create an assessment to see it here.</p>
-                                            </div>
-                                        </td>
+                                        <th className="px-4 py-3 w-16">Sr No.</th>
+                                        <th className="px-4 py-3 w-20">Status</th>
+                                        <th className="px-4 py-3">Questions</th>
+                                        <th className="px-4 py-3">Assessment Name</th>
+                                        <th className="px-4 py-3">Assessment Code</th>
+                                        <th className="px-4 py-3">Date-Time</th>
+                                        <th className="px-4 py-3">Remark</th>
+                                        <th className="px-4 py-3">Certificate</th>
+                                        <th className="px-4 py-3">Action</th>
                                     </tr>
-                                ) : assessments.map((item, index) => (
-                                    <tr key={item._id}>
-                                        <td className="px-4 py-3 align-top">{index + 1}</td>
-                                        <td className="px-4 py-3 align-top">
-                                            <label className="relative inline-flex items-center cursor-pointer">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={item.status}
-                                                    onChange={() => toggleStatus(item._id)}
-                                                    className="sr-only peer"
-                                                />
-                                                <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#319795]"></div>
-                                            </label>
-                                        </td>
-                                        <td className="px-4 py-3 align-top">
-                                            <button
-                                                onClick={() => {
-                                                    if (checkIsExpired(item.endDateTime)) {
-                                                        Swal.fire({
-                                                            title: 'Assessment Expired!',
-                                                            text: 'You can only read and delete this assessment because it has expired.',
-                                                            icon: 'warning',
-                                                            confirmButtonColor: '#319795'
-                                                        });
-                                                        return;
-                                                    }
-                                                    navigate(`/admin/assign-questions/${item._id}`, { state: { assessmentCode: item.assessmentCode } });
-                                                }}
-                                                className="bg-emerald-400 text-white px-3 py-1 rounded text-xs font-medium hover:bg-emerald-500 transition-colors"
-                                            >
-                                                Questions ({item.count || 0}/{item.totalQuestions})
-                                            </button>
-                                        </td>
-                                        <td className="px-4 py-3 align-top">
-                                            <div className="font-medium text-[#2D3748]">{item.assessmentName}</div>
-                                            <div className="text-xs bg-[#F56565]/20 text-[#B8322F] inline-block px-1.5 rounded mt-1">
-                                                {item.timeDuration} Min
-                                            </div>
-                                        </td>
-                                        <td className="px-4 py-3 align-top">
-                                            <div className="font-medium text-[#2D3748] mb-2">{item.assessmentCode}</div>
-                                            <div className="flex gap-1 mb-1">
-                                                <button
-                                                    onClick={() => handleCopyCode(item.assessmentCode)}
-                                                    className="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-600 rounded text-xs hover:bg-blue-100 transition-colors"
-                                                    title="Copy Assessment Code"
-                                                >
-                                                    <Copy className="h-3 w-3" />
-                                                    Copy
-                                                </button>
-                                                <button
-                                                    onClick={() => handleCopyLink(item.assessmentCode)}
-                                                    className="flex items-center gap-1 px-2 py-1 bg-green-50 text-green-600 rounded text-xs hover:bg-green-100 transition-colors"
-                                                    title="Copy Assessment Link"
-                                                >
-                                                    <Link className="h-3 w-3" />
-                                                    Copy Link
-                                                </button>
-                                            </div>
-                                            <div className="space-y-1 space-x-1">
-                                                <div className="text-xs bg-[#319795]/20 text-[#2B7A73] inline-block px-1.5 rounded">
-                                                    Start: {item.start || 0}
+                                </thead>
+                                <tbody className="divide-y divide-[#E6FFFA]">
+                                    {paginatedAssessments.length === 0 ? (
+                                        <tr>
+                                            <td colSpan="9" className="px-4 py-20 text-center">
+                                                <div className="flex flex-col items-center justify-center text-gray-400">
+                                                    <Search className="h-12 w-12 mb-4 opacity-20" />
+                                                    <p className="text-lg font-bold">No Assessment History Found</p>
+                                                    <p className="text-sm">Adjust your search or create an assessment.</p>
                                                 </div>
-                                                <div className="text-xs bg-[#F56565]/20 text-[#B8322F] inline-block px-1.5 rounded">
-                                                    Submit: {item.submit || 0}
+                                            </td>
+                                        </tr>
+                                    ) : paginatedAssessments.map((item, index) => (
+                                        <tr key={item._id}>
+                                            <td className="px-4 py-3 align-top">{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                                            <td className="px-4 py-3 align-top">
+                                                <label className="relative inline-flex items-center cursor-pointer">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={item.status}
+                                                        onChange={() => toggleStatus(item._id)}
+                                                        className="sr-only peer"
+                                                    />
+                                                    <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#319795]"></div>
+                                                </label>
+                                            </td>
+                                            <td className="px-4 py-3 align-top">
+                                                <button
+                                                    onClick={() => {
+                                                        if (checkIsExpired(item.endDateTime)) {
+                                                            Swal.fire({
+                                                                title: 'Assessment Expired!',
+                                                                text: 'You can only read and delete this assessment because it has expired.',
+                                                                icon: 'warning',
+                                                                confirmButtonColor: '#319795'
+                                                            });
+                                                            return;
+                                                        }
+                                                        navigate(`/admin/assign-questions/${item._id}`, { state: { assessmentCode: item.assessmentCode } });
+                                                    }}
+                                                    className="bg-emerald-400 text-white px-3 py-1 rounded text-xs font-medium hover:bg-emerald-500 transition-colors"
+                                                >
+                                                    Questions ({item.count || 0}/{item.totalQuestions})
+                                                </button>
+                                            </td>
+                                            <td className="px-4 py-3 align-top">
+                                                <div className="font-medium text-[#2D3748]">{item.assessmentName}</div>
+                                                <div className="text-xs bg-[#F56565]/20 text-[#B8322F] inline-block px-1.5 rounded mt-1">
+                                                    {item.timeDuration} Min
                                                 </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-4 py-3 align-top text-gray-500 text-xs whitespace-nowrap">
-                                            <div>{item.startDateTime}</div>
-                                            <div>{item.endDateTime}</div>
-                                        </td>
-                                        <td className="px-4 py-3 align-top text-[#2D3748]">{item.remark}</td>
-                                        <td className="px-4 py-3 align-top text-[#2D3748]">
-                                            <div>{item.generateCertificate ? 'Yes' : 'No'} </div>
-                                            <div className="text-xs text-gray-400">{item.certificateName?.certificateName || 'N/A'}</div>
-                                        </td>
-                                        <td className="px-4 py-3 align-top">
-                                            <div className="flex flex-col gap-1.5">
-                                                <button
-                                                    onClick={() => navigate(`/admin/assessment/result/${item._id}`)}
-                                                    className="border border-[#319795] text-[#319795] px-2 py-0.5 rounded text-xs hover:bg-[#E6FFFA]"
-                                                >
-                                                    Result
-                                                </button>
-                                                <button
-                                                    onClick={() => navigate(`/admin/assessment/started-students/${item._id}`, { state: { assessmentCode: item.assessmentCode } })}
-                                                    className="border border-orange-500 text-orange-500 px-2 py-0.5 rounded text-xs hover:bg-orange-50"
-                                                >
-                                                    Export
-                                                </button>
-                                                <div className="flex items-center gap-1">
+                                            </td>
+                                            <td className="px-4 py-3 align-top">
+                                                <div className="font-medium text-[#2D3748] mb-2">{item.assessmentCode}</div>
+                                                <div className="flex gap-1 mb-1">
                                                     <button
-                                                        onClick={() => {
-                                                            if (checkIsExpired(item.endDateTime)) {
-                                                                Swal.fire({
-                                                                    title: 'Assessment Expired!',
-                                                                    text: 'You can only read and delete this assessment because it has expired.',
-                                                                    icon: 'warning',
-                                                                    confirmButtonColor: '#319795'
-                                                                });
-                                                                return;
-                                                            }
-                                                            handleEdit(item);
-                                                        }}
-                                                        className="p-1 border border-blue-500 text-blue-500 rounded hover:bg-blue-50"
-                                                        title="Edit"
+                                                        onClick={() => handleCopyCode(item.assessmentCode)}
+                                                        className="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-600 rounded text-xs hover:bg-blue-100 transition-colors"
+                                                        title="Copy Assessment Code"
                                                     >
-                                                        <Edit className="h-3 w-3" />
+                                                        <Copy className="h-3 w-3" />
+                                                        Copy
                                                     </button>
                                                     <button
-                                                        onClick={() => handleDeleteAssessment(item._id)}
-                                                        className="p-1 border border-red-500 text-red-500 rounded hover:bg-red-50"
-                                                        title="Delete"
+                                                        onClick={() => handleCopyLink(item.assessmentCode)}
+                                                        className="flex items-center gap-1 px-2 py-1 bg-green-50 text-green-600 rounded text-xs hover:bg-green-100 transition-colors"
+                                                        title="Copy Assessment Link"
                                                     >
-                                                        <Trash2 className="h-3 w-3" />
+                                                        <Link className="h-3 w-3" />
+                                                        Copy Link
                                                     </button>
                                                 </div>
-                                            </div>
-                                        </td>
-                                    </tr>
+                                                <div className="space-y-1 space-x-1">
+                                                    <div className="text-xs bg-[#319795]/20 text-[#2B7A73] inline-block px-1.5 rounded">
+                                                        Start: {item.start || 0}
+                                                    </div>
+                                                    <div className="text-xs bg-[#F56565]/20 text-[#B8322F] inline-block px-1.5 rounded">
+                                                        Submit: {item.submit || 0}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3 align-top text-gray-500 text-xs whitespace-nowrap">
+                                                <div>{item.startDateTime}</div>
+                                                <div>{item.endDateTime}</div>
+                                            </td>
+                                            <td className="px-4 py-3 align-top text-[#2D3748]">{item.remark}</td>
+                                            <td className="px-4 py-3 align-top text-[#2D3748]">
+                                                <div>{item.generateCertificate ? 'Yes' : 'No'} </div>
+                                                <div className="text-xs text-gray-400">{item.certificateName?.certificateName || 'N/A'}</div>
+                                            </td>
+                                            <td className="px-4 py-3 align-top">
+                                                <div className="flex flex-col gap-1.5">
+                                                    <button
+                                                        onClick={() => navigate(`/admin/assessment/result/${item._id}`)}
+                                                        className="border border-[#319795] text-[#319795] px-2 py-0.5 rounded text-xs hover:bg-[#E6FFFA]"
+                                                    >
+                                                        Result
+                                                    </button>
+                                                    <button
+                                                        onClick={() => navigate(`/admin/assessment/started-students/${item._id}`, { state: { assessmentCode: item.assessmentCode } })}
+                                                        className="border border-orange-500 text-orange-500 px-2 py-0.5 rounded text-xs hover:bg-orange-50"
+                                                    >
+                                                        Export
+                                                    </button>
+                                                    <div className="flex items-center gap-1">
+                                                        <button
+                                                            onClick={() => {
+                                                                if (checkIsExpired(item.endDateTime)) {
+                                                                    Swal.fire({
+                                                                        title: 'Assessment Expired!',
+                                                                        text: 'You can only read and delete this assessment because it has expired.',
+                                                                        icon: 'warning',
+                                                                        confirmButtonColor: '#319795'
+                                                                    });
+                                                                    return;
+                                                                }
+                                                                handleEdit(item);
+                                                            }}
+                                                            className="p-1 border border-blue-500 text-blue-500 rounded hover:bg-blue-50"
+                                                            title="Edit"
+                                                        >
+                                                            <Edit className="h-3 w-3" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDeleteAssessment(item._id)}
+                                                            className="p-1 border border-red-500 text-red-500 rounded hover:bg-red-50"
+                                                            title="Delete"
+                                                        >
+                                                            <Trash2 className="h-3 w-3" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div className="px-4 py-3 border-t border-[#E6FFFA] text-xs text-[#2D3748] flex flex-col sm:flex-row justify-between items-center gap-4">
+                            <span>
+                                Showing {paginatedAssessments.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} to {Math.min(currentPage * itemsPerPage, filteredAssessments.length)} of {filteredAssessments.length} entries
+                            </span>
+                            <div className="flex items-center gap-1">
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                    disabled={currentPage === 1}
+                                    className={`px-3 py-1.5 rounded transition-colors ${currentPage === 1 ? 'text-gray-400 cursor-not-allowed' : 'hover:bg-gray-100 text-[#319795] font-medium'}`}
+                                >
+                                    Previous
+                                </button>
+
+                                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                    <button
+                                        key={page}
+                                        onClick={() => setCurrentPage(page)}
+                                        className={`w-8 h-8 rounded transition-all duration-200 ${currentPage === page ? 'bg-[#319795] text-white shadow-md' : 'hover:bg-gray-100 text-gray-600'}`}
+                                    >
+                                        {page}
+                                    </button>
                                 ))}
-                            </tbody>
-                        </table>
-                    </div>
+
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                    disabled={currentPage === totalPages || totalPages === 0}
+                                    className={`px-3 py-1.5 rounded transition-colors ${currentPage === totalPages || totalPages === 0 ? 'text-gray-400 cursor-not-allowed' : 'hover:bg-gray-100 text-[#319795] font-medium'}`}
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        </div>
+                    </>
                 )}
             </div>
 

@@ -21,6 +21,13 @@ export default function AcademicSetup() {
         fetchData();
     }, []);
 
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [activeTab]);
+
     const fetchData = async () => {
         setLoading(true);
         try {
@@ -146,27 +153,74 @@ export default function AcademicSetup() {
         });
     };
 
+    const renderPagination = (totalItems) => {
+        const totalPages = Math.ceil(totalItems / itemsPerPage);
+        if (totalPages <= 1) return null;
+
+        return (
+            <div className="flex flex-col sm:flex-row justify-between items-center bg-white p-4 rounded-lg border border-gray-200 mt-6 gap-4">
+                <p className="text-sm text-gray-500">
+                    Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} entries
+                </p>
+                <div className="flex gap-1.5">
+                    <button
+                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                        disabled={currentPage === 1}
+                        className={`px-3 py-1.5 rounded-md border text-sm font-medium transition-all ${currentPage === 1 ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50 active:scale-95'}`}
+                    >
+                        Previous
+                    </button>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                        <button
+                            key={page}
+                            onClick={() => setCurrentPage(page)}
+                            className={`w-9 h-9 flex items-center justify-center rounded-md text-sm font-bold transition-all ${currentPage === page ? 'bg-[#319795] text-white shadow-md' : 'bg-white border text-gray-600 hover:bg-gray-50'}`}
+                        >
+                            {page}
+                        </button>
+                    ))}
+                    <button
+                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                        disabled={currentPage === totalPages}
+                        className={`px-3 py-1.5 rounded-md border text-sm font-medium transition-all ${currentPage === totalPages ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50 active:scale-95'}`}
+                    >
+                        Next
+                    </button>
+                </div>
+            </div>
+        );
+    };
+
     const renderContent = () => {
         if (activeTab === 'colleges') {
+            const paginatedColleges = colleges.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
             return (
                 <div className="space-y-4">
-                    {colleges.length > 0 ? (
-                        colleges.map((college) => (
-                            <div key={college._id} className="bg-white p-4 rounded-lg border border-gray-200 flex justify-between items-center">
-                                <div>
-                                    <h3 className="font-bold text-gray-800">{college.collegeName}</h3>
-                                    <p className="text-sm text-gray-500">{college.location}</p>
+                    {paginatedColleges.length > 0 ? (
+                        <>
+                            {paginatedColleges.map((college, index) => (
+                                <div key={college._id} className="bg-white p-4 rounded-lg border border-gray-200 flex justify-between items-center">
+                                    <div className="flex items-center gap-4">
+                                        <div className="bg-[#E6FFFA] text-[#319795] w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs">
+                                            {(currentPage - 1) * itemsPerPage + index + 1}
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-gray-800">{college.collegeName}</h3>
+                                            <p className="text-sm text-gray-500">{college.location}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => handleEdit(college, 'colleges')} className="p-2 text-blue-600 hover:bg-blue-50 rounded">
+                                            <Edit className="h-4 w-4" />
+                                        </button>
+                                        <button onClick={() => handleDelete(college._id, 'colleges')} className="p-2 text-red-600 hover:bg-red-50 rounded">
+                                            <Trash2 className="h-4 w-4" />
+                                        </button>
+                                    </div>
                                 </div>
-                                <div className="flex gap-2">
-                                    <button onClick={() => handleEdit(college, 'colleges')} className="p-2 text-blue-600 hover:bg-blue-50 rounded">
-                                        <Edit className="h-4 w-4" />
-                                    </button>
-                                    <button onClick={() => handleDelete(college._id, 'colleges')} className="p-2 text-red-600 hover:bg-red-50 rounded">
-                                        <Trash2 className="h-4 w-4" />
-                                    </button>
-                                </div>
-                            </div>
-                        ))
+                            ))}
+                            {renderPagination(colleges.length)}
+                        </>
                     ) : (
                         <div className="text-center py-10 text-gray-500 italic">No colleges found</div>
                     )}
@@ -175,24 +229,31 @@ export default function AcademicSetup() {
         }
 
         if (activeTab === 'years') {
+            const paginatedYears = years.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
             return (
                 <div className="space-y-4">
-                    {years.length > 0 ? (
-                        years.map((year) => (
-                            <div key={year._id} className="bg-white p-4 rounded-lg border border-gray-200 flex justify-between items-center">
-                                <div>
-                                    <h3 className="font-bold text-gray-800">{year.academicYear}</h3>
+                    {paginatedYears.length > 0 ? (
+                        <>
+                            {paginatedYears.map((year, index) => (
+                                <div key={year._id} className="bg-white p-4 rounded-lg border border-gray-200 flex justify-between items-center">
+                                    <div className="flex items-center gap-4">
+                                        <div className="bg-[#E6FFFA] text-[#319795] w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs">
+                                            {(currentPage - 1) * itemsPerPage + index + 1}
+                                        </div>
+                                        <h3 className="font-bold text-gray-800">{year.academicYear}</h3>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => handleEdit(year, 'years')} className="p-2 text-blue-600 hover:bg-blue-50 rounded">
+                                            <Edit className="h-4 w-4" />
+                                        </button>
+                                        <button onClick={() => handleDelete(year._id, 'years')} className="p-2 text-red-600 hover:bg-red-50 rounded">
+                                            <Trash2 className="h-4 w-4" />
+                                        </button>
+                                    </div>
                                 </div>
-                                <div className="flex gap-2">
-                                    <button onClick={() => handleEdit(year, 'years')} className="p-2 text-blue-600 hover:bg-blue-50 rounded">
-                                        <Edit className="h-4 w-4" />
-                                    </button>
-                                    <button onClick={() => handleDelete(year._id, 'years')} className="p-2 text-red-600 hover:bg-red-50 rounded">
-                                        <Trash2 className="h-4 w-4" />
-                                    </button>
-                                </div>
-                            </div>
-                        ))
+                            ))}
+                            {renderPagination(years.length)}
+                        </>
                     ) : (
                         <div className="text-center py-10 text-gray-500 italic">No academic years found</div>
                     )}
@@ -201,24 +262,31 @@ export default function AcademicSetup() {
         }
 
         if (activeTab === 'courses') {
+            const paginatedCourses = courses.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
             return (
                 <div className="space-y-4">
-                    {courses.length > 0 ? (
-                        courses.map((course) => (
-                            <div key={course._id} className="bg-white p-4 rounded-lg border border-gray-200 flex justify-between items-center">
-                                <div>
-                                    <h3 className="font-bold text-gray-800">{course.course}</h3>
+                    {paginatedCourses.length > 0 ? (
+                        <>
+                            {paginatedCourses.map((course, index) => (
+                                <div key={course._id} className="bg-white p-4 rounded-lg border border-gray-200 flex justify-between items-center">
+                                    <div className="flex items-center gap-4">
+                                        <div className="bg-[#E6FFFA] text-[#319795] w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs">
+                                            {(currentPage - 1) * itemsPerPage + index + 1}
+                                        </div>
+                                        <h3 className="font-bold text-gray-800">{course.course}</h3>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => handleEdit(course, 'courses')} className="p-2 text-blue-600 hover:bg-blue-50 rounded">
+                                            <Edit className="h-4 w-4" />
+                                        </button>
+                                        <button onClick={() => handleDelete(course._id, 'courses')} className="p-2 text-red-600 hover:bg-red-50 rounded">
+                                            <Trash2 className="h-4 w-4" />
+                                        </button>
+                                    </div>
                                 </div>
-                                <div className="flex gap-2">
-                                    <button onClick={() => handleEdit(course, 'courses')} className="p-2 text-blue-600 hover:bg-blue-50 rounded">
-                                        <Edit className="h-4 w-4" />
-                                    </button>
-                                    <button onClick={() => handleDelete(course._id, 'courses')} className="p-2 text-red-600 hover:bg-red-50 rounded">
-                                        <Trash2 className="h-4 w-4" />
-                                    </button>
-                                </div>
-                            </div>
-                        ))
+                            ))}
+                            {renderPagination(courses.length)}
+                        </>
                     ) : (
                         <div className="text-center py-10 text-gray-500 italic">No courses found</div>
                     )}
