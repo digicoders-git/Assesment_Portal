@@ -232,14 +232,36 @@ export default function Assessment() {
             ...selectedAnswers,
             [currentQuestion]: option
         });
+        // Remove from skipped if an option is selected
+        if (skippedQuestions.has(currentQuestion)) {
+            const newSkipped = new Set(skippedQuestions);
+            newSkipped.delete(currentQuestion);
+            setSkippedQuestions(newSkipped);
+        }
+    };
+
+    const handleClear = () => {
+        const newAnswers = { ...selectedAnswers };
+        delete newAnswers[currentQuestion];
+        setSelectedAnswers(newAnswers);
     };
 
     const handleNext = () => {
-        if (!selectedAnswers[currentQuestion]) {
-            toast.error("Please select an option before proceeding!");
-            return;
-        }
-        if (currentQuestion < questions.length - 1) {
+        const isLastQuestion = currentQuestion === questions.length - 1;
+
+        if (isLastQuestion) {
+            // On last question, mark as skipped if no answer is selected
+            if (!selectedAnswers[currentQuestion]) {
+                setSkippedQuestions(prev => new Set(prev).add(currentQuestion));
+            }
+            handleSubmit();
+        } else {
+            // Requirement: must select an option for middle questions unless clicking Skip button
+            if (!selectedAnswers[currentQuestion]) {
+                toast.error("Please select an option before proceeding!");
+                return;
+            }
+
             // Remove from skipped when moving to next via "Save & Next"
             if (skippedQuestions.has(currentQuestion)) {
                 const newSkipped = new Set(skippedQuestions);
@@ -247,14 +269,6 @@ export default function Assessment() {
                 setSkippedQuestions(newSkipped);
             }
             setCurrentQuestion(currentQuestion + 1);
-        } else {
-            // Also check for the last question
-            if (skippedQuestions.has(currentQuestion)) {
-                const newSkipped = new Set(skippedQuestions);
-                newSkipped.delete(currentQuestion);
-                setSkippedQuestions(newSkipped);
-            }
-            handleSubmit();
         }
     };
 
@@ -519,36 +533,50 @@ export default function Assessment() {
                         </div>
 
                         {/* Footer / Navigation */}
-                        <div className="p-3 md:p-6 border-t border-gray-100 flex items-center justify-between bg-white mt-auto gap-2 md:gap-4">
-                            <button
-                                onClick={handlePrev}
-                                disabled={currentQuestion === 0}
-                                className={`flex items-center justify-center gap-1 md:gap-2 px-3 py-2 md:px-6 md:py-3 rounded-xl font-bold border-2 transition-all text-xs md:text-base flex-1 md:flex-none
-                                ${currentQuestion === 0
-                                        ? 'border-gray-100 text-gray-300 cursor-not-allowed'
-                                        : 'border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
-                                    }
-                            `}
-                            >
-                                <ChevronLeft size={16} className="md:w-5 md:h-5" /> <span className="md:hidden">PREV</span><span className="hidden md:inline">PREVIOUS</span>
-                            </button>
-
-                            {/* Skip button - always visible except on last question */}
-                            {currentQuestion !== questions.length - 1 && (
+                        <div className="p-3 md:p-6 border-t border-gray-100 flex items-center justify-between bg-white mt-auto gap-2 md:gap-4 flex-wrap">
+                            <div className="flex items-center gap-2">
                                 <button
-                                    onClick={handleSkip}
-                                    className="flex items-center justify-center gap-1 md:gap-2 px-3 py-2 md:px-6 md:py-3 rounded-xl font-bold text-gray-500 hover:text-[#0D9488] transition-colors text-xs md:text-base flex-1 md:flex-none border-2 border-transparent hover:border-gray-100"
+                                    onClick={handlePrev}
+                                    disabled={currentQuestion === 0}
+                                    className={`flex items-center justify-center gap-1 md:gap-2 px-3 py-2 md:px-6 md:py-3 rounded-xl font-bold border-2 transition-all text-xs md:text-base
+                                    ${currentQuestion === 0
+                                            ? 'border-gray-100 text-gray-300 cursor-not-allowed'
+                                            : 'border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+                                        }
+                                `}
                                 >
-                                    SKIP <SkipForward size={16} className="md:w-5 md:h-5" />
+                                    <ChevronLeft size={16} className="md:w-5 md:h-5" /> <span className="md:hidden">PREV</span><span className="hidden md:inline">PREVIOUS</span>
                                 </button>
-                            )}
 
-                            <button
-                                onClick={handleNext}
-                                className="flex items-center justify-center gap-1 md:gap-2 px-3 py-2 md:px-8 md:py-3 bg-[#0D9488] hover:bg-[#115E59] text-white rounded-xl font-bold shadow-lg shadow-teal-500/30 transform hover:scale-105 transition-all text-xs md:text-base flex-1 md:flex-none"
-                            >
-                                {currentQuestion === questions.length - 1 ? 'SUBMIT' : 'Save & Next'} <ChevronRight size={16} className="md:w-5 md:h-5" />
-                            </button>
+                                {/* Clear Selection Button */}
+                                {selectedAnswers[currentQuestion] && (
+                                    <button
+                                        onClick={handleClear}
+                                        className="px-3 py-2 md:px-4 md:py-3 text-red-500 hover:bg-red-50 rounded-xl font-bold text-xs md:text-sm border-2 border-transparent hover:border-red-100 transition-all uppercase"
+                                    >
+                                        Clear
+                                    </button>
+                                )}
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                {/* Skip button - always visible except on last question */}
+                                {currentQuestion !== questions.length - 1 && (
+                                    <button
+                                        onClick={handleSkip}
+                                        className="flex items-center justify-center gap-1 md:gap-2 px-3 py-2 md:px-6 md:py-3 rounded-xl font-bold text-gray-500 hover:text-[#0D9488] transition-colors text-xs md:text-base border-2 border-transparent hover:border-gray-100"
+                                    >
+                                        SKIP <SkipForward size={16} className="md:w-5 md:h-5" />
+                                    </button>
+                                )}
+
+                                <button
+                                    onClick={handleNext}
+                                    className="flex items-center justify-center gap-1 md:gap-2 px-3 py-2 md:px-8 md:py-3 bg-[#0D9488] hover:bg-[#115E59] text-white rounded-xl font-bold shadow-lg shadow-teal-500/30 transform hover:scale-105 transition-all text-xs md:text-base"
+                                >
+                                    {currentQuestion === questions.length - 1 ? 'SUBMIT' : 'Save & Next'} <ChevronRight size={16} className="md:w-5 md:h-5" />
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </main>
@@ -632,7 +660,7 @@ export default function Assessment() {
             </div>
 
             <footer className="text-center mt-8 text-gray-400 text-sm font-medium">
-                © 2025 DigiCoders Technologies. All Rights Reserved.
+                © 2026 DigiCoders Technologies. All Rights Reserved.
             </footer>
         </div >
     );
