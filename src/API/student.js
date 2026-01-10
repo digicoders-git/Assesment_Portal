@@ -67,27 +67,32 @@ export const getAcademicDataApi = async () => {
 // download excel studend by assesment
 
 export const downloadStudentsByAssessmentApi = async (assesmentCode) => {
-  const res = await api.get(
-    `registration/admin/student-excel-byassesment/${assesmentCode}`,
-    {
-      responseType: "blob",
-    }
-  );
+  // 🔹 URL decide dynamically
+  const url = assesmentCode
+    ? `/registration/admin/student-excel-byassesment/${assesmentCode}`
+    : `/registration/admin/student-excel`;
 
-  const url = window.URL.createObjectURL(
-    new Blob([res.data], {
-      type:
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    })
-  );
+  const res = await api.get(url, {
+    responseType: "blob",
+  });
 
+  const blob = new Blob([res.data], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+
+  const downloadUrl = window.URL.createObjectURL(blob);
   const link = document.createElement("a");
-  link.href = url;
-  link.setAttribute("download", `students-${assesmentCode}.xlsx`);
+  link.href = downloadUrl;
+
+  link.download = assesmentCode
+    ? `students-${assesmentCode}.xlsx`
+    : `all-students.xlsx`;
+
   document.body.appendChild(link);
   link.click();
-
   link.remove();
-  window.URL.revokeObjectURL(url);
+
+  window.URL.revokeObjectURL(downloadUrl);
 };
+
 

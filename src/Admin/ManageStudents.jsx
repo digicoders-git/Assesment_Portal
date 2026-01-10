@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import Swal from 'sweetalert2';
-import { getAllStudentApi, getStudentByAssessmentApi, updateStudentApi } from '../API/student';
+import { getAllStudentApi, getStudentByAssessmentApi, updateStudentApi, downloadStudentsByAssessmentApi } from '../API/student';
 import { getAllAssessmentsApi } from '../API/assesment';
 
 export function ManageStudents() {
@@ -15,6 +15,7 @@ export function ManageStudents() {
     const [showAssessmentDropdown, setShowAssessmentDropdown] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const [loading, setLoading] = useState(true);
+    const [exportLoading, setExportLoading] = useState(false);
     const [students, setStudents] = useState([]);
     const assessmentDropdownRef = useRef(null);
     const itemsPerPage = 10;
@@ -216,31 +217,19 @@ export function ManageStudents() {
         });
     };
 
-    const downloadExcel = () => {
-        const headers = ["Sr No.", "Name", "Phone", "Email", "College", "Course", "Year", "Registration Date"];
-        let htmlTable = '<table border="1"><tr>' + headers.map(h => `<th style="background-color: #E6FFFA; padding: 8px;">${h}</th>`).join('') + '</tr>';
-
-        filteredStudentsList.forEach((student, index) => {
-            htmlTable += `<tr>
-                <td>${index + 1}</td>
-                <td>${student.name}</td>
-                <td>${student.phone}</td>
-                <td>${student.email}</td>
-                <td>${student.college}</td>
-                <td>${student.course}</td>
-                <td>${student.year}</td>
-                <td>${student.date}</td>
-            </tr>`;
-        });
-
-        htmlTable += '</table>';
-        const blob = new Blob([htmlTable], { type: 'application/vnd.ms-excel' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = `students_data_${new Date().toISOString().split('T')[0]}.xls`;
-        link.click();
-        toast.success("Excel file downloaded!");
+    const downloadExcel = async () => {
+        setExportLoading(true);
+        try {
+            // If selectedAssessment is null, it downloads all students
+            const code = selectedAssessment?.assessmentCode || null;
+            await downloadStudentsByAssessmentApi(code);
+            toast.success("Excel file downloaded!");
+        } catch (error) {
+            console.error("Export Error:", error);
+            toast.error("Failed to download Excel file");
+        } finally {
+            setExportLoading(false);
+        }
     };
 
     const downloadPDF = () => {
@@ -355,7 +344,18 @@ export function ManageStudents() {
                     </div>
 
                     <div className="flex gap-2 mt-5">
-                        <button onClick={downloadExcel} className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors"><Download className="h-4 w-4" /> Excel</button>
+                        <button
+                            onClick={downloadExcel}
+                            disabled={exportLoading}
+                            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                        >
+                            {exportLoading ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                                <Download className="h-4 w-4" />
+                            )}
+                            Excel
+                        </button>
                         <button onClick={downloadPDF} className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors"><Download className="h-4 w-4" /> PDF</button>
                     </div>
 
