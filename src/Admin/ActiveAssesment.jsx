@@ -256,15 +256,18 @@ export function ActiveAssessment() {
         const payload = {
             assessmentName: formData.name,
             assessmentCode: formData.code,
-            totalQuestions: parseInt(formData.totalQuestions),
-            timeDuration: parseInt(formData.duration),
-            startDateTime: formData.startTime,
-            endDateTime: formData.endTime,
-            generateCertificate: formData.hasCertificate === 'Yes',
-            certificateName: selectedCertificateId,
-            remark: formData.remark,
-            status: true // Active assessments are usually true
+            totalQuestions: formData.totalQuestions,
+            timeDuration: formData.duration,
+
+            // convert local → UTC
+            startDateTime: new Date(formData.startTime).toISOString(),
+            endDateTime: new Date(formData.endTime).toISOString(),
+
+            generateCertificate: formData.hasCertificate === "Yes",
+            certificateName: formData.certificateName || null,
+            remark: formData.remark
         };
+
 
         try {
             let response;
