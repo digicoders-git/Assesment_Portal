@@ -115,7 +115,8 @@ export function AssessmentHistory() {
         setLoading(true);
         try {
             const response = await getAssessmentByStatusApi(false);
-            setAssessments(response.assessments || []);
+            const sortedAssessments = (response.assessments || []).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            setAssessments(sortedAssessments);
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to fetch assessments');
             setAssessments([]);
@@ -486,7 +487,7 @@ export function AssessmentHistory() {
                                                         title="Copy Assessment Code"
                                                     >
                                                         <Copy className="h-3 w-3" />
-                                                        Copy
+                                                        Copy Code
                                                     </button>
                                                     <button
                                                         onClick={() => handleCopyLink(item.assessmentCode)}

@@ -161,6 +161,11 @@ export default function TopicQuestions() {
 
     const handleSave = async () => {
         if (editingQuestion) {
+            // Validate all fields for single edit
+            if (!formData.question.trim() || !formData.optionA.trim() || !formData.optionB.trim() || !formData.optionC.trim() || !formData.optionD.trim() || !formData.correctOption) {
+                toast.error("Please fill all fields including all 4 options!");
+                return;
+            }
             try {
                 const payload = {
                     question: formData.question,
@@ -181,13 +186,24 @@ export default function TopicQuestions() {
                 toast.error(error.response?.data?.message || 'Failed to update question');
             }
         } else {
-            const validQuestions = multipleQuestions.filter(q =>
-                q.question.trim() && q.optionA.trim() && q.optionB.trim() &&
-                ['A', 'B', 'C', 'D'].includes(q.answer)
-            );
+            const invalidIndices = [];
+            const validQuestions = multipleQuestions.filter((q, index) => {
+                const isValid = q.question.trim() &&
+                    q.optionA.trim() &&
+                    q.optionB.trim() &&
+                    q.optionC.trim() &&
+                    q.optionD.trim() &&
+                    ['A', 'B', 'C', 'D'].includes(q.answer);
 
-            if (validQuestions.length === 0) {
-                toast.error("Please fill at least one complete question with all required fields!");
+                if (!isValid) {
+                    // Check specifically what is missing to give better feedback if needed, 
+                    // but for now we just filter and track if any are invalid
+                }
+                return isValid;
+            });
+
+            if (validQuestions.length !== multipleQuestions.length) {
+                toast.error("Please fill all required fields (Question, All Options, and Correct Answer) for all forms!");
                 return;
             }
 
@@ -526,7 +542,7 @@ export default function TopicQuestions() {
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-1">Option C</label>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">Option C *</label>
                                                 <input
                                                     type="text"
                                                     value={formData.optionC}
@@ -536,7 +552,7 @@ export default function TopicQuestions() {
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-1">Option D</label>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">Option D *</label>
                                                 <input
                                                     type="text"
                                                     value={formData.optionD}
@@ -614,7 +630,7 @@ export default function TopicQuestions() {
                                                             />
                                                         </div>
                                                         <div>
-                                                            <label className="block text-sm font-medium text-gray-700 mb-1">Option C</label>
+                                                            <label className="block text-sm font-medium text-gray-700 mb-1">Option C *</label>
                                                             <input
                                                                 type="text"
                                                                 value={questionForm.optionC}
@@ -624,7 +640,7 @@ export default function TopicQuestions() {
                                                             />
                                                         </div>
                                                         <div>
-                                                            <label className="block text-sm font-medium text-gray-700 mb-1">Option D</label>
+                                                            <label className="block text-sm font-medium text-gray-700 mb-1">Option D *</label>
                                                             <input
                                                                 type="text"
                                                                 value={questionForm.optionD}
@@ -678,7 +694,7 @@ export default function TopicQuestions() {
                                     onClick={handleSave}
                                     className="bg-[#319795] hover:bg-[#2B7A73] text-white px-4 py-2 rounded order-1 sm:order-2"
                                 >
-                                    {editingQuestion ? 'Update' : `Save ${multipleQuestions.length} Question(s)`}
+                                    {editingQuestion ? 'Update' : `Save  Question(s)`}
                                 </button>
                             </div>
                         </div>
