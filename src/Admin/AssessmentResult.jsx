@@ -1,10 +1,8 @@
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import React, { useState, useEffect, useRef } from 'react';
 import { Download, Search, FileText, FileSpreadsheet, ChevronDown, ArrowLeft, Eye, Loader2 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { getResultsByAssessmentIdApi } from '../API/result';
+import { getResultsByAssessmentIdApi, downloadAssessmentResultsApi } from '../API/result';
 import { getSingleStudentApi } from '../API/student';
 
 export default function AssessmentResult() {
@@ -12,8 +10,7 @@ export default function AssessmentResult() {
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
-    const [showExportMenu, setShowExportMenu] = useState(false);
-    const exportMenuRef = useRef(null);
+    const [exportLoading, setExportLoading] = useState(false);
     const itemsPerPage = 10;
 
     const [loading, setLoading] = useState(true);
@@ -21,19 +18,6 @@ export default function AssessmentResult() {
     const [secondSubmissions, setSecondSubmissions] = useState([]);
     const [activeTab, setActiveTab] = useState('first');
 
-    // Close dropdown when clicking outside
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (exportMenuRef.current && !exportMenuRef.current.contains(event.target)) {
-                setShowExportMenu(false);
-            }
-        };
-
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, []);
 
     useEffect(() => {
         const fetchResults = async () => {
@@ -149,142 +133,18 @@ export default function AssessmentResult() {
         }
     };
 
-    const handleDownloadPDF = () => {
+    const handleExportData = async () => {
+        if (!id) return;
+        setExportLoading(true);
         try {
-            const doc = new jsPDF();
-            doc.setFontSize(16);
-            doc.text("Assessment Results", 14, 15);
-            doc.setFontSize(10);
-            doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 22);
-
-            const tableColumn = ["ID", "Student Name", "Course", "Year", "Phone No.", "College", "Marks", "Date Time"];
-            const tableRows = [];
-
-            filteredResults.forEach(item => {
-                const rowData = [
-                    item.id,
-                    item.name,
-                    item.course,
-                    item.year,
-                    item.phone,
-                    item.college,
-                    item.marks,
-                    item.time
-                ];
-                tableRows.push(rowData);
-            });
-
-            autoTable(doc, {
-                head: [tableColumn],
-                body: tableRows,
-                startY: 25,
-                theme: 'grid',
-                styles: { fontSize: 8 },
-                headStyles: { fillColor: [79, 70, 229] }
-            });
-
-            doc.save("Assessment_Result.pdf");
-            toast.success("PDF Downloaded successfully!");
+            await downloadAssessmentResultsApi(id);
+            toast.success("Excel results downloaded successfully!");
         } catch (error) {
-            console.error("PDF Download Error:", error);
-            toast.error(`PDF Error: ${error.message || "Failed to generate PDF"}`);
+            console.error("Export Error:", error);
+            toast.error("Failed to export results");
+        } finally {
+            setExportLoading(false);
         }
-    };
-
-    const downloadCSV = () => {
-        const headers = ["ID", "Student Name", "Course", "Year", "Phone No.", "College", "Marks", "Date Time"];
-        const rows = filteredResults.map(item => [
-            item.id,
-            `"${item.name}"`,
-            `"${item.course}"`,
-            `"${item.year}"`,
-            `"${item.phone}"`,
-            `"${item.college}"`,
-            `"${item.marks}"`,
-            `"${item.time}"`
-        ]);
-
-        const csvContent = [
-            headers.join(","),
-            ...rows.map(row => row.join(","))
-        ].join("\n");
-
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.setAttribute("href", url);
-        link.setAttribute("download", `assessment_results_${new Date().toISOString().split('T')[0]}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        toast.success("CSV file downloaded successfully!");
-        setShowExportMenu(false);
-    };
-
-    const downloadExcel = () => {
-        const headers = ["S.No", "Student Name", "Course", "Year", "Phone Number", "College/Institute", "Obtained Marks", "Submission Date & Time"];
-        const rows = filteredResults.map((item, index) => [
-            index + 1,
-            `"${item.name}"`,
-            `"${item.course}"`,
-            `"${item.year}"`,
-            `"${item.phone}"`,
-            `"${item.college}"`,
-            `"${item.marks}"`,
-            `"${item.time}"`
-        ]);
-
-        const csvContent = [
-            `"Assessment Results Report - Generated on ${new Date().toLocaleString()}",,,,,,,`,
-            `"Total Records: ${filteredResults.length}",,,,,,,`,
-            "",
-            headers.join(","),
-            ...rows.map(row => row.join(","))
-        ].join("\n");
-
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.setAttribute("href", url);
-        link.setAttribute("download", `assessment_results_detailed_${new Date().toISOString().split('T')[0]}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        toast.success("Excel file downloaded successfully!");
-        setShowExportMenu(false);
-    };
-
-    const downloadJSON = () => {
-        const jsonData = {
-            exportDate: new Date().toISOString(),
-            totalRecords: filteredResults.length,
-            searchQuery: searchQuery || "All Records",
-            results: filteredResults.map((item, index) => ({
-                serialNumber: index + 1,
-                studentId: item.id,
-                studentName: item.name,
-                course: item.course,
-                year: item.year,
-                mobileNumber: item.phone,
-                college: item.college,
-                obtainedMarks: item.marks,
-                submissionDateTime: item.time
-            }))
-        };
-
-        const blob = new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.setAttribute("href", url);
-        link.setAttribute("download", `assessment_results_${new Date().toISOString().split('T')[0]}.json`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        toast.success("JSON file downloaded successfully!");
-        setShowExportMenu(false);
     };
 
     if (loading) {
@@ -327,49 +187,17 @@ export default function AssessmentResult() {
 
                 <div className="p-4 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 no-print border-b border-gray-200 flex-shrink-0">
                     <div className="flex flex-col sm:flex-row flex-wrap gap-2">
-                        <div className="relative" ref={exportMenuRef}>
-                            <button
-                                onClick={() => setShowExportMenu(!showExportMenu)}
-                                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded border border-transparent transition-colors text-sm font-medium shadow-sm w-full sm:w-auto justify-center"
-                            >
-                                <Download className="h-4 w-4" />
-                                Export Data
-                                <ChevronDown className="h-4 w-4" />
-                            </button>
-
-                            {showExportMenu && (
-                                <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[180px]">
-                                    <button
-                                        onClick={downloadExcel}
-                                        className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm text-gray-700 border-b border-gray-100"
-                                    >
-                                        <FileSpreadsheet className="h-4 w-4 text-green-600" />
-                                        Excel Format
-                                    </button>
-                                    <button
-                                        onClick={downloadCSV}
-                                        className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm text-gray-700 border-b border-gray-100"
-                                    >
-                                        <FileText className="h-4 w-4 text-blue-600" />
-                                        CSV Format
-                                    </button>
-                                    <button
-                                        onClick={downloadJSON}
-                                        className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm text-gray-700 rounded-b-lg"
-                                    >
-                                        <FileText className="h-4 w-4 text-purple-600" />
-                                        JSON Format
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-
                         <button
-                            onClick={handleDownloadPDF}
-                            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded border border-transparent transition-colors text-sm font-medium shadow-sm w-full sm:w-auto justify-center"
+                            onClick={handleExportData}
+                            disabled={exportLoading}
+                            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded border border-transparent transition-colors text-sm font-medium shadow-sm w-full sm:w-auto justify-center disabled:opacity-50"
                         >
-                            <FileText className="h-4 w-4" />
-                            Batch PDF
+                            {exportLoading ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                                <Download className="h-4 w-4" />
+                            )}
+                            Export Excel
                         </button>
                     </div>
 

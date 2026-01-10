@@ -63,3 +63,31 @@ export const getAcademicDataApi = async () => {
   return data;
 };
 
+
+// download excel studend by assesment
+
+export const downloadStudentsByAssessmentApi = async (assesmentCode) => {
+  const res = await api.get(
+    `registration/admin/student-excel-byassesment/${assesmentCode}`,
+    {
+      responseType: "blob",
+    }
+  );
+
+  const url = window.URL.createObjectURL(
+    new Blob([res.data], {
+      type:
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    })
+  );
+
+  const link = document.createElement("a");
+  link.href = url;
+  link.setAttribute("download", `students-${assesmentCode}.xlsx`);
+  document.body.appendChild(link);
+  link.click();
+
+  link.remove();
+  window.URL.revokeObjectURL(url);
+};
+
