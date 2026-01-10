@@ -45,11 +45,11 @@ const AppRoutes = () => {
         <Route path="assessment/result/:id" element={<AssessmentResult />} />
         <Route path="assessment/details/:id" element={<AssessmentDetails />} />
         <Route path="assign-questions/:id" element={<AssignQuestions />} />
-        <Route path="print-assigned-questions/:id" element={<PrintAssignedQuestions />} />
-        <Route path="print/:topicId" element={<PrintPaper />} />
         <Route path="edit/:topicId" element={<EditQuestions />} />
         <Route path="assessment/started-students/:id" element={<StartedStudents />} />
       </Route>
+      <Route path="/admin/print-assigned-questions/:id" element={<PrintAssignedQuestions />} />
+      <Route path="/admin/print/:topicId" element={<PrintPaper />} />
 
       {/* Catch-all route for assessment codes */}
       <Route path="/:code" element={<Login />} />

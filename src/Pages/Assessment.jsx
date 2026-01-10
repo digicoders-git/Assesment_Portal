@@ -451,7 +451,7 @@ export default function Assessment() {
                 </div>
 
                 <div>
-                    <img className='h-22 w-48' src="/digicoders-logo.png" alt="" />
+                    <img className='h-22 w-76' src="/digicoders-logo.png" alt="" />
                 </div>
 
                 <div className="flex items-center gap-4">

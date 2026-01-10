@@ -134,102 +134,27 @@ export default function PrintPaper() {
             <style>{`
                 @media print {
                     @page { 
-                        margin: 0.5cm 0.5cm 0.5cm 1cm !important;
+                        margin: 1.5cm !important;
                         size: A4;
                     }
                     html, body {
-                        overflow: visible !important;
-                        width: 100% !important;
-                        max-width: 100% !important;
-                        margin: 0 !important;
-                        padding: 0 !important;
                         height: auto !important;
-                        min-height: auto !important;
-                    }
-                    body {
-                        -webkit-print-color-adjust: exact !important;
-                        print-color-adjust: exact !important;
+                        overflow: visible !important;
                         background: white !important;
                         color: black !important;
-                        opacity: 1 !important;
-                        font-weight: bold !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                    }
+                    .print\:hidden {
+                        display: none !important;
                     }
                     * {
                         -webkit-print-color-adjust: exact !important;
                         print-color-adjust: exact !important;
-                        opacity: 1 !important;
-                        color: black !important;
-                        background: transparent !important;
-                        box-sizing: border-box !important;
-                        overflow: visible !important;
                     }
                     .break-inside-avoid {
                         page-break-inside: avoid !important;
-                        break-inside: avoid-page !important;
-                        orphans: 1 !important;
-                        widows: 1 !important;
-                    }
-                    .print\\:break-after-avoid {
-                        page-break-after: avoid !important;
-                        break-after: avoid !important;
-                    }
-                    .print\\:max-w-none {
-                        max-width: none !important;
-                    }
-                    .print\\:w-full {
-                        width: 100% !important;
-                    }
-                    .print\\:mb-6 {
-                        margin-bottom: 1rem !important;
-                    }
-                    .print\\:mb-2 {
-                        margin-bottom: 0.3rem !important;
-                    }
-                    .print\\:mb-0\.5 {
-                        margin-bottom: 0.1rem !important;
-                    }
-                    .print\\:text-xl {
-                        font-size: 1.1rem !important;
-                    }
-                    .print\\:text-\[0\.9rem\] {
-                        font-size: 0.85rem !important;
-                    }
-                    .print\\:text-\[0\.7rem\] {
-                        font-size: 0.65rem !important;
-                    }
-                    .print\\:h-12 {
-                        height: 2.5rem !important;
-                    }
-                    .print\\:w-32 {
-                        width: 7rem !important;
-                    }
-                    .print\\:w-3 {
-                        width: 0.6rem !important;
-                    }
-                    .print\\:h-3 {
-                        height: 0.6rem !important;
-                    }
-                    .print\\:gap-1 {
-                        gap: 0.2rem !important;
-                    }
-                    .print\\:gap-x-2 {
-                        column-gap: 0.4rem !important;
-                    }
-                    .print\\:gap-y-0 {
-                        row-gap: 0rem !important;
-                    }
-                    .print\\:space-y-2 > * + * {
-                        margin-top: 0.3rem !important;
-                    }
-                    .text-gray-700, .text-gray-500 {
-                        color: black !important;
-                    }
-                    .border-gray-400 {
-                        border-color: black !important;
-                    }
-                    .border-black {
-                        border-color: black !important;
-                        border-width: 1.5px !important;
+                        break-inside: avoid !important;
                     }
                 }
             `}</style>

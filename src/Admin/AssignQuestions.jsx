@@ -5,8 +5,7 @@ import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 import { getAllTopicsApi } from '../API/topic';
 import { getQuestionsByTopicApi } from '../API/question';
-import { getAssessmentByStatusApi } from '../API/assesment'; // Or wherever getById is
-import { addQuestionsToAssessmentApi, getAssessmentQuestionsApi, deleteQuestionFromAssessmentApi, getAssessmentByCodeApi } from '../API/assesmentQuestions';
+import { addQuestionsToAssessmentApi, deleteQuestionFromAssessmentApi, getAssessmentByCodeApi } from '../API/assesmentQuestions';
 
 export default function AssignQuestions() {
     const { id } = useParams();
@@ -149,9 +148,13 @@ export default function AssignQuestions() {
             const response = await getQuestionsByTopicApi(topicId);
             if (response.success) {
                 setAvailableQuestions(response.questions || []);
+            } else {
+                setAvailableQuestions([]);
+                toast.error(response.message || "No questions found for this topic");
             }
         } catch (error) {
-            toast.error("Failed to fetch questions for this topic");
+            setAvailableQuestions([]);
+            toast.error(error.response?.data?.message || "Failed to fetch questions for this topic");
         } finally {
             setLoading(false);
         }
@@ -300,7 +303,14 @@ export default function AssignQuestions() {
             toast.error("No questions assigned to export!");
             return;
         }
-        navigate(`/admin/print-assigned-questions/${id}`);
+
+        const code = location.state?.assessmentCode;
+        if (!code) {
+            toast.error("Assessment code not found. Please navigate from Active Assessment page.");
+            return;
+        }
+
+        navigate(`/admin/print-assigned-questions/${code}`);
     };
 
     return (

@@ -54,7 +54,7 @@ export default function TopicQuestions() {
                 optionB: "A database",
                 optionC: "A programming language",
                 optionD: "An operating system",
-                answer: "A"
+                correctOption: "A"
             },
             {
                 question: "Which hook is used for state management?",
@@ -62,14 +62,14 @@ export default function TopicQuestions() {
                 optionB: "useState",
                 optionC: "useContext",
                 optionD: "useReducer",
-                answer: "B"
+                correctOption: "B"
             }
         ];
 
         // Create proper Excel format with tab separation
-        const headers = "Question\tOptionA\tOptionB\tOptionC\tOptionD\tAnswer\n";
+        const headers = "question\toptionA\toptionB\toptionC\toptionD\tcorrectOption\n";
         const csvContent = sampleData.map(q =>
-            `${q.question}\t${q.optionA}\t${q.optionB}\t${q.optionC}\t${q.optionD}\t${q.answer}`
+            `${q.question}\t${q.optionA}\t${q.optionB}\t${q.optionC}\t${q.optionD}\t${q.correctOption}`
         ).join('\n');
 
         const blob = new Blob([headers + csvContent], { type: 'application/vnd.ms-excel' });
@@ -97,9 +97,9 @@ export default function TopicQuestions() {
             return;
         }
 
-        const headers = "Question\tOptionA\tOptionB\tOptionC\tOptionD\tAnswer\n";
+        const headers = "question\toptionA\toptionB\toptionC\toptionD\tcorrectOption\n";
         const csvContent = questions.map(q =>
-            `${q.question}\t${q.optionA}\t${q.optionB}\t${q.optionC}\t${q.optionD}\t${q.answer}`
+            `${q.question}\t${q.options?.A || ''}\t${q.options?.B || ''}\t${q.options?.C || ''}\t${q.options?.D || ''}\t${q.correctOption}`
         ).join('\n');
 
         const blob = new Blob([headers + csvContent], { type: 'application/vnd.ms-excel' });

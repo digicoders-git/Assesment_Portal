@@ -5,6 +5,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { getAcademicDataApi, studentRegisterApi, existStudentApi } from '../API/student';
 import { getAssessmentByCodeApi } from '../API/assesmentQuestions';
+import { getAssessmentByStatusApi } from '../API/assesment';
 
 export default function DigiCodersPortal() {
     const [formData, setFormData] = useState({
@@ -65,11 +66,34 @@ export default function DigiCodersPortal() {
     const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
-        // Auto-fill assessment code from URL parameter
-        if (code) {
-            setFormData(prev => ({ ...prev, code: code }));
-        }
-    }, [code]);
+        // Auto-fill and validate assessment code from URL parameter
+        const validateAndFillCode = async () => {
+            if (code) {
+                try {
+                    // Fetch all active assessments to validate the code
+                    const response = await getAssessmentByStatusApi(true);
+                    if (response && response.assessments) {
+                        const activeAssessments = response.assessments;
+                        const isValidCode = activeAssessments.some(
+                            assesment => assesment.assessmentCode === code
+                        );
+
+                        if (isValidCode) {
+                            setFormData(prev => ({ ...prev, code: code }));
+                        } else {
+                            // If code is provided but not found in active list, redirect to base login
+                            navigate('/');
+                        }
+                    }
+                } catch (error) {
+                    console.error("Code validation error:", error);
+                    navigate('/');
+                }
+            }
+        };
+
+        validateAndFillCode();
+    }, [code, navigate]);
 
     // Check for existing student when mobile number is valid
     useEffect(() => {

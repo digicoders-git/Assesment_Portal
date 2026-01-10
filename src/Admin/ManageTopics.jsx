@@ -1,22 +1,41 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Swal from 'sweetalert2';
-import { Plus, Edit, Trash2, X, Loader2 } from 'lucide-react';
+import { Plus, Edit, Trash2, X, Loader2, Filter, CheckCircle2, XCircle, ChevronDown } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { createTopicApi, getAllTopicsApi, updateTopicApi, deleteTopicApi, toggleTopicStatusApi } from '../API/topic';
 
 export function ManageTopics() {
     const navigate = useNavigate();
+    const location = useLocation();
     const [searchQuery, setSearchQuery] = useState('');
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [topicName, setTopicName] = useState('');
     const [topics, setTopics] = useState([]);
+    const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
+    const filterRef = React.useRef(null);
 
     const [loading, setLoading] = useState(true);
     const [editingTopic, setEditingTopic] = useState(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [statusFilter, setStatusFilter] = useState(location.state?.status || 'Active');
+    const itemsPerPage = 10;
 
     useEffect(() => {
         fetchTopics();
+
+        if (location.state?.status) {
+            setStatusFilter(location.state.status);
+            setCurrentPage(1);
+        }
+
+        const handleClickOutside = (event) => {
+            if (filterRef.current && !filterRef.current.contains(event.target)) {
+                setIsFilterDropdownOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
     const fetchTopics = async () => {
@@ -33,9 +52,14 @@ export function ManageTopics() {
         }
     };
 
-    const filteredTopics = Array.isArray(topics) ? topics.filter(topic =>
-        topic.topicName?.toLowerCase().includes(searchQuery.toLowerCase())
-    ) : [];
+    const filteredTopics = Array.isArray(topics) ? topics.filter(topic => {
+        const matchesSearch = topic.topicName?.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesStatus = statusFilter === 'Active' ? topic.status === true : topic.status === false;
+        return matchesSearch && matchesStatus;
+    }) : [];
+
+    const totalPages = Math.ceil(filteredTopics.length / itemsPerPage);
+    const paginatedTopics = filteredTopics.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     const handleSubmit = async () => {
         if (topicName.trim()) {
@@ -123,15 +147,64 @@ export function ManageTopics() {
                     Add Topic
                 </button>
 
-                <div className="relative w-full sm:w-auto">
-                    <span className="text-sm text-gray-700 mr-2">Search:</span>
-                    <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search Topic"
-                        className="border border-gray-300 rounded px-3 py-1.5 w-48 focus:outline-none focus:border-[#319795] transition-colors"
-                    />
+                <div className="flex items-center gap-4 w-full sm:w-auto">
+                    {/* Custom Premium Filter Dropdown */}
+                    <div className="relative" ref={filterRef}>
+                        <button
+                            onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
+                            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 transition-all duration-300 font-bold text-sm shadow-sm
+                                ${statusFilter === 'Active'
+                                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'
+                                    : 'bg-rose-50 border-rose-200 text-rose-700 hover:bg-rose-100'}`}
+                        >
+                            <Filter className="h-4 w-4" />
+                            <span>Status: {statusFilter}</span>
+                            <ChevronDown className={`h-4 w-4 transition-transform duration-300 ${isFilterDropdownOpen ? 'rotate-180' : ''}`} />
+                        </button>
+
+                        {isFilterDropdownOpen && (
+                            <div className="absolute top-full left-0 mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-xl z-50 py-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                                <button
+                                    onClick={() => {
+                                        setStatusFilter('Active');
+                                        setCurrentPage(1);
+                                        setIsFilterDropdownOpen(false);
+                                    }}
+                                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold transition-colors
+                                        ${statusFilter === 'Active' ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600 hover:bg-gray-50'}`}
+                                >
+                                    <CheckCircle2 className={`h-4 w-4 ${statusFilter === 'Active' ? 'text-emerald-500' : 'text-gray-400'}`} />
+                                    Active Topics
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setStatusFilter('Inactive');
+                                        setCurrentPage(1);
+                                        setIsFilterDropdownOpen(false);
+                                    }}
+                                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold transition-colors
+                                        ${statusFilter === 'Inactive' ? 'bg-rose-50 text-rose-700' : 'text-gray-600 hover:bg-gray-50'}`}
+                                >
+                                    <XCircle className={`h-4 w-4 ${statusFilter === 'Inactive' ? 'text-rose-500' : 'text-gray-400'}`} />
+                                    Inactive Topics
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="relative flex items-center bg-white border-2 border-gray-100 rounded-lg px-3 py-0.5 focus-within:border-[#319795] transition-all shadow-sm">
+                        <span className="text-[10px] font-black text-gray-400 mr-2 uppercase tracking-tighter">Search</span>
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => {
+                                setSearchQuery(e.target.value);
+                                setCurrentPage(1);
+                            }}
+                            placeholder="Find topics..."
+                            className="bg-transparent py-2 w-48 focus:outline-none text-sm font-medium text-gray-700"
+                        />
+                    </div>
                 </div>
             </div>
 
@@ -156,16 +229,19 @@ export function ManageTopics() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {filteredTopics.length === 0 ? (
+                                    {paginatedTopics.length === 0 ? (
                                         <tr>
-                                            <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
-                                                No topics found
+                                            <td colSpan="5" className="px-6 py-12 text-center">
+                                                <div className="flex flex-col items-center justify-center text-gray-400">
+                                                    <p className="text-lg font-bold">No {statusFilter} Topics Found</p>
+                                                    <p className="text-sm">Try adjusting your search or filter</p>
+                                                </div>
                                             </td>
                                         </tr>
                                     ) : (
-                                        filteredTopics.map((topic, index) => (
+                                        paginatedTopics.map((topic, index) => (
                                             <tr key={topic._id} className="border-b border-gray-100 hover:bg-[#E6FFFA] transition-colors">
-                                                <td className="px-6 py-4 text-[#2D3748]">{index + 1}</td>
+                                                <td className="px-6 py-4 text-[#2D3748]">{(currentPage - 1) * itemsPerPage + index + 1}</td>
                                                 <td className="px-6 py-4">
                                                     <label className="relative inline-flex items-center cursor-pointer">
                                                         <input
@@ -216,12 +292,36 @@ export function ManageTopics() {
                         </div>
 
                         {/* Pagination */}
-                        <div className="px-6 py-4 border-t border-gray-200 flex justify-between items-center text-sm text-gray-600">
-                            <div>Showing 1 to {filteredTopics.length} of {topics.length} entries</div>
-                            <div className="flex items-center gap-2">
-                                <button className="px-3 py-1 hover:bg-gray-100 rounded transition-colors">Previous</button>
-                                <button className="px-3 py-1 bg-[#319795] text-white rounded">1</button>
-                                <button className="px-3 py-1 hover:bg-gray-100 rounded transition-colors">Next</button>
+                        <div className="px-6 py-4 border-t border-gray-200 flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-gray-600">
+                            <div>
+                                Showing {filteredTopics.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredTopics.length)} of {filteredTopics.length} entries
+                            </div>
+                            <div className="flex items-center gap-1">
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                    disabled={currentPage === 1}
+                                    className={`px-3 py-1.5 rounded transition-colors ${currentPage === 1 ? 'text-gray-400 cursor-not-allowed' : 'hover:bg-gray-100 text-[#319795] font-medium'}`}
+                                >
+                                    Previous
+                                </button>
+
+                                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                    <button
+                                        key={page}
+                                        onClick={() => setCurrentPage(page)}
+                                        className={`w-8 h-8 rounded transition-all duration-200 ${currentPage === page ? 'bg-[#319795] text-white shadow-md' : 'hover:bg-gray-100 text-gray-600'}`}
+                                    >
+                                        {page}
+                                    </button>
+                                ))}
+
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                    disabled={currentPage === totalPages || totalPages === 0}
+                                    className={`px-3 py-1.5 rounded transition-colors ${currentPage === totalPages || totalPages === 0 ? 'text-gray-400 cursor-not-allowed' : 'hover:bg-gray-100 text-[#319795] font-medium'}`}
+                                >
+                                    Next
+                                </button>
                             </div>
                         </div>
                     </>

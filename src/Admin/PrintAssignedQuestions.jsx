@@ -166,33 +166,27 @@ export default function PrintAssignedQuestions() {
             <style>{`
                 @media print {
                     @page { 
-                        margin: 2cm 2.5cm 2cm 3cm !important;
+                        margin: 1.5cm !important;
                         size: A4;
                     }
                     html, body {
-                        -webkit-print-color-adjust: exact !important;
-                        print-color-adjust: exact !important;
+                        height: auto !important;
+                        overflow: visible !important;
                         background: white !important;
                         color: black !important;
-                        opacity: 1 !important;
-                        font-weight: bold !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                    }
+                    .print\:hidden {
+                        display: none !important;
                     }
                     * {
                         -webkit-print-color-adjust: exact !important;
                         print-color-adjust: exact !important;
-                        opacity: 1 !important;
-                        color: black !important;
-                        background: transparent !important;
                     }
-                    .text-gray-700, .text-gray-500 {
-                        color: black !important;
-                    }
-                    .border-gray-400 {
-                        border-color: black !important;
-                    }
-                    .border-black {
-                        border-color: black !important;
-                        border-width: 2px !important;
+                    .break-inside-avoid {
+                        page-break-inside: avoid !important;
+                        break-inside: avoid !important;
                     }
                 }
             `}</style>

@@ -43,8 +43,8 @@ export default function DashboardHome() {
         { title: 'HISTORY', value: dashboardData.historyAssesment, icon: History, link: '/admin/history' },
         { title: 'TOTAL STUDENTS', value: dashboardData.totalStudents, icon: Users, link: '/admin/students' },
         { title: 'TOTAL RESULTS', value: dashboardData.results, icon: FileText, link: '/admin/history' },
-        { title: 'ACTIVE TOPICS', value: dashboardData.activeTopics, icon: BookOpen, link: '/admin/topics' },
-        { title: 'INACTIVE TOPICS', value: dashboardData.inactiveTopics, icon: BookOpen, link: '/admin/topics' },
+        { title: 'ACTIVE TOPICS', value: dashboardData.activeTopics, icon: BookOpen, link: '/admin/topics', filter: 'Active' },
+        { title: 'INACTIVE TOPICS', value: dashboardData.inactiveTopics, icon: BookOpen, link: '/admin/topics', filter: 'Inactive' },
         { title: 'TOTAL QUESTIONS', value: dashboardData.questions, icon: FileText, link: '/admin/topics' },
         { title: 'CERTIFICATES', value: dashboardData.totalCertificates, icon: Award, link: '/admin/certificate' },
     ];
@@ -75,7 +75,7 @@ export default function DashboardHome() {
                     return (
                         <div
                             key={index}
-                            onClick={() => navigate(card.link)}
+                            onClick={() => navigate(card.link, { state: { status: card.filter } })}
                             className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-all cursor-pointer relative overflow-hidden h-[150px] flex flex-col justify-between"
                         >
                             {/* Pink corner decoration */}
