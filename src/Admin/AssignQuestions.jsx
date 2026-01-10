@@ -31,18 +31,23 @@ export default function AssignQuestions() {
     const parseBackendDate = (dateStr) => {
         if (!dateStr || typeof dateStr !== 'string') return null;
         try {
-            const parts = dateStr.includes(', ') ? dateStr.split(', ') : [dateStr];
-            if (parts.length < 2 && dateStr.includes('T')) return new Date(dateStr); // ISO format fallback
-
-            const [datePart, timePart] = parts;
-            const [day, month, year] = datePart.split('/').map(Number);
-
-            let hours = 0, minutes = 0, seconds = 0;
-            if (timePart) {
-                [hours, minutes, seconds] = timePart.split(':').map(Number);
+            // ISO format priority
+            if (dateStr.includes('T')) {
+                const date = new Date(dateStr);
+                return isNaN(date.getTime()) ? null : date;
             }
 
-            return new Date(year, month - 1, day, hours, minutes, seconds || 0);
+            // Custom format "DD/MM/YYYY, HH:MM:SS"
+            const parts = dateStr.split(', ');
+            if (parts.length === 2) {
+                const [datePart, timePart] = parts;
+                const [day, month, year] = datePart.split('/').map(Number);
+                const [hours, minutes, seconds] = timePart.split(':').map(Number);
+                return new Date(year, month - 1, day, hours, minutes, seconds || 0);
+            }
+
+            const fallbackDate = new Date(dateStr);
+            return isNaN(fallbackDate.getTime()) ? null : fallbackDate;
         } catch (e) {
             return null;
         }

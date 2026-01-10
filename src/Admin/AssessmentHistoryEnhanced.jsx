@@ -27,10 +27,31 @@ export function AssessmentHistory() {
     const parseBackendDate = (dateStr) => {
         if (!dateStr || typeof dateStr !== 'string') return '';
         try {
+            // Handle ISO format from backend (e.g., "2025-01-10T10:30:00.000Z")
+            if (dateStr.includes('T')) {
+                return dateStr.slice(0, 16);
+            }
+            // Handle custom format "DD/MM/YYYY, HH:MM:SS"
             const [datePart, timePart] = dateStr.split(', ');
-            const [day, month, year] = datePart.split('/');
-            const [hour, minute] = timePart.split(':');
-            return `${year}-${month}-${day}T${hour}:${minute}`;
+            if (datePart && timePart) {
+                const [day, month, year] = datePart.split('/');
+                const [hour, minute] = timePart.split(':');
+                if (day && month && year && hour && minute) {
+                    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`;
+                }
+            }
+
+            // Fallback for other standard formats
+            const date = new Date(dateStr);
+            if (!isNaN(date.getTime())) {
+                const y = date.getFullYear();
+                const mo = String(date.getMonth() + 1).padStart(2, '0');
+                const d = String(date.getDate()).padStart(2, '0');
+                const h = String(date.getHours()).padStart(2, '0');
+                const mi = String(date.getMinutes()).padStart(2, '0');
+                return `${y}-${mo}-${d}T${h}:${mi}`;
+            }
+            return '';
         } catch (e) {
             return '';
         }
@@ -57,6 +78,25 @@ export function AssessmentHistory() {
         fetchAssessments();
         fetchCertificates();
     }, []);
+
+    const formatDisplayDate = (dateStr) => {
+        if (!dateStr) return 'N/A';
+        try {
+            if (dateStr.includes('T')) {
+                return new Date(dateStr).toLocaleString('en-IN', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true
+                });
+            }
+            return dateStr;
+        } catch (e) {
+            return dateStr;
+        }
+    };
 
     const [certificateOptions, setCertificateOptions] = useState([]);
 
@@ -237,8 +277,8 @@ export function AssessmentHistory() {
             assessmentCode: formData.code,
             totalQuestions: parseInt(formData.totalQuestions),
             timeDuration: parseInt(formData.duration),
-            startDateTime: formData.startTime,
-            endDateTime: formData.endTime,
+            startDateTime: new Date(formData.startTime).toISOString(),
+            endDateTime: new Date(formData.endTime).toISOString(),
             generateCertificate: formData.hasCertificate === 'Yes',
             certificateName: selectedCertificateId,
             remark: formData.remark,
@@ -467,8 +507,8 @@ export function AssessmentHistory() {
                                                 </div>
                                             </td>
                                             <td className="px-4 py-3 align-top text-gray-500 text-xs whitespace-nowrap">
-                                                <div>{item.startDateTime}</div>
-                                                <div>{item.endDateTime}</div>
+                                                <div className="font-bold text-gray-700">{formatDisplayDate(item.startDateTime)}</div>
+                                                <div className="text-gray-400">{formatDisplayDate(item.endDateTime)}</div>
                                             </td>
                                             <td className="px-4 py-3 align-top text-[#2D3748]">{item.remark}</td>
                                             <td className="px-4 py-3 align-top text-[#2D3748]">
