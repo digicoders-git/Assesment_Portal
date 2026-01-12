@@ -38,10 +38,28 @@ export const existStudentApi = async (payload) => {
 };
 
 // Get All Students
-export const getAllStudentApi = async () => {
-  const res = await api.get("/registration/admin/getAll");
+export const getAllStudentsApi = async ({
+  page = 1,
+  limit = 10,
+  college = "",
+  course = "",
+  year = "",
+  search = ""
+}) => {
+  const res = await api.get("/registration/admin/getAll", {
+    params: {
+      page,
+      limit,
+      college,
+      course,
+      year,
+      search
+    }
+  });
+
   return res.data;
 };
+
 
 // getSingle
 export const getSingleStudentApi = async (id) => {
@@ -50,10 +68,33 @@ export const getSingleStudentApi = async (id) => {
 };
 
 // Get Students by Assessment Code
-export const getStudentByAssessmentApi = async (assesmentCode) => {
-  const res = await api.get(`/registration/admin/getByAssesment/${assesmentCode}`);
+export const getStudentsByAssessmentApi = async ({
+  assesmentCode,
+  page = 1,
+  limit = 10,
+  search = "",
+  college = "",
+  year = "",
+  course = ""
+}) => {
+  const params = {
+    page,
+    limit
+  };
+
+  if (search) params.search = search;
+  if (college) params.college = college;
+  if (year) params.year = year;
+  if (course) params.course = course;
+
+  const res = await api.get(
+    `/registration/admin/getByAssesment/${assesmentCode}`,
+    { params }
+  );
+
   return res.data;
 };
+
 
 
 // Academic data

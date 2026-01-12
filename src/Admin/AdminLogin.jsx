@@ -15,7 +15,7 @@ export default function AdminLogin() {
                 // userName uses camelCase as per your controller { userName, password }
                 const response = await adminLogin({ userName: username, password });
 
-                console.log("Login Response:", response);
+                // console.log("Login Response:", response);
 
                 if (response.success) {
                     toast.success(response.message || "Login Successful");

@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import Swal from 'sweetalert2';
-import { getAllStudentApi, getStudentByAssessmentApi, updateStudentApi, downloadStudentsByAssessmentApi } from '../API/student';
+import { getAllStudentsApi, getStudentsByAssessmentApi, updateStudentApi, downloadStudentsByAssessmentApi } from '../API/student';
 import { getAllAssessmentsApi } from '../API/assesment';
 
 export function ManageStudents() {
@@ -17,6 +17,16 @@ export function ManageStudents() {
     const [loading, setLoading] = useState(true);
     const [exportLoading, setExportLoading] = useState(false);
     const [students, setStudents] = useState([]);
+    const [pagination, setPagination] = useState({
+        total: 0,
+        totalPages: 1,
+        limit: 10
+    });
+    const [filters, setFilters] = useState({
+        college: '',
+        course: '',
+        year: ''
+    });
     const assessmentDropdownRef = useRef(null);
     const itemsPerPage = 10;
 
@@ -43,15 +53,48 @@ export function ManageStudents() {
         }
     };
 
-    const fetchStudents = async () => {
+    const fetchStudents = async (page = 1) => {
+        setLoading(true);
         try {
-            const response = await getAllStudentApi();
+            let response;
+            const commonParams = {
+                page,
+                limit: itemsPerPage,
+                college: filters.college,
+                course: filters.course,
+                year: filters.year,
+                search: searchQuery
+            };
+
+            if (selectedAssessment) {
+                // Fetch students for specific assessment
+                response = await getStudentsByAssessmentApi({
+                    assesmentCode: selectedAssessment.assessmentCode,
+                    ...commonParams
+                });
+                setLastFetchedAsmt(selectedAssessment.assessmentCode);
+            } else {
+                // Fetch all students
+                response = await getAllStudentsApi(commonParams);
+                setLastFetchedAsmt(null);
+            }
+
             if (response.success) {
                 mapAndSetStudents(response.students);
-                setLastFetchedAsmt(null); // Reset asmt filter
+                setPagination(response.pagination);
+                setCurrentPage(response.pagination.page);
+            } else {
+                setStudents([]);
+                setPagination({ total: 0, totalPages: 1, page: 1, limit: 10 });
+                toast.error(response.message || "No students found");
             }
         } catch (error) {
+            console.error("Fetch Error:", error);
+            setStudents([]);
+            setPagination({ total: 0, totalPages: 1, page: 1, limit: 10 });
             toast.error("Failed to fetch students");
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -70,50 +113,12 @@ export function ManageStudents() {
     };
 
     const handleSearchByAssessment = async () => {
-        // Check for "All Assessments" case
+        // Just trigger fetch with page 1
+        fetchStudents(1);
         if (!selectedAssessment || assessmentSearch === 'All Assessments') {
-            if (lastFetchedAsmt === null) {
-                toast.info("Data already loaded for All Assessments");
-                return;
-            }
-            setLoading(true);
-            try {
-                await fetchStudents();
-                setLastFetchedAsmt(null);
-                setAssessmentSearch('All Assessments');
-                setSelectedAssessment(null);
-                toast.success("Showing all students");
-            } catch (error) {
-                toast.error("Failed to fetch students");
-            } finally {
-                setLoading(false);
-            }
-            return;
-        }
-
-        // Check for specific assessment case
-        if (selectedAssessment.assessmentCode === lastFetchedAsmt) {
-            toast.info(`Data already loaded for ${selectedAssessment.assessmentName}`);
-            return;
-        }
-
-        setLoading(true);
-        try {
-            const response = await getStudentByAssessmentApi(selectedAssessment.assessmentCode);
-            if (response.success) {
-                // The API returns 'student' array, not 'students'
-                mapAndSetStudents(response.student || response.students || []);
-                setLastFetchedAsmt(selectedAssessment.assessmentCode);
-                toast.success(`Students for ${selectedAssessment.assessmentName} loaded`);
-            } else {
-                toast.error(response.message || "No students found for this assessment");
-                setStudents([]);
-            }
-        } catch (error) {
-            console.error("Filter Fetch Error:", error);
-            toast.error("Failed to filter students");
-        } finally {
-            setLoading(false);
+            toast.success("Showing all students");
+        } else {
+            toast.success(`Filtering by assessment: ${selectedAssessment.assessmentName}`);
         }
     };
 
@@ -137,20 +142,27 @@ export function ManageStudents() {
         };
     }, []);
 
-    const filteredStudentsList = students.filter(student =>
-        student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        student.phone.includes(searchQuery) ||
-        student.email.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const handleFilterChange = (e) => {
+        const { name, value } = e.target;
+        setFilters(prev => ({ ...prev, [name]: value }));
+    };
 
-    // Pagination logic
-    const totalPages = Math.ceil(filteredStudentsList.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const currentStudents = filteredStudentsList.slice(startIndex, endIndex);
+    const applyFilters = () => {
+        fetchStudents(1);
+    };
+
+    const resetFilters = () => {
+        setFilters({ college: '', course: '', year: '' });
+        setSearchQuery('');
+        setAssessmentSearch('All Assessments');
+        setSelectedAssessment(null);
+        fetchStudents(1);
+    };
+
+    const currentStudents = students;
 
     const handlePageChange = (page) => {
-        setCurrentPage(page);
+        fetchStudents(page);
     };
 
     // Edit Modal Logic
@@ -239,7 +251,7 @@ export function ManageStudents() {
             doc.text("Students Data Report", 14, 15);
             doc.setFontSize(10);
             const tableColumn = ["Sr No.", "Name", "Phone", "Email", "College", "Course", "Year", "Reg. Date"];
-            const tableRows = filteredStudentsList.map((student, index) => [
+            const tableRows = students.map((student, index) => [
                 index + 1, student.name, student.phone, student.email, student.college, student.course, student.year, student.date
             ]);
             autoTable(doc, {
@@ -270,7 +282,7 @@ export function ManageStudents() {
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-4 mb-6">
                 <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto items-end">
                     {/* Assessment Dropdown */}
-                    <div className="relative w-full sm:w-80">
+                    <div className="relative w-full sm:w-56">
                         <label className="block text-xs font-medium text-gray-700 mb-1">Select Assessment</label>
                         <div className="flex gap-2">
                             <div className="relative flex-grow">
@@ -282,9 +294,17 @@ export function ManageStudents() {
                                         setShowAssessmentDropdown(true);
                                     }}
                                     onFocus={() => setShowAssessmentDropdown(true)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleSearchByAssessment()}
                                     placeholder="Search assessments..."
-                                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:outline-none focus:border-[#319795] transition-colors bg-zinc-100 text-sm"
+                                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 pr-12 focus:outline-none focus:border-[#319795] transition-colors bg-white text-sm"
                                 />
+                                <button
+                                    onClick={handleSearchByAssessment}
+                                    className="absolute inset-y-0 right-0 pr-3 flex items-center bg-[#319795] text-white p-1.5 rounded-r-lg hover:bg-teal-700 transition-all active:scale-95"
+                                    title="Search Assessment"
+                                >
+                                    <Search className="h-3.5 w-3.5" />
+                                </button>
                                 {showAssessmentDropdown && (
                                     <div ref={assessmentDropdownRef} className="custom-scrollbar absolute z-20 w-full bg-white shadow-xl border border-gray-200 rounded-lg mt-1 max-h-60 overflow-y-auto">
                                         <div
@@ -317,18 +337,59 @@ export function ManageStudents() {
                                     </div>
                                 )}
                             </div>
-                            <button
-                                onClick={handleSearchByAssessment}
-                                disabled={loading}
-                                className="bg-[#319795] text-white px-6 py-2 rounded-lg font-bold text-sm shadow-md hover:bg-teal-700 transition-all active:scale-95 disabled:opacity-50"
-                            >
-                                Enter
-                            </button>
                         </div>
+                    </div>
+
+                    {/* Compact Backend Filters */}
+                    <div className="flex items-center bg-white border border-gray-300 rounded-lg p-1.5 gap-1.5 shadow-sm w-full sm:w-auto">
+                        <input
+                            type="text"
+                            name="college"
+                            value={filters.college}
+                            onChange={handleFilterChange}
+                            onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
+                            placeholder="College"
+                            className="w-24 sm:w-32 bg-white border-none rounded px-2 py-1.5 text-xs focus:ring-1 focus:ring-teal-500 outline-none"
+                        />
+                        <input
+                            type="text"
+                            name="course"
+                            value={filters.course}
+                            onChange={handleFilterChange}
+                            onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
+                            placeholder="Course"
+                            className="w-20 sm:w-24 bg-white border-none rounded px-2 py-1.5 text-xs focus:ring-1 focus:ring-teal-500 outline-none"
+                        />
+                        <input
+                            type="text"
+                            name="year"
+                            value={filters.year}
+                            onChange={handleFilterChange}
+                            onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
+                            placeholder="Year"
+                            className="w-16 sm:w-20 bg-white border-none rounded px-2 py-1.5 text-xs focus:ring-1 focus:ring-teal-500 outline-none"
+                        />
+                        <div className="h-6 w-[1px] bg-gray-300 mx-1"></div>
+                        <button
+                            onClick={applyFilters}
+                            disabled={loading}
+                            className="bg-[#319795] text-white p-1.5 rounded hover:bg-teal-700 transition-all active:scale-95 disabled:opacity-50"
+                            title="Apply Filters"
+                        >
+                            <Search className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                            onClick={resetFilters}
+                            disabled={loading}
+                            className="text-gray-500 hover:text-red-500 p-1.5 rounded hover:bg-gray-200 transition-all active:scale-95"
+                            title="Reset Filters"
+                        >
+                            <RotateCcw className="h-3.5 w-3.5" />
+                        </button>
                     </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full lg:w-auto">
+                <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4 w-full lg:w-auto">
                     <div className="relative w-full sm:w-64">
                         <label className="block text-xs font-medium text-gray-700 mb-1">Search Students</label>
                         <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none mt-5">
@@ -338,12 +399,13 @@ export function ManageStudents() {
                             type="text"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search students..."
-                            className="bg-zinc-100 pl-10 pr-4 py-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:border-[#319795]"
+                            onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
+                            placeholder="Name or Mobile..."
+                            className="bg-white pl-10 pr-4 py-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:border-[#319795]"
                         />
                     </div>
 
-                    <div className="flex gap-2 mt-5">
+                    <div className="flex gap-2 items-end">
                         <button
                             onClick={downloadExcel}
                             disabled={exportLoading}
@@ -357,10 +419,9 @@ export function ManageStudents() {
                             Excel
                         </button>
                         <button onClick={downloadPDF} className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors"><Download className="h-4 w-4" /> PDF</button>
-                    </div>
-
-                    <div className="text-sm text-gray-500 whitespace-nowrap mt-5">
-                        Total Students: <span className="font-semibold text-gray-700">{filteredStudentsList.length}</span>
+                        <div className="text-sm text-gray-500 whitespace-nowrap">
+                            Total: <span className="font-semibold text-gray-700">{pagination.total}</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -390,7 +451,7 @@ export function ManageStudents() {
                             <tbody className="divide-y divide-[#E6FFFA]">
                                 {currentStudents.map((student, index) => (
                                     <tr key={student.id} className="hover:bg-gray-50 transition-colors">
-                                        <td className="px-6 py-4 text-[#4A5568]">{startIndex + index + 1}</td>
+                                        <td className="px-6 py-4 text-[#4A5568]">{(currentPage - 1) * itemsPerPage + index + 1}</td>
                                         <td className="px-6 py-4 font-bold text-[#2D3748]">{student.name}</td>
                                         <td className="px-6 py-4 text-[#4A5568]">{student.phone}</td>
                                         <td className="px-6 py-4 text-[#4A5568]">{student.email}</td>
@@ -418,15 +479,15 @@ export function ManageStudents() {
 
                 {!loading && (
                     <div className="px-6 py-4 border-t border-[#E6FFFA] flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-gray-600">
-                        <div className="font-medium">Showing {startIndex + 1} to {Math.min(endIndex, filteredStudentsList.length)} of {filteredStudentsList.length} entries</div>
+                        <div className="font-medium">Showing {((currentPage - 1) * pagination.limit) + 1} to {Math.min(currentPage * pagination.limit, pagination.total)} of {pagination.total} entries</div>
                         <div className="flex items-center gap-2">
                             <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} className="px-4 py-1.5 rounded-lg border bg-white shadow-sm font-bold hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all">Prev</button>
-                            <div className="flex gap-1.5">
-                                {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
-                                    <button key={p} onClick={() => handlePageChange(p)} className={`w-9 h-9 rounded-lg font-bold transition-all ${currentPage === p ? 'bg-[#319795] text-white ring-2 bg-teal-400' : 'bg-white border text-gray-700 hover:bg-gray-100'}`}>{p}</button>
+                            <div className="flex gap-1.5 overflow-x-auto max-w-[200px] sm:max-w-none no-scrollbar">
+                                {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map(p => (
+                                    <button key={p} onClick={() => handlePageChange(p)} className={`min-w-[36px] h-9 rounded-lg font-bold transition-all ${currentPage === p ? 'bg-[#319795] text-white ring-2 bg-teal-400' : 'bg-white border text-gray-700 hover:bg-gray-100'}`}>{p}</button>
                                 ))}
                             </div>
-                            <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages || totalPages === 0} className="px-4 py-1.5 rounded-lg border bg-white shadow-sm font-bold hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all">Next</button>
+                            <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === pagination.totalPages || pagination.totalPages === 0} className="px-4 py-1.5 rounded-lg border bg-white shadow-sm font-bold hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all">Next</button>
                         </div>
                     </div>
                 )}

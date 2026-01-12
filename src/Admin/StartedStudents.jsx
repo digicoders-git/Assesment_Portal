@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { Search, ArrowLeft, Download, Loader2 } from 'lucide-react';
+import { Search, ArrowLeft, Download, Loader2, RotateCcw } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { getStudentByAssessmentApi, downloadStudentsByAssessmentApi } from '../API/student';
+import { getStudentsByAssessmentApi, downloadStudentsByAssessmentApi } from '../API/student';
 
 export default function StartedStudents() {
     // Route parameter is :id, but we need code passed via state
@@ -11,65 +11,92 @@ export default function StartedStudents() {
     const location = useLocation();
     const [searchQuery, setSearchQuery] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
+    const [pagination, setPagination] = useState({
+        total: 0,
+        totalPages: 1,
+        limit: 10
+    });
+    const [filters, setFilters] = useState({
+        college: '',
+        course: '',
+        year: ''
+    });
     const itemsPerPage = 10;
     const [loading, setLoading] = useState(true);
     const [exportLoading, setExportLoading] = useState(false);
     const [startedStudents, setStartedStudents] = useState([]);
 
+    const fetchResults = async (page = 1) => {
+        const code = location.state?.assessmentCode;
+        if (!code) {
+            toast.error("Assessment Code missing. Please navigate from Assessment page.");
+            setLoading(false);
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const response = await getStudentsByAssessmentApi({
+                assesmentCode: code,
+                page,
+                limit: itemsPerPage,
+                search: searchQuery,
+                college: filters.college,
+                course: filters.course,
+                year: filters.year
+            });
+
+            if (response.success) {
+                const studentsList = response.students || [];
+
+                const mappedData = studentsList.map(stu => ({
+                    id: stu._id,
+                    name: stu.name || "N/A",
+                    phone: stu.mobile || "N/A",
+                    college: stu.college || "N/A",
+                    course: stu.course || "N/A",
+                    year: stu.year || "N/A",
+                    dateTime: stu.createdAt ? new Date(stu.createdAt).toLocaleString() : "N/A"
+                }));
+
+                setStartedStudents(mappedData);
+                setPagination(response.pagination);
+                setCurrentPage(response.pagination.page);
+            } else {
+                setStartedStudents([]);
+                setPagination({ total: 0, totalPages: 1, page: 1, limit: 10 });
+            }
+        } catch (error) {
+            console.error("Failed to fetch started students:", error);
+            toast.error("Failed to load students data");
+            setStartedStudents([]);
+            setPagination({ total: 0, totalPages: 1, page: 1, limit: 10 });
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchResults = async () => {
-            const code = location.state?.assessmentCode;
-            if (!code) {
-                toast.error("Assessment Code missing. Please navigate from Assessment page.");
-                setLoading(false);
-                return;
-            }
-
-            setLoading(true);
-            try {
-                // Using getStudentByAssessmentApi instead of result API
-                const response = await getStudentByAssessmentApi(code);
-
-                if (response.success) {
-                    // Response key is 'student' which is an array
-                    const studentsList = response.student || [];
-
-                    const mappedData = studentsList.map(stu => ({
-                        id: stu._id,
-                        name: stu.name || "N/A",
-                        phone: stu.mobile || "N/A",
-                        college: stu.college || "N/A",
-                        course: stu.course || "N/A",
-                        year: stu.year || "N/A",
-                        // Marks not available in this API
-                        dateTime: stu.createdAt ? new Date(stu.createdAt).toLocaleString() : "N/A"
-                    }));
-
-                    setStartedStudents(mappedData);
-                }
-            } catch (error) {
-                console.error("Failed to fetch started students:", error);
-                toast.error("Failed to load students data");
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchResults();
+        fetchResults(1);
     }, [assessmentId, location.state]);
 
-    const filteredStudents = startedStudents.filter(student =>
-        student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        String(student.phone).includes(searchQuery) ||
-        student.college.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const handleFilterChange = (e) => {
+        const { name, value } = e.target;
+        setFilters(prev => ({ ...prev, [name]: value }));
+    };
 
-    const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const currentStudents = filteredStudents.slice(startIndex, startIndex + itemsPerPage);
+    const applyFilters = () => {
+        fetchResults(1);
+    };
+
+    const resetFilters = () => {
+        setFilters({ college: '', course: '', year: '' });
+        setSearchQuery('');
+        fetchResults(1);
+    };
 
     const handlePageChange = (page) => {
-        setCurrentPage(page);
+        fetchResults(page);
     };
 
     const downloadExcel = async () => {
@@ -120,21 +147,67 @@ export default function StartedStudents() {
                     <p className="text-sm text-gray-500">Showing first attempt submissions for each student</p>
                 </div>
 
-                <div className="flex items-center gap-4">
+                <div className="flex flex-wrap items-center gap-4">
+                    {/* Compact Backend Filters */}
+                    <div className="flex items-center bg-white border border-gray-300 rounded-lg p-1 gap-1 shadow-sm">
+                        <input
+                            type="text"
+                            name="college"
+                            value={filters.college}
+                            onChange={handleFilterChange}
+                            onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
+                            placeholder="College"
+                            className="hidden sm:block w-28 bg-transparent border-none px-2 py-1.5 text-xs focus:ring-0 outline-none"
+                        />
+                        <input
+                            type="text"
+                            name="course"
+                            value={filters.course}
+                            onChange={handleFilterChange}
+                            onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
+                            placeholder="Course"
+                            className="hidden sm:block w-24 bg-transparent border-none px-2 py-1.5 text-xs focus:ring-0 outline-none"
+                        />
+                        <input
+                            type="text"
+                            name="year"
+                            value={filters.year}
+                            onChange={handleFilterChange}
+                            onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
+                            placeholder="Year"
+                            className="w-16 bg-transparent border-none px-2 py-1.5 text-xs focus:ring-0 outline-none"
+                        />
+                        <div className="h-6 w-[1px] bg-gray-200 mx-1"></div>
+                        <button
+                            onClick={applyFilters}
+                            className="bg-[#319795] text-white p-1.5 rounded hover:bg-teal-700 transition-all active:scale-95"
+                            title="Apply Filters"
+                        >
+                            <Search className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                            onClick={resetFilters}
+                            className="text-gray-400 hover:text-red-500 p-1.5 rounded hover:bg-gray-100 transition-all active:scale-95"
+                            title="Reset Filters"
+                        >
+                            <RotateCcw className="h-3.5 w-3.5" />
+                        </button>
+                    </div>
+
                     <button
                         onClick={downloadExcel}
                         disabled={exportLoading}
-                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors border-none disabled:opacity-50"
+                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors border-none disabled:opacity-50 h-[38px]"
                     >
                         {exportLoading ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
                             <Download className="h-4 w-4" />
                         )}
-                        Download Excel
+                        Excel
                     </button>
 
-                    <div className="relative w-full sm:w-64">
+                    <div className="relative w-full sm:w-60">
                         <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <Search className="h-4 w-4 text-gray-400" />
                         </span>
@@ -142,8 +215,9 @@ export default function StartedStudents() {
                             type="text"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search students..."
-                            className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:border-[#319795]"
+                            onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
+                            placeholder="Name or Mobile..."
+                            className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:border-[#319795] bg-white h-[38px] text-sm"
                         />
                     </div>
                 </div>
@@ -164,10 +238,10 @@ export default function StartedStudents() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[#E6FFFA]">
-                            {currentStudents.map((student, index) => (
+                            {startedStudents.map((student, index) => (
                                 <tr key={student.id} className="hover:bg-gray-50 transition-colors">
                                     <td className="px-6 py-4 text-[#4A5568]">
-                                        {startIndex + index + 1}
+                                        {(currentPage - 1) * itemsPerPage + index + 1}
                                     </td>
                                     <td className="px-6 py-4 font-bold text-[#2D3748]">
                                         {student.name}
@@ -195,7 +269,7 @@ export default function StartedStudents() {
                                     </td>
                                 </tr>
                             ))}
-                            {currentStudents.length === 0 && (
+                            {startedStudents.length === 0 && (
                                 <tr>
                                     <td colSpan="8" className="px-6 py-12 text-center text-gray-500 italic">
                                         No students found.
@@ -208,7 +282,7 @@ export default function StartedStudents() {
 
                 {/* Pagination */}
                 <div className="px-6 py-4 border-t border-[#E6FFFA] flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-gray-600">
-                    <div className="font-medium">Showing {Math.min(startIndex + 1, filteredStudents.length)} to {Math.min(startIndex + currentStudents.length, filteredStudents.length)} of {filteredStudents.length} entries</div>
+                    <div className="font-medium">Showing {((currentPage - 1) * pagination.limit) + 1} to {Math.min(currentPage * pagination.limit, pagination.total)} of {pagination.total} entries</div>
                     <div className="flex items-center gap-2">
                         <button
                             onClick={() => handlePageChange(currentPage - 1)}
@@ -218,7 +292,7 @@ export default function StartedStudents() {
                             Prev
                         </button>
                         <div className="flex items-center gap-1.5">
-                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                            {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map(page => (
                                 <button
                                     key={page}
                                     onClick={() => handlePageChange(page)}
@@ -230,7 +304,7 @@ export default function StartedStudents() {
                         </div>
                         <button
                             onClick={() => handlePageChange(currentPage + 1)}
-                            disabled={currentPage === totalPages || totalPages === 0}
+                            disabled={currentPage === pagination.totalPages || pagination.totalPages === 0}
                             className="px-3 py-1 rounded border bg-white hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                         >
                             Next
