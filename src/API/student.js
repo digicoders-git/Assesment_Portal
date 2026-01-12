@@ -107,33 +107,61 @@ export const getAcademicDataApi = async () => {
 
 // download excel studend by assesment
 
-export const downloadStudentsByAssessmentApi = async (assesmentCode) => {
-  // 🔹 URL decide dynamically
-  const url = assesmentCode
-    ? `/registration/admin/student-excel-byassesment/${assesmentCode}`
-    : `/registration/admin/student-excel`;
+export const downloadStudentsByAssessmentApi = async (
+  assesmentCode = null,
+  filters = {}
+) => {
+  try {
+    const url = assesmentCode
+      ? `/registration/admin/student-excel-byassesment/${assesmentCode}`
+      : `/registration/admin/student-excel`;
 
-  const res = await api.get(url, {
-    responseType: "blob",
-  });
+    const params = {};
+    if (filters.college) params.college = filters.college;
+    if (filters.course) params.course = filters.course;
+    if (filters.year) params.year = filters.year;
+    if (filters.search) params.search = filters.search;
 
-  const blob = new Blob([res.data], {
-    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  });
+    const res = await api.get(url, {
+      params, 
+      responseType: "blob",
+      validateStatus: () => true, 
+    });
 
-  const downloadUrl = window.URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = downloadUrl;
+    //  Check if response is JSON (no data)
+    const contentType = res.headers["content-type"];
 
-  link.download = assesmentCode
-    ? `students-${assesmentCode}.xlsx`
-    : `all-students.xlsx`;
+    if (contentType.includes("application/json")) {
+      const text = await res.data.text();
+      const data = JSON.parse(text);
 
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
+      // Show message instead of download
+      throw new Error(data.message || "No data available");
+    }
 
-  window.URL.revokeObjectURL(downloadUrl);
+    //  Excel download
+    const blob = new Blob([res.data], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+
+    link.download = assesmentCode
+      ? `students-${assesmentCode}.xlsx`
+      : `all-students.xlsx`;
+
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(downloadUrl);
+  } catch (error) {
+    //  Handle no data / error
+    console.log(error.message);
+    throw error; // Re-throw to handle in component
+  }
 };
+
 
 

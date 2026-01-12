@@ -81,8 +81,8 @@ export function ManageStudents() {
 
             if (response.success) {
                 mapAndSetStudents(response.students);
-                setPagination(response.pagination);
-                setCurrentPage(response.pagination.page);
+                setPagination(response.pagination || { total: 0, totalPages: 1, page: 1, limit: 10 });
+                setCurrentPage(response.pagination?.page || 1);
             } else {
                 setStudents([]);
                 setPagination({ total: 0, totalPages: 1, page: 1, limit: 10 });
@@ -99,6 +99,10 @@ export function ManageStudents() {
     };
 
     const mapAndSetStudents = (rawStudents) => {
+        if (!rawStudents || !Array.isArray(rawStudents)) {
+            setStudents([]);
+            return;
+        }
         const mapped = rawStudents.map(s => ({
             id: s._id,
             name: s.name,
@@ -113,6 +117,18 @@ export function ManageStudents() {
     };
 
     const handleSearchByAssessment = async () => {
+        const currentAssessmentCode = selectedAssessment?.assessmentCode || null;
+        
+        // Check if we're trying to fetch the same assessment again
+        if (currentAssessmentCode === lastFetchedAsmt) {
+            if (!selectedAssessment || assessmentSearch === 'All Assessments') {
+                toast.info("Already showing all students");
+            } else {
+                toast.info(`Already showing students for: ${selectedAssessment.assessmentName}`);
+            }
+            return;
+        }
+        
         // Just trigger fetch with page 1
         fetchStudents(1);
         if (!selectedAssessment || assessmentSearch === 'All Assessments') {
@@ -232,13 +248,19 @@ export function ManageStudents() {
     const downloadExcel = async () => {
         setExportLoading(true);
         try {
-            // If selectedAssessment is null, it downloads all students
             const code = selectedAssessment?.assessmentCode || null;
-            await downloadStudentsByAssessmentApi(code);
+            const currentFilters = {
+                college: filters.college,
+                course: filters.course,
+                year: filters.year,
+                search: searchQuery
+            };
+            
+            await downloadStudentsByAssessmentApi(code, currentFilters);
             toast.success("Excel file downloaded!");
         } catch (error) {
             console.error("Export Error:", error);
-            toast.error("Failed to download Excel file");
+            toast.error(error.message || "Failed to download Excel file");
         } finally {
             setExportLoading(false);
         }
