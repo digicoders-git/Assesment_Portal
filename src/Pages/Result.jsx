@@ -289,9 +289,9 @@ export default function Result() {
 
             // 5. Date (Optional)
             if (certificateData.date) {
-                const dateToUse = resultData.createdAt || resultData.assesmentQuestions?.createdAt || resultData.assessmentQuestions?.createdAt;
-                const formattedDate = dateToUse ? new Date(dateToUse).toLocaleDateString() : '';
-                drawText(formattedDate, certificateData.date);
+                const dateToUse = location.state?.submissionDate ||
+                    (resultData.createdAt ? new Date(resultData.createdAt).toLocaleDateString() : new Date().toLocaleDateString());
+                drawText(dateToUse, certificateData.date);
             }
 
             // Generate Data URL
@@ -383,7 +383,7 @@ export default function Result() {
                                     <tbody>
                                         <tr>
                                             <td className="py-3 px-4 text-center font-medium text-gray-600">{resultData.student?.code}</td>
-                                            <td className="py-3 px-4 text-center font-medium text-gray-600">{resultData.createdAt ? new Date(resultData.createdAt).toLocaleDateString() : 'N/A'}</td>
+                                            <td className="py-3 px-4 text-center font-medium text-gray-600">{location.state?.submissionDate || (resultData.createdAt ? new Date(resultData.createdAt).toLocaleDateString() : new Date().toLocaleDateString())}</td>
                                             <td className="py-3 px-4 text-center font-medium text-gray-600">{location.state?.submissionTime || new Date(resultData.createdAt).toLocaleTimeString()}</td>
                                             <td className="py-3 px-4 text-center font-medium text-gray-600">{resultData.duration || 'N/A'}</td>
                                         </tr>
@@ -399,7 +399,7 @@ export default function Result() {
                                 </div>
                                 <div className="flex justify-between items-center">
                                     <span className="font-bold text-gray-700 text-sm">Date:</span>
-                                    <span className="font-medium text-gray-600 text-sm">{resultData.createdAt ? new Date(resultData.createdAt).toLocaleDateString() : 'N/A'}</span>
+                                    <span className="font-medium text-gray-600 text-sm">{location.state?.submissionDate || (resultData.createdAt ? new Date(resultData.createdAt).toLocaleDateString() : new Date().toLocaleDateString())}</span>
                                 </div>
                                 <div className="flex justify-between items-center">
                                     <span className="font-bold text-gray-700 text-sm">Time:</span>

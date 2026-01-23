@@ -346,6 +346,7 @@ export default function Assessment() {
                 navigate(`/result/${studentId}/${assesmentQuestionsId}/${certificateId}`, {
                     state: {
                         submissionTime: new Date().toLocaleTimeString(),
+                        submissionDate: new Date().toLocaleDateString(),
                     }
                 });
             } else {

@@ -108,7 +108,12 @@ export default function StartedStudents() {
 
         setExportLoading(true);
         try {
-            await downloadStudentsByAssessmentApi(code);
+            await downloadStudentsByAssessmentApi(code, {
+                college: filters.college,
+                course: filters.course,
+                year: filters.year,
+                search: searchQuery
+            });
             toast.success("Student list downloaded!");
         } catch (error) {
             console.error("Export Error:", error);

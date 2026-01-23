@@ -113,7 +113,7 @@ export function ManageTopics() {
         if (result.isConfirmed) {
             try {
                 await deleteTopicApi(topic._id);
-                toast.success('Topic deleted successfully!');
+                toast.success('Topic and related questions deleted successfully!');
                 fetchTopics();
                 window.dispatchEvent(new Event('dashboardUpdated'));
             } catch (error) {
@@ -264,7 +264,7 @@ export function ManageTopics() {
                                                 <td className="px-6 py-4">
                                                     <div className="flex items-center gap-2">
                                                         <button
-                                                            onClick={() => navigate(`/admin/print/${topic._id}`)}
+                                                            onClick={() => navigate(`/admin/print/${topic._id}`, { state: { topicName: topic.topicName } })}
                                                             className="text-[#319795] hover:text-[#2B7A73] border border-[#319795] hover:border-[#2B7A73] px-3 py-1.5 rounded text-sm font-medium transition-colors"
                                                         >
                                                             Print

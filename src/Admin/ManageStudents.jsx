@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Edit, Trash2, X, Download, Loader2, RotateCcw } from 'lucide-react';
 import { toast } from 'react-toastify';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import Swal from 'sweetalert2';
-import { getAllStudentsApi, getStudentsByAssessmentApi, updateStudentApi, downloadStudentsByAssessmentApi } from '../API/student';
+import { getAllStudentsApi, getStudentsByAssessmentApi, updateStudentApi, downloadStudentsByAssessmentApi, downloadStudentsPDFApi } from '../API/student';
 import { getAllAssessmentsApi } from '../API/assesment';
+import Swal from 'sweetalert2';
 
 export function ManageStudents() {
     const [searchQuery, setSearchQuery] = useState('');
@@ -63,7 +61,8 @@ export function ManageStudents() {
                 college: filters.college,
                 course: filters.course,
                 year: filters.year,
-                search: searchQuery
+                // Include search only when a specific assessment is selected
+                ...(selectedAssessment && { search: searchQuery })
             };
 
             if (selectedAssessment) {
@@ -118,7 +117,7 @@ export function ManageStudents() {
 
     const handleSearchByAssessment = async () => {
         const currentAssessmentCode = selectedAssessment?.assessmentCode || null;
-        
+
         // Check if we're trying to fetch the same assessment again
         if (currentAssessmentCode === lastFetchedAsmt) {
             if (!selectedAssessment || assessmentSearch === 'All Assessments') {
@@ -128,7 +127,7 @@ export function ManageStudents() {
             }
             return;
         }
-        
+
         // Just trigger fetch with page 1
         fetchStudents(1);
         if (!selectedAssessment || assessmentSearch === 'All Assessments') {
@@ -255,7 +254,7 @@ export function ManageStudents() {
                 year: filters.year,
                 search: searchQuery
             };
-            
+
             await downloadStudentsByAssessmentApi(code, currentFilters);
             toast.success("Excel file downloaded!");
         } catch (error) {
@@ -266,28 +265,24 @@ export function ManageStudents() {
         }
     };
 
-    const downloadPDF = () => {
+    const downloadPDF = async () => {
+        setExportLoading(true);
         try {
-            const doc = new jsPDF();
-            doc.setFontSize(16);
-            doc.text("Students Data Report", 14, 15);
-            doc.setFontSize(10);
-            const tableColumn = ["Sr No.", "Name", "Phone", "Email", "College", "Course", "Year", "Reg. Date"];
-            const tableRows = students.map((student, index) => [
-                index + 1, student.name, student.phone, student.email, student.college, student.course, student.year, student.date
-            ]);
-            autoTable(doc, {
-                head: [tableColumn],
-                body: tableRows,
-                startY: 35,
-                theme: 'grid',
-                styles: { fontSize: 8 },
-                headStyles: { fillColor: [49, 151, 149] }
-            });
-            doc.save(`students_data_${new Date().toISOString().split('T')[0]}.pdf`);
-            toast.success("PDF downloaded!");
+            const code = selectedAssessment?.assessmentCode || null;
+            const currentFilters = {
+                college: filters.college,
+                course: filters.course,
+                year: filters.year,
+                search: searchQuery
+            };
+
+            await downloadStudentsPDFApi(code, currentFilters);
+            toast.success("PDF file downloaded!");
         } catch (error) {
-            toast.error("Failed to generate PDF");
+            console.error("PDF Export Error:", error);
+            toast.error(error.message || "Failed to download PDF file");
+        } finally {
+            setExportLoading(false);
         }
     };
 
@@ -363,7 +358,7 @@ export function ManageStudents() {
                     </div>
 
                     {/* Compact Backend Filters */}
-                    <div className="flex items-center bg-white border border-gray-300 rounded-lg p-1.5 gap-1.5 shadow-sm w-full sm:w-auto">
+                    <div className="flex items-center bg-zinc-50 border border-gray-300 rounded-xl p-1 gap-0.5 sm:gap-1 shadow-sm w-full sm:w-auto overflow-hidden">
                         <input
                             type="text"
                             name="college"
@@ -371,17 +366,9 @@ export function ManageStudents() {
                             onChange={handleFilterChange}
                             onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
                             placeholder="College"
-                            className="w-24 sm:w-32 bg-white border-none rounded px-2 py-1.5 text-xs focus:ring-1 focus:ring-teal-500 outline-none"
+                            className="flex-1 min-w-0 w-24 sm:w-28 bg-transparent border-none px-2 py-1.5 text-[11px] sm:text-xs font-semibold focus:ring-0 outline-none text-gray-700 placeholder:text-gray-400"
                         />
-                        <input
-                            type="text"
-                            name="course"
-                            value={filters.course}
-                            onChange={handleFilterChange}
-                            onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
-                            placeholder="Course"
-                            className="w-20 sm:w-24 bg-white border-none rounded px-2 py-1.5 text-xs focus:ring-1 focus:ring-teal-500 outline-none"
-                        />
+                        <div className="h-4 w-[1px] bg-gray-300 shrink-0"></div>
                         <input
                             type="text"
                             name="year"
@@ -389,25 +376,37 @@ export function ManageStudents() {
                             onChange={handleFilterChange}
                             onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
                             placeholder="Year"
-                            className="w-16 sm:w-20 bg-white border-none rounded px-2 py-1.5 text-xs focus:ring-1 focus:ring-teal-500 outline-none"
+                            className="w-[45px] sm:w-[60px] bg-transparent border-none px-1 py-1.5 text-[11px] sm:text-xs font-semibold focus:ring-0 outline-none text-gray-700 placeholder:text-gray-400"
                         />
-                        <div className="h-6 w-[1px] bg-gray-300 mx-1"></div>
-                        <button
-                            onClick={applyFilters}
-                            disabled={loading}
-                            className="bg-[#319795] text-white p-1.5 rounded hover:bg-teal-700 transition-all active:scale-95 disabled:opacity-50"
-                            title="Apply Filters"
-                        >
-                            <Search className="h-3.5 w-3.5" />
-                        </button>
-                        <button
-                            onClick={resetFilters}
-                            disabled={loading}
-                            className="text-gray-500 hover:text-red-500 p-1.5 rounded hover:bg-gray-200 transition-all active:scale-95"
-                            title="Reset Filters"
-                        >
-                            <RotateCcw className="h-3.5 w-3.5" />
-                        </button>
+                        <div className="h-4 w-[1px] bg-gray-300 shrink-0"></div>
+                        <input
+                            type="text"
+                            name="course"
+                            value={filters.course}
+                            onChange={handleFilterChange}
+                            onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
+                            placeholder="Course"
+                            className="w-[50px] sm:w-[80px] bg-transparent border-none px-1 py-1.5 text-[11px] sm:text-xs font-semibold focus:ring-0 outline-none text-gray-700 placeholder:text-gray-400"
+                        />
+                        <div className="h-6 w-[1px] bg-gray-200 mx-0.5 sm:mx-1 shrink-0"></div>
+                        <div className="flex items-center gap-0.5">
+                            <button
+                                onClick={applyFilters}
+                                disabled={loading}
+                                className="bg-[#319795] text-white p-1.5 sm:p-2 rounded-lg hover:bg-teal-700 transition-all active:scale-95 disabled:opacity-50 shrink-0"
+                                title="Apply Filters"
+                            >
+                                <Search className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                            </button>
+                            <button
+                                onClick={resetFilters}
+                                disabled={loading}
+                                className="text-gray-400 hover:text-red-500 p-1.5 sm:p-2 rounded-lg hover:bg-white transition-all active:scale-95 shrink-0"
+                                title="Reset Filters"
+                            >
+                                <RotateCcw className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -440,7 +439,18 @@ export function ManageStudents() {
                             )}
                             Excel
                         </button>
-                        <button onClick={downloadPDF} className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors"><Download className="h-4 w-4" /> PDF</button>
+                        <button
+                            onClick={downloadPDF}
+                            disabled={exportLoading}
+                            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                        >
+                            {exportLoading ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                                <Download className="h-4 w-4" />
+                            )}
+                            PDF
+                        </button>
                         <div className="text-sm text-gray-500 whitespace-nowrap">
                             Total: <span className="font-semibold text-gray-700">{pagination.total}</span>
                         </div>

@@ -1,8 +1,27 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Download, Search, FileText, FileSpreadsheet, ChevronDown, ArrowLeft, Eye, Loader2 } from 'lucide-react';
+import { Download, Search, FileText, FileSpreadsheet, ChevronDown, ArrowLeft, Eye, Loader2, RotateCcw } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { getResultsByAssessmentIdApi, downloadAssessmentResultsApi } from '../API/result';
+import { getResultsByAssessmentIdApi, downloadResultsByAssessmentIdApi } from '../API/result';
+
+const handleExportData = async () => {
+    if (!id) return;
+    setExportLoading(true);
+    try {
+        await downloadResultsByAssessmentIdApi(id, {
+            college: filters.college,
+            course: filters.course,
+            year: filters.year,
+            search: searchQuery
+        });
+        toast.success("Excel results downloaded!");
+    } catch (error) {
+        console.error("Export Error:", error);
+        toast.error(error.message || "Failed to export results");
+    } finally {
+        setExportLoading(false);
+    }
+};
 import { getSingleStudentApi } from '../API/student';
 
 export default function AssessmentResult() {
@@ -17,53 +36,103 @@ export default function AssessmentResult() {
     const [firstSubmissions, setFirstSubmissions] = useState([]);
     const [secondSubmissions, setSecondSubmissions] = useState([]);
     const [activeTab, setActiveTab] = useState('first');
+    const [pagination, setPagination] = useState({
+        total: 0,
+        totalPages: 1,
+        limit: 10
+    });
+    const [filters, setFilters] = useState({
+        college: '',
+        course: '',
+        year: ''
+    });
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
 
+
+    const fetchResults = async (page = 1) => {
+        if (!id) return;
+        setLoading(true);
+        try {
+            const response = await getResultsByAssessmentIdApi(id, {
+                page,
+                limit: itemsPerPage,
+                search: searchQuery,
+                college: filters.college,
+                course: filters.course,
+                year: filters.year
+            });
+
+            if (response.success) {
+                const formatData = (list, submissionType) => list.map(res => ({
+                    id: res._id,
+                    studentId: res.student?._id,
+                    name: res.student?.name || "N/A",
+                    phone: res.student?.mobile || "N/A",
+                    course: res.student?.course || "N/A",
+                    year: res.student?.year || "N/A",
+                    college: res.student?.college || "N/A",
+                    marks: `${res.marks || 0}/${res.total || 0}`,
+                    time: res.createdAt ? new Date(res.createdAt).toLocaleString() : "N/A",
+                    duration: res.duration || "N/A",
+                    refNo: res.student?.code || "N/A",
+                    rank: res.rank || "N/A",
+                    submission: submissionType
+                }));
+
+                const getSortedData = (list, submissionType) => {
+                    const formatted = formatData(list, submissionType);
+                    return formatted.sort((a, b) => {
+                        const rankA = parseInt(a.rank) || 999999;
+                        const rankB = parseInt(b.rank) || 999999;
+                        return rankA - rankB;
+                    });
+                };
+
+                setFirstSubmissions(getSortedData(response.firstSubmission || [], 1));
+                setSecondSubmissions(getSortedData(response.reattempt || [], 2));
+
+                if (response.pagination) {
+                    setPagination(response.pagination);
+                    setCurrentPage(response.pagination.page);
+                } else {
+                    // Fallback if pagination is not provided
+                    const totalItems = (response.firstSubmission?.length || 0) + (response.reattempt?.length || 0);
+                    setPagination({
+                        total: totalItems,
+                        totalPages: Math.ceil(totalItems / itemsPerPage),
+                        limit: itemsPerPage
+                    });
+                }
+            }
+        } catch (error) {
+            console.error("Failed to fetch assessment results:", error);
+            toast.error("Failed to load results");
+        } finally {
+            setLoading(false);
+            setIsInitialLoad(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchResults = async () => {
-            if (!id) return;
-            setLoading(true);
-            try {
-                const response = await getResultsByAssessmentIdApi(id);
-                if (response.success) {
-                    const formatData = (list) => list.map(res => ({
-                        id: res._id,
-                        studentId: res.student?._id,
-                        name: res.student?.name || "N/A",
-                        phone: res.student?.mobile || "N/A",
-                        course: res.student?.course || "N/A",
-                        year: res.student?.year || "N/A",
-                        college: res.student?.college || "N/A",
-                        marks: `${res.marks || 0}/${res.total || 0}`,
-                        time: res.createdAt ? new Date(res.createdAt).toLocaleString() : "N/A",
-                        duration: res.duration || "N/A",
-                        refNo: res.student?.code || "N/A",
-                        rank: res.rank || "N/A",
-                        submission: activeTab === 'first' ? 1 : 2
-                    }));
-
-                    const getSortedData = (list) => {
-                        const formatted = formatData(list);
-                        return formatted.sort((a, b) => {
-                            const rankA = parseInt(a.rank) || 999999;
-                            const rankB = parseInt(b.rank) || 999999;
-                            return rankA - rankB;
-                        });
-                    };
-
-                    setFirstSubmissions(getSortedData(response.firstSubmission || []));
-                    setSecondSubmissions(getSortedData(response.reattempt || []));
-                }
-            } catch (error) {
-                console.error("Failed to fetch assessment results:", error);
-                toast.error("Failed to load results");
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchResults();
+        fetchResults(1);
     }, [id]);
+
+    const handleFilterChange = (e) => {
+        const { name, value } = e.target;
+        setFilters(prev => ({ ...prev, [name]: value }));
+    };
+
+    const applyFilters = () => {
+        setCurrentPage(1);
+        fetchResults(1);
+    };
+
+    const resetFilters = () => {
+        setFilters({ college: '', course: '', year: '' });
+        setSearchQuery('');
+        setCurrentPage(1);
+        fetchResults(1);
+    };
 
     const handleViewStudent = (student) => {
         navigate(`/admin/assessment/details/${student.studentId}`);
@@ -81,14 +150,9 @@ export default function AssessmentResult() {
         item.college.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    // Pagination Logic
-    const totalPages = Math.ceil(filteredResults.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const currentData = filteredResults.slice(startIndex, startIndex + itemsPerPage);
-
     const handlePageChange = (page) => {
-        if (page >= 1 && page <= totalPages) {
-            setCurrentPage(page);
+        if (page >= 1 && page <= pagination.totalPages) {
+            fetchResults(page);
         }
     };
 
@@ -137,7 +201,12 @@ export default function AssessmentResult() {
         if (!id) return;
         setExportLoading(true);
         try {
-            await downloadAssessmentResultsApi(id);
+            await downloadResultsByAssessmentIdApi(id, {
+                college: filters.college,
+                course: filters.course,
+                year: filters.year,
+                search: searchQuery
+            });
             toast.success("Excel results downloaded successfully!");
         } catch (error) {
             console.error("Export Error:", error);
@@ -186,11 +255,12 @@ export default function AssessmentResult() {
                 </div>
 
                 <div className="p-4 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 no-print border-b border-gray-200 flex-shrink-0">
-                    <div className="flex flex-col sm:flex-row flex-wrap gap-2">
+                    {/* Left: Export Action */}
+                    <div className="w-full xl:w-auto order-2 xl:order-1">
                         <button
                             onClick={handleExportData}
                             disabled={exportLoading}
-                            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded border border-transparent transition-colors text-sm font-medium shadow-sm w-full sm:w-auto justify-center disabled:opacity-50"
+                            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg border border-transparent transition-colors text-sm font-bold shadow-sm w-full sm:w-auto justify-center disabled:opacity-50 h-[42px]"
                         >
                             {exportLoading ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -201,15 +271,71 @@ export default function AssessmentResult() {
                         </button>
                     </div>
 
-                    <div className="relative w-full sm:w-auto flex items-center gap-2">
-                        <span className="text-sm text-gray-600">Search:</span>
-                        <input
-                            type="text"
-                            value={searchQuery}
-                            onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-                            className="border bg-zinc-50 border-gray-300 rounded px-3 py-1.5 w-full sm:w-64 focus:outline-none focus:border-teal-500 transition-colors text-sm"
-                            placeholder="Name, Phone, or College"
-                        />
+                    {/* Right: Filters & Search */}
+                    <div className="flex flex-col md:flex-row items-center gap-3 w-full xl:w-auto order-1 xl:order-2">
+                        {/* Compact Backend Filters */}
+                        <div className="flex items-center bg-zinc-50 border border-gray-300 rounded-xl p-1 gap-0.5 sm:gap-1 shadow-sm w-full md:w-auto overflow-hidden">
+                            <input
+                                type="text"
+                                name="college"
+                                value={filters.college}
+                                onChange={handleFilterChange}
+                                onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
+                                placeholder="College"
+                                className="flex-1 min-w-0 md:w-32 bg-transparent border-none px-2 py-1.5 text-[11px] sm:text-xs font-semibold focus:ring-0 outline-none text-gray-700 placeholder:text-gray-400"
+                            />
+                            <div className="h-4 w-[1px] bg-gray-300 shrink-0"></div>
+                            <input
+                                type="text"
+                                name="year"
+                                value={filters.year}
+                                onChange={handleFilterChange}
+                                onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
+                                placeholder="Year"
+                                className="w-[45px] sm:w-[65px] bg-transparent border-none px-1 py-1.5 text-[11px] sm:text-xs font-semibold focus:ring-0 outline-none text-gray-700 placeholder:text-gray-400"
+                            />
+                            <div className="h-4 w-[1px] bg-gray-300 shrink-0"></div>
+                            <input
+                                type="text"
+                                name="course"
+                                value={filters.course}
+                                onChange={handleFilterChange}
+                                onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
+                                placeholder="Course"
+                                className="w-[55px] sm:w-[90px] bg-transparent border-none px-1 py-1.5 text-[11px] sm:text-xs font-semibold focus:ring-0 outline-none text-gray-700 placeholder:text-gray-400"
+                            />
+                            <div className="h-6 w-[1px] bg-gray-200 mx-0.5 sm:mx-1 shrink-0"></div>
+                            <div className="flex items-center gap-0.5">
+                                <button
+                                    onClick={applyFilters}
+                                    className="bg-teal-600 text-white p-1.5 sm:p-2 rounded-lg hover:bg-teal-700 transition-all active:scale-95 shadow-sm shrink-0"
+                                    title="Apply Filters"
+                                >
+                                    <Search className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                                </button>
+                                <button
+                                    onClick={resetFilters}
+                                    className="text-gray-400 hover:text-red-500 p-1.5 sm:p-2 rounded-lg hover:bg-white transition-all active:scale-95 shrink-0"
+                                    title="Reset Filters"
+                                >
+                                    <RotateCcw className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="relative w-full md:w-64">
+                            <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <Search className="h-4 w-4 text-gray-400" />
+                            </span>
+                            <input
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
+                                className="pl-10 pr-4 py-2 border bg-zinc-50 border-gray-300 rounded-xl w-full focus:outline-none focus:border-teal-500 transition-colors text-xs sm:text-sm font-medium h-[40px] sm:h-[42px] shadow-sm"
+                                placeholder="Name or Mobile"
+                            />
+                        </div>
                     </div>
                 </div>
 
@@ -243,7 +369,7 @@ export default function AssessmentResult() {
                 </div>
 
                 <div className="flex-1">
-                    {filteredResults.length === 0 ? (
+                    {getCurrentData().length === 0 ? (
                         <div className="flex items-center justify-center py-20">
                             <div className="text-center">
                                 <Search className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -251,7 +377,7 @@ export default function AssessmentResult() {
                                     {activeTab === 'first' ? 'No First Submissions' : 'No Re-Attempts'}
                                 </h3>
                                 <p className="text-gray-500 font-inter">
-                                    {searchQuery ? 'No matching records found for your search.' :
+                                    {searchQuery || filters.college || filters.course || filters.year ? 'No matching records found for your filters.' :
                                         activeTab === 'first' ? 'No students have submitted this assessment yet.' :
                                             'No students have re-attempted this assessment.'}
                                 </p>
@@ -278,9 +404,9 @@ export default function AssessmentResult() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 bg-white">
-                                    {currentData.map((item, index) => (
+                                    {getCurrentData().map((item, index) => (
                                         <tr key={`${item.id}-${item.submission}`} className="hover:bg-blue-50/30 transition-colors group">
-                                            <td className="px-4 py-3 text-center text-gray-500 font-medium">{startIndex + index + 1}</td>
+                                            <td className="px-4 py-3 text-center text-gray-500 font-medium">{((currentPage - 1) * pagination.limit) + index + 1}</td>
                                             {activeTab === 'first' && (
                                                 <td className="px-4 py-3 text-center">
                                                     <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold ${index === 0 ? 'bg-yellow-100 text-yellow-700 ring-2 ring-yellow-200' :
@@ -288,7 +414,7 @@ export default function AssessmentResult() {
                                                             index === 2 ? 'bg-orange-100 text-orange-700 ring-2 ring-orange-200' :
                                                                 'bg-green-50 text-green-700'
                                                         }`}>
-                                                        {item.rank || startIndex + index + 1}
+                                                        {item.rank || ((currentPage - 1) * pagination.limit) + index + 1}
                                                     </span>
                                                 </td>
                                             )}
@@ -359,7 +485,7 @@ export default function AssessmentResult() {
                 </div>
 
                 <div className="p-4 bg-gray-50 border-t border-gray-200 text-sm text-gray-600 flex flex-col sm:flex-row justify-between items-center gap-4 flex-shrink-0">
-                    <div className="font-semibold font-inter">Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredResults.length)} of {filteredResults.length} entries</div>
+                    <div className="font-semibold font-inter">Showing {((currentPage - 1) * pagination.limit) + 1} to {Math.min(currentPage * pagination.limit, pagination.total)} of {pagination.total} entries</div>
                     <div className="flex gap-2 items-center">
                         <button
                             disabled={currentPage === 1}
@@ -370,7 +496,7 @@ export default function AssessmentResult() {
                         </button>
 
                         <div className="flex gap-1.5 items-center">
-                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                            {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map(page => (
                                 <button
                                     key={page}
                                     onClick={() => handlePageChange(page)}
@@ -382,7 +508,7 @@ export default function AssessmentResult() {
                         </div>
 
                         <button
-                            disabled={currentPage === totalPages || totalPages === 0}
+                            disabled={currentPage === pagination.totalPages || pagination.totalPages === 0}
                             onClick={() => handlePageChange(currentPage + 1)}
                             className="px-4 py-1.5 rounded-lg border bg-white shadow-sm text-gray-700 font-bold hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                         >

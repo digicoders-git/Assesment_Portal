@@ -82,13 +82,13 @@ export const getStudentsByAssessmentApi = async ({
     limit
   };
 
-  if (search) params.search = search;
-  if (college) params.college = college;
-  if (year) params.year = year;
-  if (course) params.course = course;
+  if (search && search.trim()) params.search = search.trim();
+  if (college && college.trim()) params.college = college.trim();
+  if (year && year.trim()) params.year = year.trim();
+  if (course && course.trim()) params.course = course.trim();
 
   const res = await api.get(
-    `/registration/admin/getByAssesment/${assesmentCode}`,
+    `/registration/admin/getByAssesment/${assesmentCode?.trim()}`,
     { params }
   );
 
@@ -123,9 +123,9 @@ export const downloadStudentsByAssessmentApi = async (
     if (filters.search) params.search = filters.search;
 
     const res = await api.get(url, {
-      params, 
+      params,
       responseType: "blob",
-      validateStatus: () => true, 
+      validateStatus: () => true,
     });
 
     //  Check if response is JSON (no data)
@@ -162,6 +162,57 @@ export const downloadStudentsByAssessmentApi = async (
     throw error; // Re-throw to handle in component
   }
 };
+
+// downlaod pdf
+export const downloadStudentsPDFApi = async (assesmentCode = null, options = {}) => {
+  try {
+    const { college, year, course, search } = options;
+
+    const params = {};
+    if (college) params.college = college;
+    if (year) params.year = year;
+    if (course) params.course = course;
+    if (search) params.search = search;
+
+    // Decide endpoint based on assessment code
+    const url = assesmentCode
+      ? `/registration/admin/student-pdf-byassesment/${assesmentCode}`
+      : `/registration/admin/student-pdf`; // null will mean "all students"
+
+    const response = await api.get(url, {
+      params,
+      responseType: "blob", // important for PDF
+      validateStatus: () => true, // handle 404 / JSON gracefully
+    });
+
+    const contentType = response.headers["content-type"];
+
+    // Handle "no data" from server
+    if (contentType.includes("application/json")) {
+      const text = await response.data.text();
+      const data = JSON.parse(text);
+      throw new Error(data.message || "No data available");
+    }
+
+    // Auto-download PDF
+    const blob = new Blob([response.data], { type: "application/pdf" });
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.setAttribute(
+      "download",
+      assesmentCode ? `students-${assesmentCode}.pdf` : "all-students.pdf"
+    );
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(downloadUrl);
+  } catch (error) {
+    console.error("PDF Download Error:", error.message);
+    throw error; // re-throw to handle in component
+  }
+};
+
 
 
 

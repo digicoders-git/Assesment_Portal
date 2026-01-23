@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Printer, ArrowLeft, Loader2 } from 'lucide-react';
 import { getQuestionsByTopicApi } from '../API/question';
 import { toast } from 'react-toastify';
@@ -7,8 +7,10 @@ import { toast } from 'react-toastify';
 export default function PrintPaper() {
     const { topicId } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
     const [questions, setQuestions] = useState([]);
     const [loading, setLoading] = useState(true);
+    const topicName = location.state?.topicName || 'Interview Questions';
 
     useEffect(() => {
         fetchQuestions();
@@ -61,7 +63,7 @@ export default function PrintPaper() {
                         className="flex items-center gap-2 bg-teal-500 hover:bg-teal-600 text-white px-6 py-2 rounded-lg font-medium transition-colors w-full sm:w-auto justify-center sm:justify-start"
                     >
                         <Printer className="h-4 w-4" />
-                        Print Solution
+                        Print Questions
                     </button>
                 </div>
             </div>
@@ -73,7 +75,7 @@ export default function PrintPaper() {
                     <div className='flex items-center justify-center'>
                         <img className='h-16 w-40 print:h-12 print:w-32' src="/digicoders-logo.png" alt="" />
                     </div>
-                    <h2 className="text-2xl font-bold text-gray-700 print:text-xl print:mb-2">Interview Questions</h2>
+                    <h2 className="text-2xl font-bold text-gray-700 print:text-xl print:mb-2">{topicName}</h2>
                 </div>
 
                 {/* Student Details */}
