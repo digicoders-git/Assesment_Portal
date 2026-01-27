@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
-import { Plus, Search, Edit, Trash2, X, Eye, ArrowLeft, Save, Image as ImageIcon, Type, Layout, Grid, Loader2 } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, X, Eye, ArrowLeft, Save, Image as ImageIcon, Type, Layout, Grid, Loader2, Copy } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useUser } from '../context/UserContext';
 import { getAllCertificatesApi, toggleCertificateStatusApi, deleteCertificateApi, getSingleCertificateApi, createCertificateApi, updateCertificateApi } from '../API/certificate';
@@ -230,6 +230,15 @@ export function ManageCertificate() {
                     toast.error(error.response?.data?.message || 'Failed to delete certificate');
                 }
             }
+        });
+    };
+
+    const handleCopyCertLink = (id) => {
+        const link = `${window.location.origin}/certificate/${id}`;
+        navigator.clipboard.writeText(link).then(() => {
+            toast.success("Certificate direct link copied!");
+        }).catch(() => {
+            toast.error("Failed to copy link");
         });
     };
 
@@ -695,6 +704,13 @@ export function ManageCertificate() {
                                                                 title="Edit Template"
                                                             >
                                                                 <Edit className="h-4 w-4" />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleCopyCertLink(cert._id)}
+                                                                className="text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 p-2 rounded-lg transition-all"
+                                                                title="Copy Direct Link"
+                                                            >
+                                                                <Copy className="h-4 w-4" />
                                                             </button>
                                                             <button
                                                                 onClick={() => handleDelete(cert._id)}

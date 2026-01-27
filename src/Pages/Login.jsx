@@ -3,9 +3,10 @@ import { User, Phone, GraduationCap, Calendar, BookOpen, Key, Sparkles, ArrowRig
 import { toast } from 'react-toastify';
 import { useNavigate, useParams } from 'react-router-dom';
 import Swal from 'sweetalert2';
-import { getAcademicDataApi, studentRegisterApi, existStudentApi } from '../API/student';
+import { getAcademicDataApi, studentRegisterApi, existStudentApi, uploadStudentCertificateApi } from '../API/student';
 import { getAssessmentByCodeApi } from '../API/assesmentQuestions';
 import { getAssessmentByStatusApi } from '../API/assesment';
+import { getSingleCertificateApi } from '../API/certificate';
 
 export default function DigiCodersPortal() {
     const [formData, setFormData] = useState({
@@ -60,10 +61,64 @@ export default function DigiCodersPortal() {
 
     const digi = "{Coders}"
     const navigate = useNavigate();
-    const { code } = useParams();
+    const { code, certId } = useParams();
+    const [certTemplate, setCertTemplate] = useState(null);
+    const [fetchingCert, setFetchingCert] = useState(false);
+    const [certNotFound, setCertNotFound] = useState(false);
 
     const [focusedField, setFocusedField] = useState(null);
     const [submitting, setSubmitting] = useState(false);
+
+    useEffect(() => {
+        const fetchCertificateTemplate = async () => {
+            if (certId) {
+                setFetchingCert(true);
+                setCertNotFound(false);
+                try {
+                    const response = await getSingleCertificateApi(certId);
+                    const template = response?.certificate || (response?._id ? response : null);
+                    if (template) {
+                        setCertTemplate(template);
+                    } else {
+                        toast.error("No certificate found for this link");
+                        setCertNotFound(true);
+                    }
+                } catch (error) {
+                    console.error("Certificate fetch error:", error);
+                    toast.error("No certificate found for this link");
+                    setCertNotFound(true);
+                } finally {
+                    setFetchingCert(false);
+                }
+            }
+        };
+        fetchCertificateTemplate();
+    }, [certId]);
+
+    const fontCSSMap = {
+        'Inter': 'Inter, sans-serif',
+        'Roboto': 'Roboto, sans-serif',
+        'Playfair Display': 'Playfair Display, serif',
+        'Montserrat': 'Montserrat, sans-serif',
+        'Dancing Script': 'Dancing Script, cursive',
+        'Courier New': 'Courier New, monospace',
+        'Lobster': 'Lobster, cursive',
+        'Pacifico': 'Pacifico, cursive',
+        'Great Vibes': 'Great Vibes, cursive',
+        'Satisfy': 'Satisfy, cursive',
+        'Kaushan Script': 'Kaushan Script, cursive',
+        'Crimson Text': 'Crimson Text, serif',
+        'Libre Baskerville': 'Libre Baskerville, serif',
+        'Cormorant Garamond': 'Cormorant Garamond, serif'
+    };
+
+    const ensureFontLoaded = async (fontFamily) => {
+        if (!fontFamily) return;
+        const cleanName = fontFamily.split(',')[0].trim();
+        const isLoaded = document.fonts.check(`16px "${cleanName}"`);
+        if (isLoaded) return;
+        await document.fonts.ready;
+    };
 
     useEffect(() => {
         // Auto-fill and validate assessment code from URL parameter
@@ -299,6 +354,127 @@ export default function DigiCodersPortal() {
             return;
         }
 
+        // If it's a certificate flow, handle it differently
+        if (certId) {
+            if (certNotFound) {
+                toast.error("Process blocked: Invalid certificate link");
+                return;
+            }
+            setSubmitting(true);
+            const statusToastId = toast.loading("Generating your certificate...");
+            try {
+                // 1. Register or find student (using the existing studentRegisterApi logic but for certificate only)
+                // Since this flow doesn't have an assessment code, we might need a dedicated API or just skip the assessment check.
+                // However, the user said "normal jaise create hota h student vaise ho hi hoga".
+                // I will use a dummy/special code if needed, but let's see if we can just create student.
+
+                const registerPayload = {
+                    ...formData,
+                    code: formData.code.toUpperCase().trim() || certTemplate.certificateName
+                };
+
+                const regResponse = await studentRegisterApi(registerPayload);
+                if (!regResponse.success) {
+                    throw new Error(regResponse.message || "Registration failed");
+                }
+
+                const studentData = regResponse.newStudent;
+
+                // 2. Generate Certificate
+                const img = new Image();
+                img.crossOrigin = "anonymous";
+                img.src = certTemplate.certificateImage;
+
+                await new Promise((resolve, reject) => {
+                    img.onload = resolve;
+                    img.onerror = () => reject(new Error("Failed to load certificate template"));
+                });
+
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const w = certTemplate.width || img.width;
+                const h = certTemplate.height || img.height;
+                canvas.width = w;
+                canvas.height = h;
+
+                ctx.drawImage(img, 0, 0, w, h);
+                await document.fonts.ready;
+
+                const drawText = (text, style) => {
+                    if (!style || !text) return;
+                    const weight = style.bold ? 'bold ' : '';
+                    const italic = style.italic ? 'italic ' : '';
+                    const fontFamily = fontCSSMap[style.fontFamily] || 'Inter, sans-serif';
+
+                    const fontSizePx = style.fontSize?.toString().includes('%')
+                        ? (parseFloat(style.fontSize) / 100) * canvas.width
+                        : parseFloat(style.fontSize);
+
+                    ctx.font = `${weight}${italic}${fontSizePx}px ${fontFamily}`;
+                    ctx.fillStyle = style.textColor || '#000';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+
+                    const x = style.horizontalPosition?.toString().includes('%')
+                        ? (parseFloat(style.horizontalPosition) / 100) * canvas.width
+                        : parseFloat(style.horizontalPosition);
+                    const y = style.verticalPosition?.toString().includes('%')
+                        ? (parseFloat(style.verticalPosition) / 100) * canvas.height
+                        : parseFloat(style.verticalPosition);
+
+                    ctx.fillText(text, x, y);
+                };
+
+                // Draw fields
+                if (certTemplate.studentName?.status !== false) {
+                    await ensureFontLoaded(fontCSSMap[certTemplate.studentName?.fontFamily]);
+                    drawText(studentData.name.toUpperCase(), certTemplate.studentName);
+                }
+                if (certTemplate.collegeName?.status !== false) {
+                    await ensureFontLoaded(fontCSSMap[certTemplate.collegeName?.fontFamily]);
+                    drawText(studentData.college, certTemplate.collegeName);
+                }
+                if (certTemplate.date?.status !== false) {
+                    await ensureFontLoaded(fontCSSMap[certTemplate.date?.fontFamily]);
+                    drawText(new Date().toLocaleDateString(), certTemplate.date);
+                }
+                if (certTemplate.assessmentCode?.status !== false) {
+                    await ensureFontLoaded(fontCSSMap[certTemplate.assessmentCode?.fontFamily]);
+                    drawText(studentData.code || "DIGICODERS", certTemplate.assessmentCode);
+                }
+
+                const dataUrl = canvas.toDataURL('image/jpeg', 1.0);
+
+                // 3. Upload & Download
+                const blob = await (await fetch(dataUrl)).blob();
+                const fileName = `${certTemplate.certificateName.replace(/\s+/g, '_')}_${studentData.name.replace(/\s+/g, '_')}.jpg`;
+                const file = new File([blob], fileName, { type: "image/jpeg" });
+
+                await uploadStudentCertificateApi(studentData._id, file);
+
+                const link = document.createElement('a');
+                link.href = dataUrl;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                toast.update(statusToastId, { render: "Certificate generated and downloaded!", type: "success", isLoading: false, autoClose: 3000 });
+
+                // Clear Form
+                setFormData({
+                    name: '', email: '', mobile: '', college: '', year: '', course: '', code: ''
+                });
+
+            } catch (err) {
+                console.error("Certificate flow error:", err);
+                toast.update(statusToastId, { render: err.message || "Failed to process certificate", type: "error", isLoading: false, autoClose: 3000 });
+            } finally {
+                setSubmitting(false);
+            }
+            return;
+        }
+
         // API Integration
         setSubmitting(true);
         try {
@@ -461,6 +637,12 @@ export default function DigiCodersPortal() {
 
             {/* Main Container */}
             <div className="relative w-full max-w-4xl z-10 transition-all duration-300">
+                {fetchingCert && (
+                    <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center rounded-3xl">
+                        <div className="w-12 h-12 border-4 border-[#0D9488] border-t-transparent rounded-full animate-spin mb-4"></div>
+                        <p className="text-[#0D9488] font-bold">Validating Certificate Link...</p>
+                    </div>
+                )}
                 {/* Top Sparkle Effect */}
                 <div className="flex justify-center mb-6">
                     <Sparkles className="w-8 h-8 text-[#0D9488] animate-pulse" />
@@ -520,13 +702,14 @@ export default function DigiCodersPortal() {
                                     <input
                                         type="text"
                                         name="mobile"
+                                        disabled={certNotFound}
                                         value={formData.mobile}
                                         onChange={handleChange}
                                         onFocus={() => setFocusedField('mobile')}
                                         onBlur={() => setFocusedField(null)}
                                         placeholder="10 Digit Mobile Number"
                                         maxLength="10"
-                                        className={`w-full px-4 py-2 md:px-4 md:py-3 bg-gray-50 border-2 ${focusedField === 'mobile' ? 'border-[#0D9488]' : 'border-gray-200'} rounded-2xl text-[#1F2937] placeholder-gray-400 focus:outline-none transition-all duration-300 hover:border-gray-300 text-sm md:text-base`}
+                                        className={`w-full px-4 py-2 md:px-4 md:py-3 bg-gray-50 border-2 ${focusedField === 'mobile' ? 'border-[#0D9488]' : 'border-gray-200'} rounded-2xl text-[#1F2937] placeholder-gray-400 focus:outline-none transition-all duration-300 hover:border-gray-300 text-sm md:text-base ${certNotFound ? 'opacity-50 cursor-not-allowed' : ''}`}
                                     />
                                 </div>
 
@@ -537,12 +720,13 @@ export default function DigiCodersPortal() {
                                     <input
                                         type="text"
                                         name="name"
+                                        disabled={certNotFound}
                                         value={formData.name}
                                         onChange={handleChange}
                                         onFocus={() => setFocusedField('name')}
                                         onBlur={() => setFocusedField(null)}
                                         placeholder="Enter Your Full Name"
-                                        className={`w-full px-4 py-2 md:px-4 md:py-3 bg-gray-50 border-2 ${focusedField === 'name' ? 'border-[#0D9488]' : 'border-gray-200'} rounded-2xl text-[#1F2937] placeholder-gray-400 focus:outline-none transition-all duration-300 hover:border-gray-300 text-sm md:text-base`}
+                                        className={`w-full px-4 py-2 md:px-4 md:py-3 bg-gray-50 border-2 ${focusedField === 'name' ? 'border-[#0D9488]' : 'border-gray-200'} rounded-2xl text-[#1F2937] placeholder-gray-400 focus:outline-none transition-all duration-300 hover:border-gray-300 text-sm md:text-base ${certNotFound ? 'opacity-50 cursor-not-allowed' : ''}`}
                                     />
                                 </div>
                             </div>
@@ -555,12 +739,13 @@ export default function DigiCodersPortal() {
                                 <input
                                     type="email"
                                     name="email"
+                                    disabled={certNotFound}
                                     value={formData.email}
                                     onChange={handleChange}
                                     onFocus={() => setFocusedField('email')}
                                     onBlur={() => setFocusedField(null)}
                                     placeholder="Enter Your Email Address"
-                                    className={`w-full px-4 py-2 md:px-4 md:py-3 bg-gray-50 border-2 ${focusedField === 'email' ? 'border-[#0D9488]' : 'border-gray-200'} rounded-2xl text-[#1F2937] placeholder-gray-400 focus:outline-none transition-all duration-300 hover:border-gray-300 text-sm md:text-base`}
+                                    className={`w-full px-4 py-2 md:px-4 md:py-3 bg-gray-50 border-2 ${focusedField === 'email' ? 'border-[#0D9488]' : 'border-gray-200'} rounded-2xl text-[#1F2937] placeholder-gray-400 focus:outline-none transition-all duration-300 hover:border-gray-300 text-sm md:text-base ${certNotFound ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 />
                             </div>
 
@@ -573,19 +758,22 @@ export default function DigiCodersPortal() {
                                     <input
                                         type="text"
                                         readOnly
+                                        disabled={certNotFound}
                                         value={formData.college}
-                                        onClick={() => setShowCollegeDropdown(true)}
+                                        onClick={() => !certNotFound && setShowCollegeDropdown(true)}
                                         onFocus={() => {
-                                            setFocusedField('college');
-                                            setShowCollegeDropdown(true);
+                                            if (!certNotFound) {
+                                                setFocusedField('college');
+                                                setShowCollegeDropdown(true);
+                                            }
                                         }}
                                         onBlur={() => setFocusedField(null)}
                                         placeholder="Choose College"
-                                        className={`w-full px-4 py-2 md:px-4 md:py-3 bg-gray-50 border-2 ${focusedField === 'college' ? 'border-[#0D9488]' : 'border-gray-200'} rounded-2xl text-[#1F2937] placeholder-gray-400 focus:outline-none transition-all duration-300 hover:border-gray-300 text-sm md:text-base pr-10 cursor-pointer`}
+                                        className={`w-full px-4 py-2 md:px-4 md:py-3 bg-gray-50 border-2 ${focusedField === 'college' ? 'border-[#0D9488]' : 'border-gray-200'} rounded-2xl text-[#1F2937] placeholder-gray-400 focus:outline-none transition-all duration-300 hover:border-gray-300 text-sm md:text-base pr-10 cursor-pointer ${certNotFound ? 'opacity-50 cursor-not-allowed' : ''}`}
                                     />
                                     <ChevronDown
                                         className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 transition-transform ${showCollegeDropdown ? 'rotate-180' : ''}`}
-                                        onClick={() => setShowCollegeDropdown(!showCollegeDropdown)}
+                                        onClick={() => !certNotFound && setShowCollegeDropdown(!showCollegeDropdown)}
                                     />
 
                                     {showCollegeDropdown && (
@@ -637,15 +825,18 @@ export default function DigiCodersPortal() {
                                         <input
                                             type="text"
                                             readOnly
+                                            disabled={certNotFound}
                                             value={formData.year}
-                                            onClick={() => setShowYearDropdown(true)}
+                                            onClick={() => !certNotFound && setShowYearDropdown(true)}
                                             onFocus={() => {
-                                                setFocusedField('year');
-                                                setShowYearDropdown(true);
+                                                if (!certNotFound) {
+                                                    setFocusedField('year');
+                                                    setShowYearDropdown(true);
+                                                }
                                             }}
                                             onBlur={() => setFocusedField(null)}
                                             placeholder="Choose Year"
-                                            className={`w-full px-4 py-2 md:px-4 md:py-3 bg-gray-50 border-2 ${focusedField === 'year' ? 'border-[#0D9488]' : 'border-gray-200'} rounded-2xl text-[#1F2937] placeholder-gray-400 focus:outline-none transition-all duration-300 hover:border-gray-300 text-sm md:text-base pr-10 cursor-pointer`}
+                                            className={`w-full px-4 py-2 md:px-4 md:py-3 bg-gray-50 border-2 ${focusedField === 'year' ? 'border-[#0D9488]' : 'border-gray-200'} rounded-2xl text-[#1F2937] placeholder-gray-400 focus:outline-none transition-all duration-300 hover:border-gray-300 text-sm md:text-base pr-10 cursor-pointer ${certNotFound ? 'opacity-50 cursor-not-allowed' : ''}`}
                                         />
                                         <ChevronDown
                                             className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 transition-transform ${showYearDropdown ? 'rotate-180' : ''}`}
@@ -699,15 +890,18 @@ export default function DigiCodersPortal() {
                                         <input
                                             type="text"
                                             readOnly
+                                            disabled={certNotFound}
                                             value={formData.course}
-                                            onClick={() => setShowCourseDropdown(true)}
+                                            onClick={() => !certNotFound && setShowCourseDropdown(true)}
                                             onFocus={() => {
-                                                setFocusedField('course');
-                                                setShowCourseDropdown(true);
+                                                if (!certNotFound) {
+                                                    setFocusedField('course');
+                                                    setShowCourseDropdown(true);
+                                                }
                                             }}
                                             onBlur={() => setFocusedField(null)}
                                             placeholder="Choose Course"
-                                            className={`w-full px-4 py-2 md:px-4 md:py-3 bg-gray-50 border-2 ${focusedField === 'course' ? 'border-[#0D9488]' : 'border-gray-200'} rounded-2xl text-[#1F2937] placeholder-gray-400 focus:outline-none transition-all duration-300 hover:border-gray-300 text-sm md:text-base pr-10 cursor-pointer`}
+                                            className={`w-full px-4 py-2 md:px-4 md:py-3 bg-gray-50 border-2 ${focusedField === 'course' ? 'border-[#0D9488]' : 'border-gray-200'} rounded-2xl text-[#1F2937] placeholder-gray-400 focus:outline-none transition-all duration-300 hover:border-gray-300 text-sm md:text-base pr-10 cursor-pointer ${certNotFound ? 'opacity-50 cursor-not-allowed' : ''}`}
                                         />
                                         <ChevronDown
                                             className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 transition-transform ${showCourseDropdown ? 'rotate-180' : ''}`}
@@ -756,7 +950,6 @@ export default function DigiCodersPortal() {
 
 
 
-                            {/* Assessment Code */}
                             <div className="group">
                                 <label className="flex items-center text-sm font-bold text-black mb-3">
 
@@ -785,12 +978,12 @@ export default function DigiCodersPortal() {
                                     {submitting ? (
                                         <>
                                             <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                            REGISTERING...
+                                            {certId ? 'PROCESSING...' : 'REGISTERING...'}
                                         </>
                                     ) : (
                                         <>
-                                            START ASSESSMENT
-                                            <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
+                                            {certNotFound ? 'INVALID LINK' : (certId ? 'SUBMIT' : 'START ASSESSMENT')}
+                                            {!certNotFound && <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />}
                                         </>
                                     )}
                                 </span>
