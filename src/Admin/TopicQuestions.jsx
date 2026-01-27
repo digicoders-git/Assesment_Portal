@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { Plus, Trash2, Edit, X, FileSpreadsheet, ArrowLeft, Loader2 } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { createQuestionsApi, getQuestionsByTopicApi, deleteQuestionApi, updateQuestionApi, importQuestionsFromExcelApi } from '../API/question';
+import { createQuestionsApi, getQuestionsByTopicApi, deleteQuestionApi, updateQuestionApi, importQuestionsFromExcelApi, exportQuestionsByTopicApi } from '../API/question';
 import { getAllTopicsApi } from '../API/topic';
 
 export default function TopicQuestions() {
@@ -123,27 +123,31 @@ export default function TopicQuestions() {
         setIsAddModalOpen(true);
     };
 
-    const handleExportExcel = () => {
-        if (questions.length === 0) {
-            toast.error("No questions available to export!");
-            return;
+    const handleExportExcel = async () => {
+        try {
+            const response = await exportQuestionsByTopicApi(topicId);
+
+            // Create a blob from the response data
+            const blob = new Blob([response.data], {
+                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            });
+
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            // Use topic name for filename or default
+            const fileName = `${topicName || 'questions'}_export.xlsx`;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+
+            toast.success("Questions exported successfully!");
+        } catch (error) {
+            console.error("Export error:", error);
+            toast.error("Failed to export questions. Please try again.");
         }
-
-        const headers = "question\toptionA\toptionB\toptionC\toptionD\tcorrectOption\n";
-        const csvContent = questions.map(q =>
-            `${q.question}\t${q.options?.A || ''}\t${q.options?.B || ''}\t${q.options?.C || ''}\t${q.options?.D || ''}\t${q.correctOption}`
-        ).join('\n');
-
-        const blob = new Blob([headers + csvContent], { type: 'application/vnd.ms-excel' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${topicName}_questions_${new Date().toISOString().split('T')[0]}.xls`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-        toast.success(`${questions.length} questions exported to Excel successfully!`);
     };
 
     const handleEdit = (q) => {

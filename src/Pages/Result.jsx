@@ -22,6 +22,36 @@ export default function Result() {
     const [certificateData, setCertificateData] = useState(null);
     const [loading, setLoading] = useState(true);
 
+    // load fonts 
+    const ensureFontLoaded = async (fontFamily) => {
+        if (!fontFamily) return;
+        const cleanName = fontFamily.split(',')[0].trim();
+        const isLoaded = document.fonts.check(`16px "${cleanName}"`);
+        if (isLoaded) return;
+        await document.fonts.ready;
+    };
+
+
+    // font mapping with css value
+    const fontCSSMap = {
+        'Inter': 'Inter, sans-serif',
+        'Roboto': 'Roboto, sans-serif',
+        'Playfair Display': 'Playfair Display, serif',
+        'Montserrat': 'Montserrat, sans-serif',
+        'Dancing Script': 'Dancing Script, cursive',
+        'Courier New': 'Courier New, monospace',
+        'Lobster': 'Lobster, cursive',
+        'Pacifico': 'Pacifico, cursive',
+        'Great Vibes': 'Great Vibes, cursive',
+        'Satisfy': 'Satisfy, cursive',
+        'Kaushan Script': 'Kaushan Script, cursive',
+        'Crimson Text': 'Crimson Text, serif',
+        'Libre Baskerville': 'Libre Baskerville, serif',
+        'Cormorant Garamond': 'Cormorant Garamond, serif'
+    };
+
+
+
     const fetchResult = async () => {
         try {
             if (!studentId || !assessmentId) {
@@ -227,7 +257,6 @@ export default function Result() {
             ctx.drawImage(img, 0, 0, width, height);
             await document.fonts.ready;
 
-
             // Function to draw styled text
             const drawText = (text, style) => {
                 if (!style || !text) return;
@@ -271,32 +300,59 @@ export default function Result() {
 
             // Overlay Data
             // 1. Student Name
-            drawText(resultData.student?.name, certificateData.studentName);
+            // 1. Student Name
+            const studentFont = fontCSSMap[certificateData.studentName?.fontFamily] || 'Inter, sans-serif';
+            await ensureFontLoaded(studentFont);
+            drawText(resultData.student?.name.toUpperCase(), {
+                ...certificateData.studentName,
+                fontFamily: studentFont
+            });
 
-            // 2. Assessment Name (Optional)
+            // 2. Assessment Name
             if (certificateData.assessmentName) {
+                const assessmentFont = fontCSSMap[certificateData.assessmentName?.fontFamily] || 'Inter, sans-serif';
+                await ensureFontLoaded(assessmentFont);
                 const aName = resultData.assesmentQuestions?.assesmentId?.assessmentName ||
                     resultData.assessmentQuestions?.assesmentId?.assessmentName;
-                drawText(aName, certificateData.assessmentName);
+                drawText(aName, {
+                    ...certificateData.assessmentName,
+                    fontFamily: assessmentFont
+                });
             }
 
-            // 3. Assessment Code (Optional)
-            if (certificateData.assessmentCode) {
-                const aCode = resultData.student?.code || "DIGICODERS";
-                drawText(aCode, certificateData.assessmentCode);
-            }
-
-            // 4. College Name (Optional)
+            // 3. College Name
             if (certificateData.collegeName) {
-                drawText(resultData.student?.college, certificateData.collegeName);
+                const collegeFont = fontCSSMap[certificateData.collegeName?.fontFamily] || 'Inter, sans-serif';
+                await ensureFontLoaded(collegeFont);
+                drawText(resultData.student?.college, {
+                    ...certificateData.collegeName,
+                    fontFamily: collegeFont
+                });
             }
 
-            // 5. Date (Optional)
+            // 4. Date
             if (certificateData.date) {
+                const dateFont = fontCSSMap[certificateData.date?.fontFamily] || 'Inter, sans-serif';
+                await ensureFontLoaded(dateFont);
                 const dateToUse = location.state?.submissionDate ||
                     (resultData.createdAt ? new Date(resultData.createdAt).toLocaleDateString() : new Date().toLocaleDateString());
-                drawText(dateToUse, certificateData.date);
+                drawText(dateToUse, {
+                    ...certificateData.date,
+                    fontFamily: dateFont
+                });
             }
+
+            // 5. Assessment Code
+            if (certificateData.assessmentCode) {
+                const codeFont = fontCSSMap[certificateData.assessmentCode?.fontFamily] || 'Inter, sans-serif';
+                await ensureFontLoaded(codeFont);
+                const aCode = resultData.student?.code || "DIGICODERS";
+                drawText(aCode, {
+                    ...certificateData.assessmentCode,
+                    fontFamily: codeFont
+                });
+            }
+
 
             // Generate Data URL
             const dataUrl = canvas.toDataURL('image/jpeg', 1.0);

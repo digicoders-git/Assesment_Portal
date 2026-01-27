@@ -490,7 +490,8 @@ export function ManageCertificate() {
                                                     type="color"
                                                     value={formData[layer.id].textColor}
                                                     onChange={(e) => updateNestedState(layer.id, 'textColor', e.target.value)}
-                                                    className="w-10 h-9 p-1 border border-gray-300 rounded-lg cursor-pointer bg-white"
+                                                    className="w-12 h-10 p-1 border border-gray-300 rounded-lg cursor-pointer bg-white"
+                                                    style={{ minWidth: '40px' }}
                                                 />
                                                 <input
                                                     type="text"

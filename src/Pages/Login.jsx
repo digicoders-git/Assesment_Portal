@@ -126,8 +126,8 @@ export default function DigiCodersPortal() {
                             email: student.email || prev.email,
                             college: student.college || prev.college,
                             year: student.year || prev.year,
-                            course: student.course || prev.course,
-                            code: student.code || prev.code
+                            course: student.course || prev.course
+                            // Do not auto-fill code as per request
                         }));
                     }
                 } catch (error) {
@@ -160,9 +160,16 @@ export default function DigiCodersPortal() {
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        // Restrict mobile input to 10 characters
-        if (name === 'mobile' && value.length > 10) {
-            return;
+
+        // Validation for Mobile: Only numbers
+        if (name === 'mobile') {
+            if (value.length > 10) return;
+            if (!/^\d*$/.test(value)) return;
+        }
+
+        // Validation for Name: Only alphabets and spaces
+        if (name === 'name') {
+            if (!/^[a-zA-Z\s]*$/.test(value)) return;
         }
 
         setFormData({

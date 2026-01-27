@@ -41,3 +41,16 @@ export const importQuestionsFromExcelApi = async (id, file) => {
 
   return res.data;
 };
+
+// export excel
+export const exportQuestionsByTopicApi = async (topicId) => {
+  const res = await api.get(
+    `/admin/question/export/${topicId}`,
+    {
+      responseType: "blob",
+    }
+  );
+
+  return res;
+};
+
