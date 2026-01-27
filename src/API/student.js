@@ -46,17 +46,13 @@ export const getAllStudentsApi = async ({
   year = "",
   search = ""
 }) => {
-  const res = await api.get("/registration/admin/getAll", {
-    params: {
-      page,
-      limit,
-      college,
-      course,
-      year,
-      search
-    }
-  });
+  const params = { page, limit };
+  if (college && college.trim()) params.college = college.trim();
+  if (course && course.trim()) params.course = course.trim();
+  if (year && year.trim()) params.year = year.trim();
+  if (search && search.trim()) params.search = search.trim();
 
+  const res = await api.get("/registration/admin/getAll", { params });
   return res.data;
 };
 

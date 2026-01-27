@@ -369,7 +369,10 @@ export default function AcademicSetup() {
                                             <input
                                                 type="text"
                                                 value={formData.collegeName || ''}
-                                                onChange={(e) => setFormData({ ...formData, collegeName: e.target.value })}
+                                                onChange={(e) => {
+                                                    const val = e.target.value.replace(/[^a-zA-Z\s]/g, '');
+                                                    setFormData({ ...formData, collegeName: val });
+                                                }}
                                                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-[#319795] outline-none"
                                                 placeholder="Enter college name"
                                             />
@@ -379,7 +382,10 @@ export default function AcademicSetup() {
                                             <input
                                                 type="text"
                                                 value={formData.location || ''}
-                                                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                                                onChange={(e) => {
+                                                    const val = e.target.value.replace(/[^a-zA-Z\s]/g, '');
+                                                    setFormData({ ...formData, location: val });
+                                                }}
                                                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-[#319795] outline-none"
                                                 placeholder="Enter location"
                                             />
@@ -406,7 +412,10 @@ export default function AcademicSetup() {
                                         <input
                                             type="text"
                                             value={formData.course || ''}
-                                            onChange={(e) => setFormData({ ...formData, course: e.target.value })}
+                                            onChange={(e) => {
+                                                const val = e.target.value.replace(/[^a-zA-Z\s]/g, '');
+                                                setFormData({ ...formData, course: val });
+                                            }}
                                             className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-[#319795] outline-none"
                                             placeholder="Enter course name"
                                         />

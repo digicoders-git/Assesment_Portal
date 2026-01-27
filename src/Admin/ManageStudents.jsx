@@ -61,8 +61,7 @@ export function ManageStudents() {
                 college: filters.college,
                 course: filters.course,
                 year: filters.year,
-                // Include search only when a specific assessment is selected
-                ...(selectedAssessment && { search: searchQuery })
+                search: searchQuery
             };
 
             if (selectedAssessment) {
@@ -116,19 +115,7 @@ export function ManageStudents() {
     };
 
     const handleSearchByAssessment = async () => {
-        const currentAssessmentCode = selectedAssessment?.assessmentCode || null;
-
-        // Check if we're trying to fetch the same assessment again
-        if (currentAssessmentCode === lastFetchedAsmt) {
-            if (!selectedAssessment || assessmentSearch === 'All Assessments') {
-                toast.info("Already showing all students");
-            } else {
-                toast.info(`Already showing students for: ${selectedAssessment.assessmentName}`);
-            }
-            return;
-        }
-
-        // Just trigger fetch with page 1
+        // Trigger fetch with page 1
         fetchStudents(1);
         if (!selectedAssessment || assessmentSearch === 'All Assessments') {
             toast.success("Showing all students");
@@ -310,11 +297,15 @@ export function ManageStudents() {
                                         setAssessmentSearch(e.target.value);
                                         setShowAssessmentDropdown(true);
                                     }}
-                                    onFocus={() => setShowAssessmentDropdown(true)}
-                                    onKeyDown={(e) => e.key === 'Enter' && handleSearchByAssessment()}
+                                    onFocus={() => {
+                                        setAssessmentSearch("");
+                                        setShowAssessmentDropdown(true);
+                                    }}
+                                    onKeyDown={(e) => e.key === "Enter" && handleSearchByAssessment()}
                                     placeholder="Search assessments..."
                                     className="w-full border border-gray-300 rounded-lg px-3 py-2.5 pr-12 focus:outline-none focus:border-[#319795] transition-colors bg-white text-sm"
                                 />
+
                                 <button
                                     onClick={handleSearchByAssessment}
                                     className="absolute inset-y-0 right-0 pr-3 flex items-center bg-[#319795] text-white p-1.5 rounded-r-lg hover:bg-teal-700 transition-all active:scale-95"
@@ -411,19 +402,26 @@ export function ManageStudents() {
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4 w-full lg:w-auto">
-                    <div className="relative w-full sm:w-64">
-                        <label className="block text-xs font-medium text-gray-700 mb-1">Search Students</label>
-                        <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none mt-5">
-                            <Search className="h-4 w-4 text-gray-400" />
-                        </span>
-                        <input
-                            type="text"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
-                            placeholder="Name or Mobile..."
-                            className="bg-white pl-10 pr-4 py-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:border-[#319795]"
-                        />
+                    <div className="relative flex items-center gap-2">
+                        <div className="relative w-full">
+                            <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none mt-0">
+                                <Search className="h-4 w-4 text-gray-400" />
+                            </span>
+                            <input
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
+                                placeholder="Name or Mobile..."
+                                className="bg-white pl-10 pr-4 py-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:border-[#319795] text-sm h-[42px]"
+                            />
+                        </div>
+                        <button
+                            onClick={applyFilters}
+                            className="bg-[#319795] text-white px-4 rounded-lg hover:bg-teal-700 transition-all active:scale-95 h-[42px] font-bold text-xs shadow-sm"
+                        >
+                            <Search className="h-4 w-4 text-white" />
+                        </button>
                     </div>
 
                     <div className="flex gap-2 items-end">
@@ -525,32 +523,34 @@ export function ManageStudents() {
                 )}
             </div>
 
-            {isEditModalOpen && (
-                <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl transform transition-all animate-in zoom-in duration-200">
-                        <div className="bg-gradient-to-r from-teal-600 to-teal-500 text-white px-6 py-4 flex justify-between items-center">
-                            <h3 className="font-bold text-lg flex items-center gap-2"><Edit className="h-5 w-5" /> Edit Student Details</h3>
-                            <button onClick={() => setIsEditModalOpen(false)} className="text-white/80 hover:text-white"><X className="h-6 w-6" /></button>
-                        </div>
-                        <div className="p-6 space-y-4">
-                            <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Full Name</label><input type="text" value={editingStudent?.name || ''} onChange={(e) => setEditingStudent({ ...editingStudent, name: e.target.value })} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none" /></div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Phone</label><input type="text" value={editingStudent?.phone || ''} onChange={(e) => setEditingStudent({ ...editingStudent, phone: e.target.value })} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none" /></div>
-                                <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">College</label><input type="text" value={editingStudent?.college || ''} onChange={(e) => setEditingStudent({ ...editingStudent, college: e.target.value })} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none" /></div>
+            {
+                isEditModalOpen && (
+                    <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl transform transition-all animate-in zoom-in duration-200">
+                            <div className="bg-gradient-to-r from-teal-600 to-teal-500 text-white px-6 py-4 flex justify-between items-center">
+                                <h3 className="font-bold text-lg flex items-center gap-2"><Edit className="h-5 w-5" /> Edit Student Details</h3>
+                                <button onClick={() => setIsEditModalOpen(false)} className="text-white/80 hover:text-white"><X className="h-6 w-6" /></button>
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Course</label><input type="text" value={editingStudent?.course || ''} onChange={(e) => setEditingStudent({ ...editingStudent, course: e.target.value })} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none" /></div>
-                                <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Year</label><input type="text" value={editingStudent?.year || ''} onChange={(e) => setEditingStudent({ ...editingStudent, year: e.target.value })} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none" /></div>
+                            <div className="p-6 space-y-4">
+                                <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Full Name</label><input type="text" value={editingStudent?.name || ''} onChange={(e) => setEditingStudent({ ...editingStudent, name: e.target.value })} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none" /></div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Phone</label><input type="text" value={editingStudent?.phone || ''} onChange={(e) => setEditingStudent({ ...editingStudent, phone: e.target.value })} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none" /></div>
+                                    <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">College</label><input type="text" value={editingStudent?.college || ''} onChange={(e) => setEditingStudent({ ...editingStudent, college: e.target.value })} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none" /></div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Course</label><input type="text" value={editingStudent?.course || ''} onChange={(e) => setEditingStudent({ ...editingStudent, course: e.target.value })} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none" /></div>
+                                    <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Year</label><input type="text" value={editingStudent?.year || ''} onChange={(e) => setEditingStudent({ ...editingStudent, year: e.target.value })} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none" /></div>
+                                </div>
+                                <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Email</label><input type="email" value={editingStudent?.email || ''} onChange={(e) => setEditingStudent({ ...editingStudent, email: e.target.value })} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none" /></div>
                             </div>
-                            <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Email</label><input type="email" value={editingStudent?.email || ''} onChange={(e) => setEditingStudent({ ...editingStudent, email: e.target.value })} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none" /></div>
-                        </div>
-                        <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t border-gray-100">
-                            <button onClick={() => setIsEditModalOpen(false)} className="px-4 py-2 rounded-lg text-sm font-bold text-gray-500 hover:bg-gray-200">Cancel</button>
-                            <button onClick={handleSaveStudent} className="px-6 py-2 rounded-lg text-sm font-bold bg-[#319795] text-white hover:bg-teal-700 shadow-lg shadow-teal-500/20 active:scale-95 transition-all">Save Changes</button>
+                            <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t border-gray-100">
+                                <button onClick={() => setIsEditModalOpen(false)} className="px-4 py-2 rounded-lg text-sm font-bold text-gray-500 hover:bg-gray-200">Cancel</button>
+                                <button onClick={handleSaveStudent} className="px-6 py-2 rounded-lg text-sm font-bold bg-[#319795] text-white hover:bg-teal-700 shadow-lg shadow-teal-500/20 active:scale-95 transition-all">Save Changes</button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 }
