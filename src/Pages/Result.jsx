@@ -215,11 +215,16 @@ export default function Result() {
             // Create Canvas
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
-            canvas.width = img.width;
-            canvas.height = img.height;
+
+            // Use API provided dimensions if available to ensure consistency with preview
+            const width = certificateData.width || img.width;
+            const height = certificateData.height || img.height;
+
+            canvas.width = width;
+            canvas.height = height;
 
             // Draw Base Image
-            ctx.drawImage(img, 0, 0);
+            ctx.drawImage(img, 0, 0, width, height);
             await document.fonts.ready;
 
 
@@ -243,7 +248,7 @@ export default function Result() {
                 ctx.font = `${weight}${italic}${fontSizePx}px ${fontFamily}`;
                 ctx.fillStyle = style.textColor || '#000';
                 ctx.textAlign = 'center';
-                ctx.textBaseline = 'alphabetic';
+                ctx.textBaseline = 'middle';
 
                 const parsePos = (pos, base) => {
                     if (!pos) return base / 2;
@@ -256,12 +261,11 @@ export default function Result() {
                 };
 
                 const x = parsePos(style.horizontalPosition, canvas.width);
-                const y =
-                    parsePos(style.verticalPosition, canvas.height) +
-                    fontSizePx * 0.35;
+                const y = parsePos(style.verticalPosition, canvas.height);
 
                 ctx.fillText(text, x, y);
             };
+
 
 
 

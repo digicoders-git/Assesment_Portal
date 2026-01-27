@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { Plus, Search, Edit, Trash2, X, Eye, ArrowLeft, Save, Image as ImageIcon, Type, Layout, Grid, Loader2 } from 'lucide-react';
@@ -13,6 +13,7 @@ export function ManageCertificate() {
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
     const [selectedImage, setSelectedImage] = useState(null);
     const [editingId, setEditingId] = useState(null);
+    const canvasRef = useRef(null);
 
     // Load Google Fonts
     useEffect(() => {
@@ -54,6 +55,8 @@ export function ManageCertificate() {
         name: '',
         image: null,
         imageFile: null, // To store the actual File object
+        width: 0,
+        height: 0,
         studentName: { status: true, textColor: '#000000', verticalPosition: '50%', horizontalPosition: '50%', fontSize: '30px', fontFamily: 'Inter', bold: false, italic: false, underline: false },
         assessmentName: { status: false, textColor: '#000000', verticalPosition: '40%', horizontalPosition: '50%', fontSize: '20px', fontFamily: 'Inter', bold: false, italic: false, underline: false },
         assessmentCode: { status: false, textColor: '#000000', verticalPosition: '65%', horizontalPosition: '50%', fontSize: '16px', fontFamily: 'Inter', bold: false, italic: false, underline: false },
@@ -97,6 +100,8 @@ export function ManageCertificate() {
             name: cert.certificateName,
             image: cert.certificateImage,
             imageFile: null, // Reset file so we don't re-upload unless changed
+            width: cert.width || 0,
+            height: cert.height || 0,
             ...updatedLayers
         });
         setView('editor');
@@ -123,7 +128,11 @@ export function ManageCertificate() {
         const file = e.target.files[0];
         if (file) {
             const url = URL.createObjectURL(file);
-            setFormData({ ...formData, image: url, imageFile: file });
+            const img = new Image();
+            img.onload = () => {
+                setFormData(prev => ({ ...prev, image: url, imageFile: file, width: img.width, height: img.height }));
+            };
+            img.src = url;
         }
     };
 
@@ -151,6 +160,8 @@ export function ManageCertificate() {
         try {
             const data = new FormData();
             data.append('certificateName', formData.name);
+            data.append('width', formData.width);
+            data.append('height', formData.height);
 
             // Only send image if a new file was actually selected
             if (formData.imageFile) {
@@ -239,6 +250,80 @@ export function ManageCertificate() {
         { name: 'Cormorant Garamond', value: 'Cormorant Garamond, serif' }
     ];
 
+    // Canvas drawing effect for Editor
+    useEffect(() => {
+        if (view !== 'editor' || !formData.image || !canvasRef.current) return;
+
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.src = formData.image;
+
+        img.onload = () => {
+            const width = formData.width || img.width;
+            const height = formData.height || img.height;
+
+            // Set canvas resolution to match image
+            canvas.width = width;
+            canvas.height = height;
+
+            // Clear and draw base image
+            ctx.clearRect(0, 0, width, height);
+            ctx.drawImage(img, 0, 0, width, height);
+
+            // Draw layers
+            const layers = [
+                { id: 'studentName', sample: 'Stu' },
+                { id: 'assessmentName', sample: 'html&css test' },
+                { id: 'assessmentCode', sample: 'hhh-3344' },
+                { id: 'collegeName', sample: 'MMIT Kushinagar' },
+                { id: 'date', sample: '27/01/2026' }
+            ];
+
+            layers.forEach(layer => {
+                const settings = formData[layer.id];
+                if (!settings || !settings.status) return;
+
+                const fontDetail = fontFamilies.find(f => f.name === settings.fontFamily);
+                const fontStyle = fontDetail ? fontDetail.value : 'Inter, sans-serif';
+                const weight = settings.bold ? 'bold ' : '';
+                const italic = settings.italic ? 'italic ' : '';
+                const underline = settings.underline;
+
+                const sizeVal = parseFloat(settings.fontSize);
+                const sizePx = isNaN(sizeVal) ? 30 : sizeVal;
+
+                ctx.font = `${weight}${italic}${sizePx}px ${fontStyle}`;
+                ctx.fillStyle = settings.textColor;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                const x = settings.horizontalPosition.toString().includes('%')
+                    ? (parseFloat(settings.horizontalPosition) / 100) * width
+                    : parseFloat(settings.horizontalPosition);
+
+                const y = settings.verticalPosition.toString().includes('%')
+                    ? (parseFloat(settings.verticalPosition) / 100) * height
+                    : parseFloat(settings.verticalPosition);
+
+                ctx.fillText(layer.sample, x, y);
+
+                if (underline) {
+                    const metrics = ctx.measureText(layer.sample);
+                    const lineWidth = metrics.width;
+                    const lineY = y + sizePx * 0.5;
+                    ctx.beginPath();
+                    ctx.strokeStyle = settings.textColor;
+                    ctx.lineWidth = sizePx * 0.05;
+                    ctx.moveTo(x - lineWidth / 2, lineY);
+                    ctx.lineTo(x + lineWidth / 2, lineY);
+                    ctx.stroke();
+                }
+            });
+        };
+    }, [formData, view]);
+
     if (view === 'editor') {
         return (
             <div className="p-6 bg-gray-50 min-h-screen">
@@ -314,10 +399,10 @@ export function ManageCertificate() {
                         {/* Text Layer Components */}
                         {[
                             { id: 'studentName', label: 'Student Name', sample: 'stu' },
-                            { id: 'assessmentName', label: 'Assessment Name', sample: 'asmnt' },
-                            { id: 'assessmentCode', label: 'Assessment Code', sample: 'cd' },
+                            { id: 'assessmentName', label: 'Assessment Name', sample: 'asName' },
+                            { id: 'assessmentCode', label: 'Assessment Code', sample: 'dct-2026' },
                             { id: 'collegeName', label: 'College Name', sample: 'clg' },
-                            { id: 'date', label: 'Date', sample: 'dt' }
+                            { id: 'date', label: 'Date', sample: '27/01/2026' }
                         ].map((layer) => (
                             <div key={layer.id} className="bg-white rounded-xl border border-gray-200 p-6">
                                 <div className="flex items-center justify-between mb-4">
@@ -451,52 +536,18 @@ export function ManageCertificate() {
                                 </div>
                             </h3>
 
-                            <div className="aspect-[3/2] bg-slate-100 rounded-lg border-4 border-slate-200 overflow-hidden relative flex items-center justify-center">
+                            <div className="bg-slate-100 rounded-lg border-4 border-slate-200 overflow-hidden relative flex items-center justify-center p-1">
                                 {formData.image ? (
-                                    <div className="relative w-full h-full">
-                                        <img src={formData.image} alt="Template" className="w-full h-full object-fill" />
-
-                                        {/* Dynamic Overlay Layers */}
-                                        {[
-                                            { id: 'studentName', sample: 'stu' },
-                                            { id: 'assessmentName', sample: 'asmnt' },
-                                            { id: 'assessmentCode', sample: 'cd' },
-                                            { id: 'collegeName', sample: 'clg' },
-                                            { id: 'date', sample: 'dt' }
-                                        ].map((layer) => {
-                                            const settings = formData[layer.id];
-                                            if (!settings.status) return null;
-
-                                            // Find full font family string
-                                            const fontDetail = fontFamilies.find(f => f.name === settings.fontFamily);
-                                            const fontStyle = fontDetail ? fontDetail.value : 'inherit';
-
-                                            return (
-                                                <div
-                                                    key={layer.id}
-                                                    className="absolute pointer-events-none whitespace-nowrap"
-                                                    style={{
-                                                        top: settings.verticalPosition,
-                                                        left: settings.horizontalPosition,
-                                                        transform: 'translate(-50%, -50%)',
-                                                        color: settings.textColor,
-                                                        fontSize: settings.fontSize,
-                                                        fontFamily: fontStyle,
-                                                        fontWeight: settings.bold ? 'bold' : 'normal',
-                                                        fontStyle: settings.italic ? 'italic' : 'normal',
-                                                        textDecoration: settings.underline ? 'underline' : 'none',
-                                                        lineHeight: 1
-                                                    }}
-                                                >
-                                                    {layer.sample}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
+                                    <canvas
+                                        ref={canvasRef}
+                                        className="w-full h-auto object-contain shadow-sm bg-white"
+                                        style={{ maxHeight: '70vh' }}
+                                    />
                                 ) : (
-                                    <div className="text-center p-8">
-                                        <ImageIcon className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                                        <p className="text-gray-400 text-sm">Upload a template image to begin</p>
+                                    <div className="text-center p-12 w-full">
+                                        <ImageIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                                        <p className="text-gray-500 font-medium">Upload a template image to begin</p>
+                                        <p className="text-xs text-gray-400 mt-2">Recommended size: 2000x1414px (A4 Landscape)</p>
                                     </div>
                                 )}
                             </div>
@@ -707,7 +758,7 @@ export function ManageCertificate() {
                 })()}
             </div>
 
-            {/* Enhanced Preview Modal */}
+            {/* Canvas Preview Modal */}
             {isPreviewOpen && selectedImage && (
                 <div
                     className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4"
@@ -723,49 +774,52 @@ export function ManageCertificate() {
 
                         <div className="p-6">
                             <h3 className="text-xl font-bold text-gray-800 mb-4">{selectedImage.certificateName}</h3>
-
-                            <div className="aspect-[3/2] bg-slate-100 rounded-lg border border-slate-200 overflow-hidden relative flex items-center justify-center">
-                                <div className="relative w-full h-full">
-                                    <img src={selectedImage.certificateImage} alt="Certificate" className="w-full h-full object-contain" />
-
-                                    {/* Dynamic Overlay Layers with actual certificate data */}
-                                    {[
-                                        { id: 'studentName', sample: 'stu' },
-                                        { id: 'assessmentName', sample: 'asmnt' },
-                                        { id: 'assessmentCode', sample: 'Cd' },
-                                        { id: 'collegeName', sample: 'clg' },
-                                        { id: 'date', sample: 'Dt' }
-                                    ].map((layer) => {
-                                        const settings = selectedImage[layer.id];
-                                        if (!settings) return null; // Only check if data exists
-
-                                        // Find full font family string
-                                        const fontDetail = fontFamilies.find(f => f.name === settings.fontFamily);
-                                        const fontStyle = fontDetail ? fontDetail.value : 'inherit';
-
-                                        return (
-                                            <div
-                                                key={layer.id}
-                                                className="absolute pointer-events-none whitespace-nowrap"
-                                                style={{
-                                                    top: settings.verticalPosition,
-                                                    left: settings.horizontalPosition,
-                                                    transform: 'translate(-50%, -50%)',
-                                                    color: settings.textColor,
-                                                    fontSize: settings.fontSize,
-                                                    fontFamily: fontStyle,
-                                                    fontWeight: settings.bold ? 'bold' : 'normal',
-                                                    fontStyle: settings.italic ? 'italic' : 'normal',
-                                                    textDecoration: settings.underline ? 'underline' : 'none',
-                                                    lineHeight: 1
-                                                }}
-                                            >
-                                                {layer.sample}
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
+                            {/* Canvas element for preview */}
+                            <canvas
+                                ref={canvas => {
+                                    if (!canvas) return;
+                                    const ctx = canvas.getContext('2d');
+                                    const img = new Image();
+                                    img.crossOrigin = "anonymous";
+                                    img.src = selectedImage.certificateImage;
+                                    img.onload = () => {
+                                        const width = selectedImage.width || img.width;
+                                        const height = selectedImage.height || img.height;
+                                        canvas.width = width;
+                                        canvas.height = height;
+                                        ctx.clearRect(0, 0, width, height);
+                                        ctx.drawImage(img, 0, 0, width, height);
+                                        const layers = [
+                                            { id: 'studentName', sample: 'stu' },
+                                            { id: 'assessmentName', sample: 'asmnt' },
+                                            { id: 'assessmentCode', sample: 'dct-2026' },
+                                            { id: 'collegeName', sample: 'clg' },
+                                            { id: 'date', sample: '27/01/2026' }
+                                        ];
+                                        layers.forEach(layer => {
+                                            const settings = selectedImage[layer.id];
+                                            if (!settings) return;
+                                            const fontDetail = fontFamilies.find(f => f.name === settings.fontFamily);
+                                            const fontStyle = fontDetail ? fontDetail.value : 'inherit';
+                                            const weight = settings.bold ? 'bold' : 'normal';
+                                            const italic = settings.italic ? 'italic' : '';
+                                            const sizePx = parseFloat(settings.fontSize);
+                                            ctx.font = `${weight} ${italic} ${sizePx}px ${fontStyle}`;
+                                            ctx.fillStyle = settings.textColor || '#000';
+                                            ctx.textAlign = 'center';
+                                            const x = settings.horizontalPosition.includes('%')
+                                                ? (parseFloat(settings.horizontalPosition) / 100) * width
+                                                : parseFloat(settings.horizontalPosition);
+                                            const yBase = settings.verticalPosition.includes('%')
+                                                ? (parseFloat(settings.verticalPosition) / 100) * height
+                                                : parseFloat(settings.verticalPosition);
+                                            const y = yBase + sizePx * 0.35;
+                                            ctx.fillText(layer.sample, x, y);
+                                        });
+                                    };
+                                }}
+                                style={{ maxWidth: '100%', border: '1px solid #e5e7eb' }}
+                            />
                         </div>
                     </div>
                 </div>
