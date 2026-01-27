@@ -164,9 +164,16 @@ export function SecuritySettings() {
                             <button
                                 onClick={handleProfileUpdate}
                                 disabled={loading}
-                                className="w-full bg-[#319795] hover:bg-[#2c7a7b] text-white font-medium py-2 rounded transition-colors mt-2 disabled:opacity-50"
+                                className="w-full bg-[#319795] hover:bg-[#2c7a7b] text-white font-medium py-2 rounded transition-colors mt-2 disabled:opacity-50 flex items-center justify-center gap-2"
                             >
-                                {loading ? "Saving..." : "Save Profile"}
+                                {loading ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        Saving...
+                                    </>
+                                ) : (
+                                    "Save Profile"
+                                )}
                             </button>
                         </div>
                     </div>
@@ -191,9 +198,16 @@ export function SecuritySettings() {
                             <button
                                 onClick={handlePasswordChange}
                                 disabled={loading}
-                                className="w-full bg-[#319795] hover:bg-[#2c7a7b] text-white font-medium py-2 rounded transition-colors mt-2 disabled:opacity-50"
+                                className="w-full bg-[#319795] hover:bg-[#2c7a7b] text-white font-medium py-2 rounded transition-colors mt-2 disabled:opacity-50 flex items-center justify-center gap-2"
                             >
-                                {loading ? "Updating..." : "Update Password"}
+                                {loading ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        Updating...
+                                    </>
+                                ) : (
+                                    "Update Password"
+                                )}
                             </button>
                         </div>
                     </div>

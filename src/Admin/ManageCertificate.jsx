@@ -29,6 +29,7 @@ export function ManageCertificate() {
 
     const [certificates, setCertificates] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
     const [searchQuery, setSearchQuery] = useState('');
@@ -157,6 +158,7 @@ export function ManageCertificate() {
             return;
         }
 
+        setSaving(true);
         try {
             const data = new FormData();
             data.append('certificateName', formData.name);
@@ -192,6 +194,8 @@ export function ManageCertificate() {
         } catch (error) {
             console.error("Save error:", error);
             toast.error(error.response?.data?.message || 'Failed to save certificate');
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -353,10 +357,20 @@ export function ManageCertificate() {
                     </div>
                     <button
                         onClick={handleSave}
-                        className="flex items-center gap-2 bg-teal-500 hover:bg-teal-600 text-white px-6 py-2.5 rounded-lg font-medium transition-all active:scale-95 w-full sm:w-auto justify-center"
+                        disabled={saving}
+                        className={`flex items-center gap-2 ${saving ? 'bg-teal-400 cursor-not-allowed' : 'bg-teal-500 hover:bg-teal-600'} text-white px-6 py-2.5 rounded-lg font-medium transition-all active:scale-95 w-full sm:w-auto justify-center`}
                     >
-                        <Save className="h-5 w-5" />
-                        Save Certificate
+                        {saving ? (
+                            <>
+                                <Loader2 className="h-5 w-5 animate-spin" />
+                                Saving...
+                            </>
+                        ) : (
+                            <>
+                                <Save className="h-5 w-5" />
+                                Save Certificate
+                            </>
+                        )}
                     </button>
                 </div>
 

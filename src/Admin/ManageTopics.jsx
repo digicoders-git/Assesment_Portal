@@ -16,6 +16,7 @@ export function ManageTopics() {
     const filterRef = React.useRef(null);
 
     const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
     const [editingTopic, setEditingTopic] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [statusFilter, setStatusFilter] = useState(location.state?.status || 'Active');
@@ -63,6 +64,7 @@ export function ManageTopics() {
 
     const handleSubmit = async () => {
         if (topicName.trim()) {
+            setSubmitting(true);
             try {
                 if (editingTopic) {
                     await updateTopicApi(editingTopic._id, { topicName });
@@ -78,6 +80,8 @@ export function ManageTopics() {
                 window.dispatchEvent(new Event('dashboardUpdated'));
             } catch (error) {
                 toast.error(editingTopic ? 'Failed to update topic' : 'Failed to add topic');
+            } finally {
+                setSubmitting(false);
             }
         }
     };
@@ -356,10 +360,20 @@ export function ManageTopics() {
                         <div className="px-6 pb-6">
                             <button
                                 onClick={handleSubmit}
-                                className="w-full bg-[#319795] hover:bg-[#2B7A73] text-white py-2.5 rounded font-medium transition-colors flex items-center justify-center gap-2"
+                                disabled={submitting}
+                                className={`w-full ${submitting ? 'bg-[#319795]/70 cursor-not-allowed' : 'bg-[#319795] hover:bg-[#2B7A73]'} text-white py-2.5 rounded font-medium transition-colors flex items-center justify-center gap-2`}
                             >
-                                <span className="inline-block w-5 h-5 bg-white rounded-full flex items-center justify-center text-[#319795] text-xs">✓</span>
-                                Submit
+                                {submitting ? (
+                                    <>
+                                        <Loader2 className="h-5 w-5 animate-spin" />
+                                        Processing...
+                                    </>
+                                ) : (
+                                    <>
+                                        <span className="inline-block w-5 h-5 bg-white rounded-full flex items-center justify-center text-[#319795] text-xs">✓</span>
+                                        Submit
+                                    </>
+                                )}
                             </button>
                         </div>
                     </div>

@@ -18,6 +18,7 @@ export default function TopicQuestions() {
 
     const [questions, setQuestions] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
 
@@ -124,6 +125,7 @@ export default function TopicQuestions() {
     };
 
     const handleExportExcel = async () => {
+        setSubmitting(true);
         try {
             const response = await exportQuestionsByTopicApi(topicId);
 
@@ -147,6 +149,8 @@ export default function TopicQuestions() {
         } catch (error) {
             console.error("Export error:", error);
             toast.error("Failed to export questions. Please try again.");
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -170,6 +174,7 @@ export default function TopicQuestions() {
                 toast.error("Please fill all fields including all 4 options!");
                 return;
             }
+            setSubmitting(true);
             try {
                 const payload = {
                     question: formData.question,
@@ -188,6 +193,8 @@ export default function TopicQuestions() {
                 window.dispatchEvent(new Event('dashboardUpdated'));
             } catch (error) {
                 toast.error(error.response?.data?.message || 'Failed to update question');
+            } finally {
+                setSubmitting(false);
             }
         } else {
             const invalidIndices = [];
@@ -211,6 +218,7 @@ export default function TopicQuestions() {
                 return;
             }
 
+            setSubmitting(true);
             try {
                 const questionsData = validQuestions.map(q => ({
                     question: q.question,
@@ -230,6 +238,8 @@ export default function TopicQuestions() {
                 window.dispatchEvent(new Event('dashboardUpdated'));
             } catch (error) {
                 toast.error(error.response?.data?.message || 'Failed to create questions');
+            } finally {
+                setSubmitting(false);
             }
         }
     };
@@ -284,6 +294,7 @@ export default function TopicQuestions() {
             return;
         }
 
+        setSubmitting(true);
         try {
             const response = await importQuestionsFromExcelApi(topicId, file);
             toast.success(`${response.message}. Imported: ${response.insertedCount}, Failed: ${response.failedCount}`);
@@ -295,6 +306,8 @@ export default function TopicQuestions() {
             window.dispatchEvent(new Event('dashboardUpdated'));
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to import questions');
+        } finally {
+            setSubmitting(false);
         }
         e.target.value = '';
     };
@@ -340,11 +353,12 @@ export default function TopicQuestions() {
                     </button>
                     <button
                         onClick={handleExportExcel}
-                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-3 sm:px-4 py-2 rounded text-xs sm:text-sm"
+                        disabled={submitting}
+                        className={`flex items-center gap-2 ${submitting ? 'bg-green-600/70 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'} text-white px-3 sm:px-4 py-2 rounded text-xs sm:text-sm transition-all`}
                     >
-                        <FileSpreadsheet className="h-4 w-4" />
-                        <span className="hidden sm:inline">Export Excel</span>
-                        <span className="sm:hidden">Export</span>
+                        {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSpreadsheet className="h-4 w-4" />}
+                        <span className="hidden sm:inline">{submitting ? 'Exporting...' : 'Export Excel'}</span>
+                        <span className="sm:hidden">{submitting ? 'Exp...' : 'Export'}</span>
                     </button>
                     <button
                         onClick={handleOpenAdd}
@@ -696,9 +710,11 @@ export default function TopicQuestions() {
                                 )}
                                 <button
                                     onClick={handleSave}
-                                    className="bg-[#319795] hover:bg-[#2B7A73] text-white px-4 py-2 rounded order-1 sm:order-2"
+                                    disabled={submitting}
+                                    className={`bg-[#319795] ${submitting ? 'opacity-70 cursor-not-allowed' : 'hover:bg-[#2B7A73]'} text-white px-4 py-2 rounded order-1 sm:order-2 flex items-center justify-center gap-2`}
                                 >
-                                    {editingQuestion ? 'Update' : `Save  Question(s)`}
+                                    {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                                    {editingQuestion ? (submitting ? 'Updating...' : 'Update') : (submitting ? 'Saving...' : `Save  Question(s)`)}
                                 </button>
                             </div>
                         </div>

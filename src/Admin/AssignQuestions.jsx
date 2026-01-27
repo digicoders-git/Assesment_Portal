@@ -24,6 +24,7 @@ export default function AssignQuestions() {
     const itemsPerPage = 10;
     const [loading, setLoading] = useState(false);
     const [loadingAssigned, setLoadingAssigned] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
     const [junctionId, setJunctionId] = useState(null);
     const [isExpired, setIsExpired] = useState(false);
 
@@ -215,6 +216,7 @@ export default function AssignQuestions() {
                     toast.error("Internal Error: Junction record not found.");
                     return;
                 }
+                setSubmitting(true);
                 try {
                     const response = await deleteQuestionFromAssessmentApi(junctionId, questionId);
                     if (response.success) {
@@ -225,6 +227,8 @@ export default function AssignQuestions() {
                     }
                 } catch (error) {
                     toast.error(error.response?.data?.message || "Failed to remove question");
+                } finally {
+                    setSubmitting(false);
                 }
             }
         });
@@ -241,6 +245,7 @@ export default function AssignQuestions() {
             questionIds: selectedQuestions
         };
 
+        setSubmitting(true);
         try {
             const response = await addQuestionsToAssessmentApi(id, payload);
             if (response.success) {
@@ -252,6 +257,8 @@ export default function AssignQuestions() {
             }
         } catch (error) {
             toast.error(error.response?.data?.message || "Failed to assign questions");
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -365,11 +372,11 @@ export default function AssignQuestions() {
                             )}
                             <button
                                 onClick={handleSave}
-                                disabled={isExpired}
-                                className={`px-6 py-2.5 rounded-lg font-bold text-sm transition-all flex items-center gap-2 ${isExpired ? 'bg-gray-400 cursor-not-allowed text-gray-200' : 'bg-[#319795] hover:bg-[#2B7A73] text-white'}`}
+                                disabled={isExpired || submitting}
+                                className={`px-6 py-2.5 rounded-lg font-bold text-sm transition-all flex items-center gap-2 ${isExpired || submitting ? 'bg-gray-400 cursor-not-allowed text-gray-200' : 'bg-[#319795] hover:bg-[#2B7A73] text-white'}`}
                             >
-                                <Save className="h-4 w-4" />
-                                {isExpired ? 'Expired' : 'Assign Now'}
+                                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                                {isExpired ? 'Expired' : (submitting ? 'Assigning...' : 'Assign Now')}
                             </button>
                         </div>
                     </div>

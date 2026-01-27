@@ -7,10 +7,12 @@ import { adminLogin } from '../API/auth';
 export default function AdminLogin() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
     const handleSubmit = async () => {
         if (username && password) {
+            setLoading(true);
             try {
                 // userName uses camelCase as per your controller { userName, password }
                 const response = await adminLogin({ userName: username, password });
@@ -28,6 +30,8 @@ export default function AdminLogin() {
                 console.error("Login Error Details:", error);
                 const errorMsg = error.response?.data?.message || "Login failed - Check CORS/Network";
                 toast.error(errorMsg);
+            } finally {
+                setLoading(false);
             }
         } else {
             toast.error("Please fill in both fields");
@@ -77,10 +81,15 @@ export default function AdminLogin() {
 
                         <button
                             onClick={handleSubmit}
-                            className="w-full bg-[#319795] hover:bg-[#2B7A73] text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-3 uppercase text-xs tracking-widest mt-4 active:scale-[0.98]"
+                            disabled={loading}
+                            className={`w-full ${loading ? 'bg-[#319795]/70 cursor-not-allowed' : 'bg-[#319795] hover:bg-[#2B7A73]'} text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-3 uppercase text-xs tracking-widest mt-4 active:scale-[0.98]`}
                         >
-                            Log In to Dashboard
-                            <ArrowRight className="h-4 w-4" />
+                            {loading ? (
+                                <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            ) : (
+                                "Log In to Dashboard"
+                            )}
+                            {!loading && <ArrowRight className="h-4 w-4" />}
                         </button>
                     </div>
                 </div>

@@ -13,6 +13,7 @@ export default function AcademicSetup() {
     const [formData, setFormData] = useState({ collegeName: '', academicYear: '', course: '', location: '' });
 
     const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
     const [colleges, setColleges] = useState([]);
     const [years, setYears] = useState([]);
     const [courses, setCourses] = useState([]);
@@ -70,11 +71,12 @@ export default function AcademicSetup() {
     };
 
     const handleSave = async () => {
-        setLoading(true);
+        setSubmitting(true);
         try {
             if (activeTab === 'colleges') {
                 if (!formData.collegeName || !formData.location) {
                     toast.error('College name and location are required!');
+                    setSubmitting(false);
                     return;
                 }
                 const payload = { collegeName: formData.collegeName, location: formData.location };
@@ -90,6 +92,7 @@ export default function AcademicSetup() {
             if (activeTab === 'years') {
                 if (!formData.academicYear) {
                     toast.error('Academic year is required!');
+                    setSubmitting(false);
                     return;
                 }
                 const payload = { academicYear: formData.academicYear };
@@ -105,6 +108,7 @@ export default function AcademicSetup() {
             if (activeTab === 'courses') {
                 if (!formData.course) {
                     toast.error('Course name is required!');
+                    setSubmitting(false);
                     return;
                 }
                 const payload = { course: formData.course };
@@ -122,7 +126,7 @@ export default function AcademicSetup() {
         } catch (error) {
             toast.error("Operation failed");
         } finally {
-            setLoading(false);
+            setSubmitting(false);
         }
     };
 
@@ -432,10 +436,20 @@ export default function AcademicSetup() {
                                 </button>
                                 <button
                                     onClick={handleSave}
-                                    className="flex-1 px-4 py-2 bg-[#319795] text-white rounded-lg hover:bg-[#2B7A73] flex items-center justify-center gap-2"
+                                    disabled={submitting}
+                                    className={`flex-1 px-4 py-2 ${submitting ? 'bg-[#319795]/70 cursor-not-allowed' : 'bg-[#319795] hover:bg-[#2B7A73]'} text-white rounded-lg flex items-center justify-center gap-2 transition-all`}
                                 >
-                                    <Save className="h-4 w-4" />
-                                    Save
+                                    {submitting ? (
+                                        <>
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                            Saving...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Save className="h-4 w-4" />
+                                            Save
+                                        </>
+                                    )}
                                 </button>
                             </div>
                         </div>

@@ -14,6 +14,7 @@ export function ManageStudents() {
     const [currentPage, setCurrentPage] = useState(1);
     const [loading, setLoading] = useState(true);
     const [exportLoading, setExportLoading] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
     const [students, setStudents] = useState([]);
     const [pagination, setPagination] = useState({
         total: 0,
@@ -182,6 +183,7 @@ export function ManageStudents() {
             return;
         }
 
+        setSubmitting(true);
         try {
             const payload = {
                 name: editingStudent.name,
@@ -190,7 +192,6 @@ export function ManageStudents() {
                 college: editingStudent.college,
                 course: editingStudent.course,
                 year: editingStudent.year
-                // Include other fields if necessary
             };
 
             const response = await updateStudentApi(editingStudent.id, payload);
@@ -205,6 +206,8 @@ export function ManageStudents() {
         } catch (error) {
             console.error("Update Error:", error);
             toast.error(error.response?.data?.message || "Failed to update student");
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -545,7 +548,14 @@ export function ManageStudents() {
                             </div>
                             <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t border-gray-100">
                                 <button onClick={() => setIsEditModalOpen(false)} className="px-4 py-2 rounded-lg text-sm font-bold text-gray-500 hover:bg-gray-200">Cancel</button>
-                                <button onClick={handleSaveStudent} className="px-6 py-2 rounded-lg text-sm font-bold bg-[#319795] text-white hover:bg-teal-700 shadow-lg shadow-teal-500/20 active:scale-95 transition-all">Save Changes</button>
+                                <button
+                                    onClick={handleSaveStudent}
+                                    disabled={submitting}
+                                    className={`px-6 py-2 rounded-lg text-sm font-bold bg-[#319795] text-white hover:bg-teal-700 shadow-lg shadow-teal-500/20 active:scale-95 transition-all flex items-center gap-2 ${submitting ? 'opacity-70 cursor-not-allowed' : ''}`}
+                                >
+                                    {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                                    {submitting ? "Saving..." : "Save Changes"}
+                                </button>
                             </div>
                         </div>
                     </div>

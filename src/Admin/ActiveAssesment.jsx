@@ -14,6 +14,7 @@ export function ActiveAssessment() {
     const [editingAssessment, setEditingAssessment] = useState(null);
     const [assessments, setAssessments] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
     const [certificateSearch, setCertificateSearch] = useState('');
@@ -306,6 +307,7 @@ export function ActiveAssessment() {
             status: true // Active assessments are usually true
         };
 
+        setSubmitting(true);
         try {
             let response;
             if (editingAssessment) {
@@ -324,6 +326,8 @@ export function ActiveAssessment() {
             }
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to save assessment');
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -719,10 +723,15 @@ export function ActiveAssessment() {
                             <div className="bg-[#EDF2F7] px-6 py-4 flex justify-start">
                                 <button
                                     onClick={handleSave}
-                                    className="bg-[#319795] hover:bg-[#2c7a7b] text-white px-4 py-2 rounded text-sm font-medium flex items-center gap-2 transition-colors"
+                                    disabled={submitting}
+                                    className={`bg-[#319795] ${submitting ? 'opacity-70 cursor-not-allowed' : 'hover:bg-[#2c7a7b]'} text-white px-4 py-2 rounded text-sm font-medium flex items-center gap-2 transition-colors`}
                                 >
-                                    <span className="bg-white text-[#319795] rounded-full w-4 h-4 flex items-center justify-center text-[10px]">✓</span>
-                                    {editingAssessment ? 'Update' : 'Add'}
+                                    {submitting ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <span className="bg-white text-[#319795] rounded-full w-4 h-4 flex items-center justify-center text-[10px]">✓</span>
+                                    )}
+                                    {editingAssessment ? (submitting ? 'Updating...' : 'Update') : (submitting ? 'Adding...' : 'Add')}
                                 </button>
                             </div>
                         </div>

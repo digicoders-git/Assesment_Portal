@@ -17,6 +17,7 @@ export default function Assessment() {
     const [visitedQuestions, setVisitedQuestions] = useState(new Set([0]));
     const [testStarted, setTestStarted] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
     const [assesmentQuestionsId, setAssesmentQuestionsId] = useState(null);
     const [certificateId, setCertificateId] = useState(null);
     const tabWarningsRef = useRef(0);
@@ -340,6 +341,7 @@ export default function Assessment() {
             duration: duration
         };
 
+        setSubmitting(true);
         try {
             const response = await createResultApi(payload);
             if (response.success) {
@@ -360,6 +362,8 @@ export default function Assessment() {
                 icon: 'error',
                 confirmButtonColor: '#0D9488'
             });
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -445,12 +449,12 @@ export default function Assessment() {
 
 
 
-    if (loading) {
+    if (loading || submitting) {
         return (
             <div className="min-h-screen bg-[#F1F5F9] flex items-center justify-center">
                 <div className="text-center">
                     <div className="w-16 h-16 border-4 border-[#0D9488] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-[#1F2937] font-bold text-lg">Loading Assessment...</p>
+                    <p className="text-[#1F2937] font-bold text-lg">{loading ? 'Loading Assessment...' : 'Submitting Assessment...'}</p>
                 </div>
             </div>
         );
