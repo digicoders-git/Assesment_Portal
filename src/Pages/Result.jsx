@@ -354,11 +354,20 @@ export default function Result() {
             }
 
 
-            // Generate Data URL
-            const dataUrl = canvas.toDataURL('image/jpeg', 1.0);
+            // Generate blob with dynamic quality to keep size <= 3MB
+            let quality = 1.0; // start with max quality
+            let blob;
+            let dataUrl; 
+            const maxBytes = 3 * 1024 * 1024; // 3 MB max
 
-            // Convert Data URL to File for Upload
-            const blob = await (await fetch(dataUrl)).blob();
+            do {
+                dataUrl = canvas.toDataURL('image/jpeg', quality); 
+                blob = await (await fetch(dataUrl)).blob();
+
+                if (blob.size <= maxBytes) break; // size acceptable
+                quality -= 0.05; // gradually reduce quality
+            } while (quality > 0.1);
+
             const fileName = `DigiCoders_Certificate_${(resultData.student?.name || 'Student').replace(/\s+/g, '_')}.jpg`;
             const file = new File([blob], fileName, { type: "image/jpeg" });
 
