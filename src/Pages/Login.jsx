@@ -443,21 +443,30 @@ export default function DigiCodersPortal() {
                     drawText(studentData.code || "DIGICODERS", certTemplate.assessmentCode);
                 }
 
-                const dataUrl = canvas.toDataURL('image/jpeg', 1.0);
+                const blob = await new Promise(resolve => {
+                    canvas.toBlob(
+                        resolve,
+                        'image/jpeg',
+                        0.75
+                    );
+                });
 
-                // 3. Upload & Download
-                const blob = await (await fetch(dataUrl)).blob();
-                const fileName = `${certTemplate.certificateName.replace(/\s+/g, '_')}_${studentData.name.replace(/\s+/g, '_')}.jpg`;
-                const file = new File([blob], fileName, { type: "image/jpeg" });
+                const fileName =
+                    `${certTemplate.certificateName}_${studentData.name}`.replace(/\s+/g, '_') + '.jpg';
 
+                const file = new File([blob], fileName, { type: 'image/jpeg' });
+
+                // upload
                 await uploadStudentCertificateApi(studentData._id, file);
 
+                // download
+                const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
-                link.href = dataUrl;
+                link.href = url;
                 link.download = fileName;
-                document.body.appendChild(link);
                 link.click();
-                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+
 
                 toast.update(statusToastId, { render: "Certificate generated and downloaded!", type: "success", isLoading: false, autoClose: 3000 });
 
