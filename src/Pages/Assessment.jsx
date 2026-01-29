@@ -529,7 +529,7 @@ export default function Assessment() {
                                     `}>
                                             {String.fromCharCode(65 + idx)}
                                         </span>
-                                        <span className={`text-lg font-medium ${selectedAnswers[currentQuestion] === option ? 'text-[#0D9488]' : 'text-gray-700'}`}>
+                                        <span className={`text-lg font-medium flex-1 break-all overflow-wrap-anywhere ${selectedAnswers[currentQuestion] === option ? 'text-[#0D9488]' : 'text-gray-700'}`}>
                                             {option}
                                         </span>
                                     </div>
