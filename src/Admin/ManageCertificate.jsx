@@ -287,8 +287,8 @@ export function ManageCertificate() {
 
             // Draw layers
             const layers = [
-                { id: 'studentName', sample: 'Stu' },
-                { id: 'assessmentName', sample: 'html&css test' },
+                { id: 'studentName', sample: 'Gunjan Rathore' },
+                { id: 'assessmentName', sample: 'html&Jquery' },
                 { id: 'assessmentCode', sample: 'hhh-3344' },
                 { id: 'collegeName', sample: 'MMIT Kushinagar' },
                 { id: 'date', sample: '27/01/2026' }
@@ -421,10 +421,10 @@ export function ManageCertificate() {
 
                         {/* Text Layer Components */}
                         {[
-                            { id: 'studentName', label: 'Student Name', sample: 'stu' },
-                            { id: 'assessmentName', label: 'Assessment Name', sample: 'asName' },
+                            { id: 'studentName', label: 'Student Name', sample: 'Gunjan Rathore' },
+                            { id: 'assessmentName', label: 'Assessment Name', sample: 'DigiCoders' },
                             { id: 'assessmentCode', label: 'Assessment Code', sample: 'dct-2026' },
-                            { id: 'collegeName', label: 'College Name', sample: 'clg' },
+                            { id: 'collegeName', label: 'College Name', sample: 'MMIT Kushinagar' },
                             { id: 'date', label: 'Date', sample: '27/01/2026' }
                         ].map((layer) => (
                             <div key={layer.id} className="bg-white rounded-xl border border-gray-200 p-6">
@@ -821,10 +821,10 @@ export function ManageCertificate() {
                                         ctx.clearRect(0, 0, width, height);
                                         ctx.drawImage(img, 0, 0, width, height);
                                         const layers = [
-                                            { id: 'studentName', sample: 'stu' },
-                                            { id: 'assessmentName', sample: 'asmnt' },
+                                            { id: 'studentName', sample: 'Gunajan Rathore' },
+                                            { id: 'assessmentName', sample: 'Html&Jquery' },
                                             { id: 'assessmentCode', sample: 'dct-2026' },
-                                            { id: 'collegeName', sample: 'clg' },
+                                            { id: 'collegeName', sample: 'MMIT Kushinaagr' },
                                             { id: 'date', sample: '27/01/2026' }
                                         ];
                                         layers.forEach(layer => {

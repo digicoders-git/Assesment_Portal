@@ -400,6 +400,12 @@ export default function DigiCodersPortal() {
                 ctx.drawImage(img, 0, 0, w, h);
                 await document.fonts.ready;
 
+                // Function to capitalize text (first letter of each word)
+                const capitalizeText = (text) => {
+                    if (!text) return text;
+                    return text.toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+                };
+
                 const drawText = (text, style) => {
                     if (!style || !text) return;
                     const weight = style.bold ? 'bold ' : '';
@@ -428,11 +434,16 @@ export default function DigiCodersPortal() {
                 // Draw fields
                 if (certTemplate.studentName?.status !== false) {
                     await ensureFontLoaded(fontCSSMap[certTemplate.studentName?.fontFamily]);
-                    drawText(studentData.name.toUpperCase(), certTemplate.studentName);
+                    drawText(capitalizeText(studentData.name), certTemplate.studentName);
                 }
                 if (certTemplate.collegeName?.status !== false) {
                     await ensureFontLoaded(fontCSSMap[certTemplate.collegeName?.fontFamily]);
-                    drawText(studentData.college, certTemplate.collegeName);
+                    drawText(capitalizeText(studentData.college), certTemplate.collegeName);
+                }
+                if (certTemplate.assessmentName?.status !== false) {
+                    await ensureFontLoaded(fontCSSMap[certTemplate.assessmentName?.fontFamily]);
+                    const assessmentName = startCheckResponse.data?.assesmentId?.assessmentName || startCheckResponse.data?.assessmentName;
+                    drawText(capitalizeText(assessmentName), certTemplate.assessmentName);
                 }
                 if (certTemplate.date?.status !== false) {
                     await ensureFontLoaded(fontCSSMap[certTemplate.date?.fontFamily]);

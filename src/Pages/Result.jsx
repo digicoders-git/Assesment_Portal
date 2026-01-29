@@ -257,6 +257,12 @@ export default function Result() {
             ctx.drawImage(img, 0, 0, width, height);
             await document.fonts.ready;
 
+            // Function to capitalize text (first letter of each word)
+            const capitalizeText = (text) => {
+                if (!text) return text;
+                return text.toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+            };
+
             // Function to draw styled text
             const drawText = (text, style) => {
                 if (!style || !text) return;
@@ -298,12 +304,10 @@ export default function Result() {
 
 
 
-            // Overlay Data
-            // 1. Student Name
             // 1. Student Name
             const studentFont = fontCSSMap[certificateData.studentName?.fontFamily] || 'Inter, sans-serif';
             await ensureFontLoaded(studentFont);
-            drawText(resultData.student?.name.toUpperCase(), {
+            drawText(capitalizeText(resultData.student?.name), {
                 ...certificateData.studentName,
                 fontFamily: studentFont
             });
@@ -314,7 +318,7 @@ export default function Result() {
                 await ensureFontLoaded(assessmentFont);
                 const aName = resultData.assesmentQuestions?.assesmentId?.assessmentName ||
                     resultData.assessmentQuestions?.assesmentId?.assessmentName;
-                drawText(aName, {
+                drawText(capitalizeText(aName), {
                     ...certificateData.assessmentName,
                     fontFamily: assessmentFont
                 });
@@ -324,7 +328,7 @@ export default function Result() {
             if (certificateData.collegeName) {
                 const collegeFont = fontCSSMap[certificateData.collegeName?.fontFamily] || 'Inter, sans-serif';
                 await ensureFontLoaded(collegeFont);
-                drawText(resultData.student?.college, {
+                drawText(capitalizeText(resultData.student?.college), {
                     ...certificateData.collegeName,
                     fontFamily: collegeFont
                 });
