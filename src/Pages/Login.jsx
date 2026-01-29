@@ -442,7 +442,8 @@ export default function DigiCodersPortal() {
                 }
                 if (certTemplate.assessmentName?.status !== false) {
                     await ensureFontLoaded(fontCSSMap[certTemplate.assessmentName?.fontFamily]);
-                    const assessmentName = startCheckResponse.data?.assesmentId?.assessmentName || startCheckResponse.data?.assessmentName;
+                    // For certificate flow, use certificate name or a default value since we don't have assessment data
+                    const assessmentName = certTemplate.certificateName || "Certificate Course";
                     drawText(capitalizeText(assessmentName), certTemplate.assessmentName);
                 }
                 if (certTemplate.date?.status !== false) {
