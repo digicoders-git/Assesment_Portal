@@ -5,7 +5,7 @@ import { getSingleCertificateApi } from '../API/certificate';
 import { uploadStudentCertificateApi } from '../API/student';
 import Confetti from 'react-confetti';
 import { useWindowSize } from 'react-use';
-import { Download, Home, FileText } from 'lucide-react';
+import { Download, Home, FileText, Youtube, MessageCircle, Linkedin, Instagram, Facebook, Send } from 'lucide-react';
 import { toast } from 'react-toastify';
 import domtoimage from 'dom-to-image-more';
 import { useRef } from 'react';
@@ -136,9 +136,11 @@ export default function Result() {
         const toastId = toast.loading("Generating result image...");
 
         try {
-            // Hide action buttons during screenshot
+            // Hide action buttons and social media during screenshot
             const actionButtons = document.getElementById('action-buttons');
+            const socialMedia = document.getElementById('social-media');
             if (actionButtons) actionButtons.style.display = 'none';
+            if (socialMedia) socialMedia.style.display = 'none';
 
             // Use dom-to-image-more which supports modern CSS colors
             const dataUrl = await domtoimage.toPng(resultRef.current, {
@@ -159,8 +161,9 @@ export default function Result() {
                 }
             });
 
-            // Show action buttons again
+            // Show action buttons and social media again
             if (actionButtons) actionButtons.style.display = 'flex';
+            if (socialMedia) socialMedia.style.display = 'block';
 
             // Create download link
             const link = document.createElement('a');
@@ -181,9 +184,11 @@ export default function Result() {
                 autoClose: 3000
             });
         } catch (error) {
-            // Show action buttons again in case of error
+            // Show action buttons and social media again in case of error
             const actionButtons = document.getElementById('action-buttons');
+            const socialMedia = document.getElementById('social-media');
             if (actionButtons) actionButtons.style.display = 'flex';
+            if (socialMedia) socialMedia.style.display = 'block';
 
             console.error("Screenshot failed:", error);
             toast.update(toastId, {
@@ -517,13 +522,14 @@ export default function Result() {
 
                         {/* Actions */}
                         <div id="action-buttons" className="flex flex-col md:flex-row gap-4">
-                            <button
-                                onClick={handleDownloadCertificate}
-                                disabled={!certificateData}
-                                className={`flex items-center gap-2 px-8 py-3 text-white rounded-xl font-bold shadow-lg transition-all hover:-translate-y-1 ${!certificateData ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#a855f7] hover:bg-[#9333ea] shadow-purple-200'}`}
-                            >
-                                <Download size={20} /> DOWNLOAD CERTIFICATE
-                            </button>
+                            {certificateData && (
+                                <button
+                                    onClick={handleDownloadCertificate}
+                                    className="flex items-center gap-2 px-8 py-3 bg-[#a855f7] hover:bg-[#9333ea] text-white rounded-xl font-bold shadow-lg shadow-purple-200 transition-all hover:-translate-y-1"
+                                >
+                                    <Download size={20} /> DOWNLOAD CERTIFICATE
+                                </button>
+                            )}
 
                             <button
                                 onClick={handleSaveResult}
@@ -531,6 +537,61 @@ export default function Result() {
                             >
                                 <Download size={20} /> SAVE RESULT
                             </button>
+                        </div>
+
+                        {/* Social Media Links */}
+                        <div id="social-media" className="mt-6 pt-4 border-t border-gray-200">
+                            <p className="text-gray-600 text-sm mb-3 font-medium">Follow us on social media</p>
+                            <div className="flex flex-wrap justify-center gap-3">
+                                <a
+                                    href="https://www.youtube.com/@digicoders"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium text-sm transition-all hover:scale-105 shadow-md"
+                                >
+                                    <Youtube size={16} /> YouTube
+                                </a>
+                                <a
+                                    href="https://www.whatsapp.com/channel/0029VaDTIxW5EjxzOyubYT3l"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium text-sm transition-all hover:scale-105 shadow-md"
+                                >
+                                    <MessageCircle size={16} /> WhatsApp
+                                </a>
+                                <a
+                                    href="https://www.linkedin.com/company/digicoders/"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm transition-all hover:scale-105 shadow-md"
+                                >
+                                    <Linkedin size={16} /> LinkedIn
+                                </a>
+                                <a
+                                    href="https://www.instagram.com/digicoderstech/"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-2 px-4 py-2 bg-pink-500 hover:bg-pink-600 text-white rounded-lg font-medium text-sm transition-all hover:scale-105 shadow-md"
+                                >
+                                    <Instagram size={16} /> Instagram
+                                </a>
+                                <a
+                                    href="https://www.facebook.com/DigiCodersTech/"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium text-sm transition-all hover:scale-105 shadow-md"
+                                >
+                                    <Facebook size={16} /> Facebook
+                                </a>
+                                <a
+                                    href="https://t.me/digicoderstech"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-2 px-4 py-2 bg-blue-400 hover:bg-blue-500 text-white rounded-lg font-medium text-sm transition-all hover:scale-105 shadow-md"
+                                >
+                                    <Send size={16} /> Telegram
+                                </a>
+                            </div>
                         </div>
 
                         <p className="mt-4 text-gray-400 text-sm">Congratulations! You have completed the assessment.</p>

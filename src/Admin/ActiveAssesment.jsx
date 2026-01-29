@@ -234,15 +234,45 @@ export function ActiveAssessment() {
         setIsModalOpen(true);
     };
 
+    // Auto-fill helper functions
+    const generateAssessmentCode = () => {
+        const now = new Date();
+        const day = now.getDate().toString().padStart(2, '0');
+        const minutes = now.getMinutes().toString().padStart(2, '0');
+        const seconds = now.getSeconds().toString().padStart(2, '0');
+        return `DCT${day}${minutes.charAt(1)}${seconds.charAt(1)}`;
+    };
+
+    const getAutoFillTimes = () => {
+        const now = new Date();
+        const startTime = new Date(now.getTime() - 3 * 60 * 60 * 1000); // 3 hours before
+        const endTime = new Date(now.getTime() + 6 * 60 * 60 * 1000); // 6 hours after
+        
+        const formatDateTime = (date) => {
+            const year = date.getFullYear();
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const day = date.getDate().toString().padStart(2, '0');
+            const hours = date.getHours().toString().padStart(2, '0');
+            const minutes = date.getMinutes().toString().padStart(2, '0');
+            return `${year}-${month}-${day}T${hours}:${minutes}`;
+        };
+        
+        return {
+            startTime: formatDateTime(startTime),
+            endTime: formatDateTime(endTime)
+        };
+    };
+
     const handleAdd = () => {
         setEditingAssessment(null);
+        const autoTimes = getAutoFillTimes();
         setFormData({
             name: '',
-            code: '',
+            code: generateAssessmentCode(),
             totalQuestions: '',
             duration: '',
-            startTime: '',
-            endTime: '',
+            startTime: autoTimes.startTime,
+            endTime: autoTimes.endTime,
             hasCertificate: 'No',
             certificateType: 'Default',
             certificateName: '',
