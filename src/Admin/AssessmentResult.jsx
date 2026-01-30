@@ -75,34 +75,25 @@ export default function AssessmentResult() {
                     time: res.createdAt ? new Date(res.createdAt).toLocaleString() : "N/A",
                     duration: res.duration || "N/A",
                     refNo: res.student?.code || "N/A",
-                    rank: res.rank || "N/A",
+                    rank: res.rank || "N/A", // Use actual rank from backend
                     submission: submissionType
                 }));
 
-                const getSortedData = (list, submissionType) => {
-                    const formatted = formatData(list, submissionType);
-                    return formatted.sort((a, b) => {
-                        const rankA = parseInt(a.rank) || 999999;
-                        const rankB = parseInt(b.rank) || 999999;
-                        return rankA - rankB;
-                    });
-                };
+                // No sorting needed - backend already provides ranked data
+                setFirstSubmissions(formatData(response.firstSubmission || [], 1));
+                setSecondSubmissions(formatData(response.reattempt || [], 2));
 
-                setFirstSubmissions(getSortedData(response.firstSubmission || [], 1));
-                setSecondSubmissions(getSortedData(response.reattempt || [], 2));
-
-                if (response.pagination) {
-                    setPagination(response.pagination);
-                    setCurrentPage(response.pagination.page);
-                } else {
-                    // Fallback if pagination is not provided
-                    const totalItems = (response.firstSubmission?.length || 0) + (response.reattempt?.length || 0);
-                    setPagination({
-                        total: totalItems,
-                        totalPages: Math.ceil(totalItems / itemsPerPage),
-                        limit: itemsPerPage
-                    });
-                }
+                // Set pagination for frontend based on current tab
+                const firstTotal = response.firstSubmission?.length || 0;
+                const secondTotal = response.reattempt?.length || 0;
+                
+                setPagination({
+                    total: activeTab === 'first' ? firstTotal : secondTotal,
+                    totalPages: Math.ceil((activeTab === 'first' ? firstTotal : secondTotal) / itemsPerPage),
+                    limit: itemsPerPage,
+                    page: 1
+                });
+                setCurrentPage(1);
             }
         } catch (error) {
             console.error("Failed to fetch assessment results:", error);
@@ -143,16 +134,32 @@ export default function AssessmentResult() {
         return activeTab === 'first' ? firstSubmissions : secondSubmissions;
     };
 
-    // Filter Logic
-    const filteredResults = getCurrentData().filter(item =>
-        item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        String(item.phone).includes(searchQuery) ||
-        item.college.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    // Get paginated data for current tab
+    const getPaginatedData = () => {
+        const currentData = getCurrentData();
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        return currentData.slice(startIndex, endIndex);
+    };
+
+    // Update pagination when tab changes
+    useEffect(() => {
+        if (!isInitialLoad) {
+            const currentData = getCurrentData();
+            setPagination({
+                total: currentData.length,
+                totalPages: Math.ceil(currentData.length / itemsPerPage),
+                limit: itemsPerPage,
+                page: 1 // Reset to page 1 when switching tabs
+            });
+            setCurrentPage(1);
+        }
+    }, [activeTab, firstSubmissions, secondSubmissions]);
 
     const handlePageChange = (page) => {
-        if (page >= 1 && page <= pagination.totalPages) {
-            fetchResults(page);
+        const totalPages = Math.ceil(getCurrentData().length / itemsPerPage);
+        if (page >= 1 && page <= totalPages) {
+            setCurrentPage(page);
         }
     };
 
@@ -404,17 +411,17 @@ export default function AssessmentResult() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 bg-white">
-                                    {getCurrentData().map((item, index) => (
+                                    {getPaginatedData().map((item, index) => (
                                         <tr key={`${item.id}-${item.submission}`} className="hover:bg-blue-50/30 transition-colors group">
                                             <td className="px-4 py-3 text-center text-gray-500 font-medium">{((currentPage - 1) * pagination.limit) + index + 1}</td>
                                             {activeTab === 'first' && (
                                                 <td className="px-4 py-3 text-center">
-                                                    <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold ${index === 0 ? 'bg-yellow-100 text-yellow-700 ring-2 ring-yellow-200' :
-                                                        index === 1 ? 'bg-gray-100 text-gray-700 ring-2 ring-gray-200' :
-                                                            index === 2 ? 'bg-orange-100 text-orange-700 ring-2 ring-orange-200' :
+                                                    <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold ${item.rank === 1 ? 'bg-yellow-100 text-yellow-700 ring-2 ring-yellow-200' :
+                                                        item.rank === 2 ? 'bg-gray-100 text-gray-700 ring-2 ring-gray-200' :
+                                                            item.rank === 3 ? 'bg-orange-100 text-orange-700 ring-2 ring-orange-200' :
                                                                 'bg-green-50 text-green-700'
                                                         }`}>
-                                                        {item.rank || ((currentPage - 1) * pagination.limit) + index + 1}
+                                                        {item.rank}
                                                     </span>
                                                 </td>
                                             )}
@@ -496,15 +503,9 @@ export default function AssessmentResult() {
                         </button>
 
                         <div className="flex gap-1.5 items-center">
-                            {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map(page => (
-                                <button
-                                    key={page}
-                                    onClick={() => handlePageChange(page)}
-                                    className={`w-9 h-9 rounded-lg font-bold transition-all shadow-sm ${currentPage === page ? 'bg-teal-500 text-white ring-2 ring-teal-200' : 'bg-white border text-gray-700 hover:bg-gray-100'}`}
-                                >
-                                    {page}
-                                </button>
-                            ))}
+                            <span className="px-3 py-1.5 bg-teal-500 text-white rounded-lg font-bold text-sm">
+                                {currentPage} of {pagination.totalPages}
+                            </span>
                         </div>
 
                         <button

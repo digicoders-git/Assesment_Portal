@@ -386,25 +386,6 @@ export function AssessmentHistory() {
         });
     };
 
-    const checkIsExpired = (endDateTimeStr) => {
-        if (!endDateTimeStr) return false;
-        try {
-            // Expected format: "DD/MM/YYYY, HH:mm:ss" (based on parseBackendDate usage)
-            // Backend date format seems to be "DD/MM/YYYY, HH:MM:SS" or similar
-            const parts = endDateTimeStr.split(', ');
-            if (parts.length < 2) return false;
-
-            const [datePart, timePart] = parts;
-            const [day, month, year] = datePart.split('/').map(Number);
-            const [hours, minutes, seconds] = timePart.split(':').map(Number);
-
-            const expiryDate = new Date(year, month - 1, day, hours, minutes, seconds || 0);
-            return new Date() > expiryDate;
-        } catch (e) {
-            return false;
-        }
-    };
-
     return (
         <div className="p-6">
             {/* ... Header and Controls remain same ... */}
@@ -492,15 +473,6 @@ export function AssessmentHistory() {
                                             <td className="px-4 py-3 align-top">
                                                 <button
                                                     onClick={() => {
-                                                        if (checkIsExpired(item.endDateTime)) {
-                                                            Swal.fire({
-                                                                title: 'Assessment Expired!',
-                                                                text: 'You can only read and delete this assessment because it has expired.',
-                                                                icon: 'warning',
-                                                                confirmButtonColor: '#319795'
-                                                            });
-                                                            return;
-                                                        }
                                                         navigate(`/admin/assign-questions/${item._id}`, { state: { assessmentCode: item.assessmentCode } });
                                                     }}
                                                     className="bg-emerald-400 text-white px-3 py-1 rounded text-xs font-medium hover:bg-emerald-500 transition-colors"
@@ -547,7 +519,11 @@ export function AssessmentHistory() {
                                                 <div className="font-bold text-gray-700">{formatDisplayDate(item.startDateTime)}</div>
                                                 <div className="text-gray-400">{formatDisplayDate(item.endDateTime)}</div>
                                             </td>
-                                            <td className="px-4 py-3 align-top text-[#2D3748]">{item.remark}</td>
+                                            <td className="px-4 py-3 align-top">
+                                                <div className="w-20 whitespace-normal break-words text-[#2D3748] text-xs leading-tight">
+                                                    {item.remark}
+                                                </div>
+                                            </td>
                                             <td className="px-4 py-3 align-top text-[#2D3748]">
                                                 <div>{item.generateCertificate ? 'Yes' : 'No'} </div>
                                                 <div className="text-xs text-gray-400">{item.certificateName?.certificateName || 'N/A'}</div>
@@ -568,18 +544,7 @@ export function AssessmentHistory() {
                                                     </button>
                                                     <div className="flex items-center gap-1">
                                                         <button
-                                                            onClick={() => {
-                                                                if (checkIsExpired(item.endDateTime)) {
-                                                                    Swal.fire({
-                                                                        title: 'Assessment Expired!',
-                                                                        text: 'You can only read and delete this assessment because it has expired.',
-                                                                        icon: 'warning',
-                                                                        confirmButtonColor: '#319795'
-                                                                    });
-                                                                    return;
-                                                                }
-                                                                handleEdit(item);
-                                                            }}
+                                                            onClick={() => handleEdit(item)}
                                                             className="p-1 border border-blue-500 text-blue-500 rounded hover:bg-blue-50"
                                                             title="Edit"
                                                         >

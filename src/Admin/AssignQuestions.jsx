@@ -249,7 +249,7 @@ export default function AssignQuestions() {
         try {
             const response = await addQuestionsToAssessmentApi(id, payload);
             if (response.success) {
-                toast.success(`${selectedQuestions.length} Questions successfully added!`);
+                toast.success(`Questions successfully added!`);
                 setSelectedQuestions([]);
                 fetchAssignedQuestions();
             } else {

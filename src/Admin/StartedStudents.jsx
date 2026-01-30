@@ -297,15 +297,9 @@ export default function StartedStudents() {
                             Prev
                         </button>
                         <div className="flex items-center gap-1.5">
-                            {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map(page => (
-                                <button
-                                    key={page}
-                                    onClick={() => handlePageChange(page)}
-                                    className={`w-8 h-8 rounded font-bold transition-all ${currentPage === page ? 'bg-[#319795] text-white shadow-sm' : 'bg-white border hover:bg-gray-100'}`}
-                                >
-                                    {page}
-                                </button>
-                            ))}
+                            <span className="px-3 py-1.5 bg-[#319795] text-white rounded font-bold text-sm">
+                                {currentPage} of {pagination.totalPages}
+                            </span>
                         </div>
                         <button
                             onClick={() => handlePageChange(currentPage + 1)}

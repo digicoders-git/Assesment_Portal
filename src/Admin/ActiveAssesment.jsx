@@ -524,7 +524,11 @@ export function ActiveAssessment() {
                                                 <div className="font-bold text-gray-700">{formatDisplayDate(item.startDateTime)}</div>
                                                 <div className="text-gray-400">{formatDisplayDate(item.endDateTime)}</div>
                                             </td>
-                                            <td className="px-4 py-3 align-top text-[#2D3748]">{item.remark}</td>
+                                            <td className="px-4 py-3 align-top">
+                                                <div className="w-20 whitespace-normal break-words text-[#2D3748] text-xs leading-tight">
+                                                    {item.remark}
+                                                </div>
+                                            </td>
                                             <td className="px-4 py-3 align-top text-[#2D3748]">
                                                 <div>{item.generateCertificate ? 'Yes' : 'No'}</div>
                                                 <div className="text-xs text-gray-400">{item.certificateName?.certificateName || 'N/A'}</div>
