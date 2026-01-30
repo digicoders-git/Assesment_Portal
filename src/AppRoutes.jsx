@@ -54,6 +54,7 @@ const AppRoutes = () => {
       {/* Catch-all route for assessment codes */}
       <Route path="/:code" element={<Login />} />
       <Route path="/certificate/:certId" element={<Login />} />
+      <Route path="/certificate/:certId/:assessmentCode" element={<Login />} />
     </Routes>
   );
 };

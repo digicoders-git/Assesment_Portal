@@ -417,7 +417,7 @@ export default function AcademicSetup() {
                                             type="text"
                                             value={formData.course || ''}
                                             onChange={(e) => {
-                                                const val = e.target.value.replace(/[^a-zA-Z\s]/g, '');
+                                                const val = e.target.value;
                                                 setFormData({ ...formData, course: val });
                                             }}
                                             className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-[#319795] outline-none"

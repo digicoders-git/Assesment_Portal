@@ -323,7 +323,7 @@ export default function Result() {
                 await ensureFontLoaded(assessmentFont);
                 const aName = resultData.assesmentQuestions?.assesmentId?.assessmentName ||
                     resultData.assessmentQuestions?.assesmentId?.assessmentName;
-                drawText(capitalizeText(aName), {
+                drawText(aName, {
                     ...certificateData.assessmentName,
                     fontFamily: assessmentFont
                 });
@@ -333,7 +333,7 @@ export default function Result() {
             if (certificateData.collegeName) {
                 const collegeFont = fontCSSMap[certificateData.collegeName?.fontFamily] || 'Inter, sans-serif';
                 await ensureFontLoaded(collegeFont);
-                drawText(capitalizeText(resultData.student?.college), {
+                drawText(resultData.student?.college, {
                     ...certificateData.collegeName,
                     fontFamily: collegeFont
                 });
@@ -549,7 +549,7 @@ export default function Result() {
                                     rel="noopener noreferrer"
                                     className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium text-sm transition-all hover:scale-105 shadow-md"
                                 >
-                                    <Youtube size={16} /> YouTube
+                                    <Youtube size={16} />
                                 </a>
                                 <a
                                     href="https://www.whatsapp.com/channel/0029VaDTIxW5EjxzOyubYT3l"
@@ -557,7 +557,7 @@ export default function Result() {
                                     rel="noopener noreferrer"
                                     className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium text-sm transition-all hover:scale-105 shadow-md"
                                 >
-                                    <MessageCircle size={16} /> WhatsApp
+                                    <MessageCircle size={16} />
                                 </a>
                                 <a
                                     href="https://www.linkedin.com/company/digicoders/"
@@ -565,7 +565,7 @@ export default function Result() {
                                     rel="noopener noreferrer"
                                     className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm transition-all hover:scale-105 shadow-md"
                                 >
-                                    <Linkedin size={16} /> LinkedIn
+                                    <Linkedin size={16} />
                                 </a>
                                 <a
                                     href="https://www.instagram.com/digicoderstech/"
@@ -573,7 +573,7 @@ export default function Result() {
                                     rel="noopener noreferrer"
                                     className="flex items-center gap-2 px-4 py-2 bg-pink-500 hover:bg-pink-600 text-white rounded-lg font-medium text-sm transition-all hover:scale-105 shadow-md"
                                 >
-                                    <Instagram size={16} /> Instagram
+                                    <Instagram size={16} /> 
                                 </a>
                                 <a
                                     href="https://www.facebook.com/DigiCodersTech/"
@@ -581,7 +581,7 @@ export default function Result() {
                                     rel="noopener noreferrer"
                                     className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium text-sm transition-all hover:scale-105 shadow-md"
                                 >
-                                    <Facebook size={16} /> Facebook
+                                    <Facebook size={16} /> 
                                 </a>
                                 <a
                                     href="https://t.me/digicoderstech"
@@ -589,7 +589,7 @@ export default function Result() {
                                     rel="noopener noreferrer"
                                     className="flex items-center gap-2 px-4 py-2 bg-blue-400 hover:bg-blue-500 text-white rounded-lg font-medium text-sm transition-all hover:scale-105 shadow-md"
                                 >
-                                    <Send size={16} /> Telegram
+                                    <Send size={16} /> 
                                 </a>
                             </div>
                         </div>

@@ -61,7 +61,7 @@ export default function DigiCodersPortal() {
 
     const digi = "{Coders}"
     const navigate = useNavigate();
-    const { code, certId } = useParams();
+    const { code, certId, assessmentCode } = useParams();
     const [certTemplate, setCertTemplate] = useState(null);
     const [fetchingCert, setFetchingCert] = useState(false);
     const [certNotFound, setCertNotFound] = useState(false);
@@ -79,6 +79,10 @@ export default function DigiCodersPortal() {
                     const template = response?.certificate || (response?._id ? response : null);
                     if (template) {
                         setCertTemplate(template);
+                        // Auto-fill assessment code if provided in URL
+                        if (assessmentCode) {
+                            setFormData(prev => ({ ...prev, code: assessmentCode }));
+                        }
                     } else {
                         toast.error("No certificate found for this link");
                         setCertNotFound(true);
@@ -93,7 +97,7 @@ export default function DigiCodersPortal() {
             }
         };
         fetchCertificateTemplate();
-    }, [certId]);
+    }, [certId, assessmentCode]);
 
     const fontCSSMap = {
         'Inter': 'Inter, sans-serif',
@@ -380,6 +384,24 @@ export default function DigiCodersPortal() {
 
                 const studentData = regResponse.newStudent;
 
+                // Get assessment data for certificate
+                let assessmentName = "Certificate Course";
+                if (assessmentCode) {
+                    try {
+                        const assessmentResponse = await getAssessmentByStatusApi(true);
+                        if (assessmentResponse.success && assessmentResponse.assessments) {
+                            const matchingAssessment = assessmentResponse.assessments.find(
+                                assessment => assessment.assessmentCode === assessmentCode
+                            );
+                            if (matchingAssessment) {
+                                assessmentName = matchingAssessment.assessmentName || "Certificate Course";
+                            }
+                        }
+                    } catch (error) {
+                        console.error("Failed to fetch assessment data:", error);
+                    }
+                }
+
                 // 2. Generate Certificate
                 const img = new Image();
                 img.crossOrigin = "anonymous";
@@ -438,13 +460,11 @@ export default function DigiCodersPortal() {
                 }
                 if (certTemplate.collegeName?.status !== false) {
                     await ensureFontLoaded(fontCSSMap[certTemplate.collegeName?.fontFamily]);
-                    drawText(capitalizeText(studentData.college), certTemplate.collegeName);
+                    drawText(studentData.college, certTemplate.collegeName);
                 }
                 if (certTemplate.assessmentName?.status !== false) {
                     await ensureFontLoaded(fontCSSMap[certTemplate.assessmentName?.fontFamily]);
-                    // For certificate flow, use certificate name or a default value since we don't have assessment data
-                    const assessmentName = certTemplate.certificateName || "Certificate Course";
-                    drawText(capitalizeText(assessmentName), certTemplate.assessmentName);
+                    drawText(assessmentName, certTemplate.assessmentName);
                 }
                 if (certTemplate.date?.status !== false) {
                     await ensureFontLoaded(fontCSSMap[certTemplate.date?.fontFamily]);

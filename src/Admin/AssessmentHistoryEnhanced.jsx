@@ -144,8 +144,14 @@ export function AssessmentHistory() {
         });
     };
 
-    const handleCopyLink = (code) => {
-        const link = `${window.location.origin}/${code}`;
+    const handleCopyLink = (item) => {
+        let link;
+        if (item.certificateOnly) {
+            const certificateId = item.certificateName?._id || item.certificateName;
+            link = `${window.location.origin}/certificate/${certificateId}/${item.assessmentCode}`;
+        } else {
+            link = `${window.location.origin}/${item.assessmentCode}`;
+        }
         navigator.clipboard.writeText(link).then(() => {
             toast.success("Assessment link copied!");
         }).catch(() => {
@@ -189,7 +195,8 @@ export function AssessmentHistory() {
         hasCertificate: 'No',
         certificateType: 'Default',
         certificateName: '',
-        remark: ''
+        remark: '',
+        certificateOnly: 'No'
     });
 
 
@@ -214,7 +221,8 @@ export function AssessmentHistory() {
             hasCertificate: assessment.generateCertificate ? 'Yes' : 'No',
             certificateType: assessment.certificateType || 'Default',
             remark: assessment.remark,
-            certificateName: assessment.certificateName?.certificateName || ''
+            certificateName: assessment.certificateName?.certificateName || '',
+            certificateOnly: assessment.certificateOnly ? 'Yes' : 'No'
         });
         setCertificateSearch(assessment.certificateName?.certificateName || '');
         setIsModalOpen(true);
@@ -261,7 +269,8 @@ export function AssessmentHistory() {
             endTime: autoTimes.endTime,
             hasCertificate: 'No',
             certificateType: 'Default',
-            remark: ''
+            remark: '',
+            certificateOnly: 'No'
         });
         setCertificateSearch('');
         setShowCertificateDropdown(false);
@@ -278,13 +287,15 @@ export function AssessmentHistory() {
             toast.error("Assessment Code is required!");
             return;
         }
-        if (!formData.totalQuestions) {
-            toast.error("Total Questions is required!");
-            return;
-        }
-        if (!formData.duration) {
-            toast.error("Duration is required!");
-            return;
+        if (formData.certificateOnly === 'No') {
+            if (!formData.totalQuestions) {
+                toast.error("Total Questions is required!");
+                return;
+            }
+            if (!formData.duration) {
+                toast.error("Duration is required!");
+                return;
+            }
         }
         if (!formData.startTime.trim()) {
             toast.error("Start Date-Time is required!");
@@ -297,7 +308,7 @@ export function AssessmentHistory() {
 
         // Validate certificate field if certificate is enabled
         let selectedCertificateId = null;
-        if (formData.hasCertificate === 'Yes') {
+        if (formData.hasCertificate === 'Yes' || formData.certificateOnly === 'Yes') {
             const selectedCert = certificateOptions.find(cert => cert.certificateName === certificateSearch);
             if (!selectedCert) {
                 toast.error("Please select a valid certificate from the dropdown options!");
@@ -309,14 +320,15 @@ export function AssessmentHistory() {
         const payload = {
             assessmentName: formData.name,
             assessmentCode: formData.code,
-            totalQuestions: parseInt(formData.totalQuestions),
-            timeDuration: parseInt(formData.duration),
+            totalQuestions: formData.certificateOnly === 'Yes' ? 0 : parseInt(formData.totalQuestions),
+            timeDuration: formData.certificateOnly === 'Yes' ? 0 : parseInt(formData.duration),
             startDateTime: new Date(formData.startTime).toISOString(),
             endDateTime: new Date(formData.endTime).toISOString(),
-            generateCertificate: formData.hasCertificate === 'Yes',
+            generateCertificate: formData.hasCertificate === 'Yes' || formData.certificateOnly === 'Yes',
             certificateName: selectedCertificateId,
             remark: formData.remark,
-            status: false // History assessments are false
+            status: false, // History assessments are false
+            certificateOnly: formData.certificateOnly === 'Yes'
         };
 
         setSubmitting(true);
@@ -471,20 +483,28 @@ export function AssessmentHistory() {
                                                 </label>
                                             </td>
                                             <td className="px-4 py-3 align-top">
-                                                <button
-                                                    onClick={() => {
-                                                        navigate(`/admin/assign-questions/${item._id}`, { state: { assessmentCode: item.assessmentCode } });
-                                                    }}
-                                                    className="bg-emerald-400 text-white px-3 py-1 rounded text-xs font-medium hover:bg-emerald-500 transition-colors"
-                                                >
-                                                    Questions ({item.count || 0}/{item.totalQuestions})
-                                                </button>
+                                                {item.certificateOnly ? (
+                                                    <div className="text-purple-600 font-medium text-sm px-3 py-1 bg-purple-50 rounded inline-block">
+                                                        Certificate Only
+                                                    </div>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => {
+                                                            navigate(`/admin/assign-questions/${item._id}`, { state: { assessmentCode: item.assessmentCode } });
+                                                        }}
+                                                        className="bg-emerald-400 text-white px-3 py-1 rounded text-xs font-medium hover:bg-emerald-500 transition-colors"
+                                                    >
+                                                        Questions ({item.count || 0}/{item.totalQuestions})
+                                                    </button>
+                                                )}
                                             </td>
                                             <td className="px-4 py-3 align-top">
                                                 <div className="font-medium text-[#2D3748]">{item.assessmentName}</div>
-                                                <div className="text-xs bg-[#F56565]/20 text-[#B8322F] inline-block px-1.5 rounded mt-1">
-                                                    {item.timeDuration} Min
-                                                </div>
+                                                {!item.certificateOnly && (
+                                                    <div className="text-xs bg-[#F56565]/20 text-[#B8322F] inline-block px-1.5 rounded mt-1">
+                                                        {item.timeDuration} Min
+                                                    </div>
+                                                )}
                                             </td>
                                             <td className="px-4 py-3 align-top">
                                                 <div className="font-medium text-[#2D3748] mb-2">{item.assessmentCode}</div>
@@ -498,7 +518,7 @@ export function AssessmentHistory() {
                                                         Copy Code
                                                     </button>
                                                     <button
-                                                        onClick={() => handleCopyLink(item.assessmentCode)}
+                                                        onClick={() => handleCopyLink(item)}
                                                         className="flex items-center gap-1 px-2 py-1 bg-green-50 text-green-600 rounded text-xs hover:bg-green-100 transition-colors"
                                                         title="Copy Assessment Link"
                                                     >
@@ -510,9 +530,11 @@ export function AssessmentHistory() {
                                                     <div className="text-xs bg-[#319795]/20 text-[#2B7A73] inline-block px-1.5 rounded">
                                                         Start: {item.start || 0}
                                                     </div>
-                                                    <div className="text-xs bg-[#F56565]/20 text-[#B8322F] inline-block px-1.5 rounded">
-                                                        Submit: {item.submit || 0}
-                                                    </div>
+                                                    {!item.certificateOnly && (
+                                                        <div className="text-xs bg-[#F56565]/20 text-[#B8322F] inline-block px-1.5 rounded">
+                                                            Submit: {item.submit || 0}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </td>
                                             <td className="px-4 py-3 align-top text-gray-500 text-xs whitespace-nowrap">
@@ -530,12 +552,14 @@ export function AssessmentHistory() {
                                             </td>
                                             <td className="px-4 py-3 align-top">
                                                 <div className="flex flex-col gap-1.5">
-                                                    <button
-                                                        onClick={() => navigate(`/admin/assessment/result/${item._id}`)}
-                                                        className="border border-[#319795] text-[#319795] px-2 py-0.5 rounded text-xs hover:bg-[#E6FFFA]"
-                                                    >
-                                                        Result
-                                                    </button>
+                                                    {!item.certificateOnly && (
+                                                        <button
+                                                            onClick={() => navigate(`/admin/assessment/result/${item._id}`)}
+                                                            className="border border-[#319795] text-[#319795] px-2 py-0.5 rounded text-xs hover:bg-[#E6FFFA]"
+                                                        >
+                                                            Result
+                                                        </button>
+                                                    )}
                                                     <button
                                                         onClick={() => navigate(`/admin/assessment/started-students/${item._id}`, { state: { assessmentCode: item.assessmentCode } })}
                                                         className="border border-orange-500 text-orange-500 px-2 py-0.5 rounded text-xs hover:bg-orange-50"
@@ -633,23 +657,50 @@ export function AssessmentHistory() {
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1">Total Question<span className="text-red-500">*</span></label>
-                                <input
-                                    type="number"
-                                    value={formData.totalQuestions}
-                                    onChange={(e) => setFormData({ ...formData, totalQuestions: e.target.value })}
-                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#319795]"
-                                />
+                                <label className="block text-xs font-semibold text-gray-600 mb-1">Only Certificate</label>
+                                <div className="flex gap-4">
+                                    <label className="flex items-center gap-2 text-sm text-gray-600">
+                                        <input
+                                            type="radio"
+                                            name="certificate_only_history"
+                                            checked={formData.certificateOnly === 'Yes'}
+                                            onChange={() => setFormData({ ...formData, certificateOnly: 'Yes', hasCertificate: 'Yes' })}
+                                            className="text-[#319795] focus:ring-[#319795]"
+                                        /> Yes
+                                    </label>
+                                    <label className="flex items-center gap-2 text-sm text-gray-600">
+                                        <input
+                                            type="radio"
+                                            name="certificate_only_history"
+                                            checked={formData.certificateOnly === 'No'}
+                                            onChange={() => setFormData({ ...formData, certificateOnly: 'No' })}
+                                            className="text-[#319795] focus:ring-[#319795]"
+                                        /> No
+                                    </label>
+                                </div>
                             </div>
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1">Time Duration (Min)<span className="text-red-500">*</span></label>
-                                <input
-                                    type="text"
-                                    value={formData.duration}
-                                    onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#319795]"
-                                />
-                            </div>
+                            {formData.certificateOnly === 'No' && (
+                                <>
+                                    <div>
+                                        <label className="block text-xs font-semibold text-gray-600 mb-1">Total Question<span className="text-red-500">*</span></label>
+                                        <input
+                                            type="number"
+                                            value={formData.totalQuestions}
+                                            onChange={(e) => setFormData({ ...formData, totalQuestions: e.target.value })}
+                                            className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#319795]"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-semibold text-gray-600 mb-1">Time Duration (Min)<span className="text-red-500">*</span></label>
+                                        <input
+                                            type="text"
+                                            value={formData.duration}
+                                            onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                                            className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#319795]"
+                                        />
+                                    </div>
+                                </>
+                            )}
                             <div>
                                 <label className="block text-xs font-semibold text-gray-600 mb-1">Start Date-Time<span className="text-red-500">*</span></label>
                                 <input
@@ -668,32 +719,34 @@ export function AssessmentHistory() {
                                     className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#319795]"
                                 />
                             </div>
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1">Generate Certificate</label>
-                                <div className="flex gap-4">
-                                    <label className="flex items-center gap-2 text-sm text-gray-600">
-                                        <input
-                                            type="radio"
-                                            name="cert_history"
-                                            checked={formData.hasCertificate === 'Yes'}
-                                            onChange={() => setFormData({ ...formData, hasCertificate: 'Yes' })}
-                                            className="text-[#319795] focus:ring-[#319795]"
-                                        /> Yes
-                                    </label>
-                                    <label className="flex items-center gap-2 text-sm text-gray-600">
-                                        <input
-                                            type="radio"
-                                            name="cert_history"
-                                            checked={formData.hasCertificate === 'No'}
-                                            onChange={() => setFormData({ ...formData, hasCertificate: 'No' })}
-                                            className="text-[#319795] focus:ring-[#319795]"
-                                        /> No
-                                    </label>
+                            {formData.certificateOnly === 'No' && (
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Generate Certificate</label>
+                                    <div className="flex gap-4">
+                                        <label className="flex items-center gap-2 text-sm text-gray-600">
+                                            <input
+                                                type="radio"
+                                                name="cert_history"
+                                                checked={formData.hasCertificate === 'Yes'}
+                                                onChange={() => setFormData({ ...formData, hasCertificate: 'Yes' })}
+                                                className="text-[#319795] focus:ring-[#319795]"
+                                            /> Yes
+                                        </label>
+                                        <label className="flex items-center gap-2 text-sm text-gray-600">
+                                            <input
+                                                type="radio"
+                                                name="cert_history"
+                                                checked={formData.hasCertificate === 'No'}
+                                                onChange={() => setFormData({ ...formData, hasCertificate: 'No' })}
+                                                className="text-[#319795] focus:ring-[#319795]"
+                                            /> No
+                                        </label>
+                                    </div>
                                 </div>
-                            </div>
-                            {formData.hasCertificate === 'Yes' && (
+                            )}
+                            {(formData.hasCertificate === 'Yes' || formData.certificateOnly === 'Yes') && (
                                 <div className="relative" ref={certificateRef}>
-                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Choose Certificate Name</label>
+                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Choose Certificate Name<span className="text-red-500">*</span></label>
                                     <input
                                         type="text"
                                         value={certificateSearch}
