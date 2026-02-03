@@ -16,6 +16,8 @@ export function ActiveAssessment() {
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(0);
+    const [totalCount, setTotalCount] = useState(0);
     const itemsPerPage = 10;
     const [certificateSearch, setCertificateSearch] = useState('');
     const [showCertificateDropdown, setShowCertificateDropdown] = useState(false);
@@ -73,8 +75,7 @@ export function ActiveAssessment() {
 
     useEffect(() => {
         fetchAssessments();
-        fetchCertificates();
-    }, []);
+    }, [currentPage]);
 
     const formatDisplayDate = (dateStr) => {
         if (!dateStr) return 'N/A';
@@ -96,8 +97,10 @@ export function ActiveAssessment() {
     };
 
     const [certificateOptions, setCertificateOptions] = useState([]);
+    const [certificateLoading, setCertificateLoading] = useState(false);
 
     const fetchCertificates = async () => {
+        setCertificateLoading(true);
         try {
             const response = await getAllCertificatesApi();
             if (response.success) {
@@ -105,15 +108,18 @@ export function ActiveAssessment() {
             }
         } catch (error) {
             console.error('Failed to fetch certificates:', error);
+        } finally {
+            setCertificateLoading(false);
         }
     };
 
     const fetchAssessments = async () => {
         setLoading(true);
         try {
-            const response = await getAssessmentByStatusApi(true);
-            const sortedAssessments = (response.assessments || []).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-            setAssessments(sortedAssessments);
+            const response = await getAssessmentByStatusApi(true, currentPage, itemsPerPage);
+            setAssessments(response.assessments || []);
+            setTotalPages(response.totalPages || 0);
+            setTotalCount(response.totalCount || 0);
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to fetch assessments');
             setAssessments([]);
@@ -141,8 +147,7 @@ export function ActiveAssessment() {
 
 
 
-    const totalPages = Math.ceil(assessments.length / itemsPerPage);
-    const paginatedAssessments = assessments.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
 
     const handleCopyCode = (code) => {
         navigator.clipboard.writeText(code).then(() => {
@@ -239,6 +244,7 @@ export function ActiveAssessment() {
         });
         setCertificateSearch(assessment.certificateName?.certificateName || '');
         setShowCertificateDropdown(false);
+        fetchCertificates();
         setIsModalOpen(true);
     };
 
@@ -292,6 +298,7 @@ export function ActiveAssessment() {
         });
         setCertificateSearch('');
         setShowCertificateDropdown(false);
+        fetchCertificates();
         setIsModalOpen(true);
     };
 
@@ -465,7 +472,7 @@ export function ActiveAssessment() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-[#E6FFFA]">
-                                    {paginatedAssessments.length === 0 ? (
+                                    {assessments.length === 0 ? (
                                         <tr>
                                             <td colSpan="9" className="px-4 py-20 text-center">
                                                 <div className="flex flex-col items-center justify-center text-gray-400">
@@ -475,7 +482,7 @@ export function ActiveAssessment() {
                                                 </div>
                                             </td>
                                         </tr>
-                                    ) : paginatedAssessments.map((item, index) => (
+                                    ) : assessments.map((item, index) => (
                                         <tr key={item._id} >
                                             <td className="px-4 py-3 align-top">{(currentPage - 1) * itemsPerPage + index + 1}</td>
                                             <td className="px-4 py-3 align-top">
@@ -504,7 +511,7 @@ export function ActiveAssessment() {
                                                 )}
                                             </td>
                                             <td className="px-4 py-3 align-top">
-                                                <div className="font-medium text-[#2D3748]">{item.assessmentName}</div>
+                                                <div className="w-32 whitespace-normal break-words text-[#2D3748] font-medium leading-tight">{item.assessmentName}</div>
                                                 {!item.certificateOnly && (
                                                     <div className="text-xs bg-[#F56565]/20 text-[#B8322F] inline-block px-1.5 rounded mt-1">
                                                         {item.timeDuration} Min
@@ -552,8 +559,8 @@ export function ActiveAssessment() {
                                                 </div>
                                             </td>
                                             <td className="px-4 py-3 align-top text-[#2D3748]">
-                                                <div>{item.generateCertificate ? 'Yes' : 'No'}</div>
-                                                <div className="text-xs text-gray-400">{item.certificateName?.certificateName || 'N/A'}</div>
+                                                <div className="w-20 whitespace-normal break-words text-xs leading-tight">{item.generateCertificate ? 'Yes' : 'No'}</div>
+                                                <div className="w-20 whitespace-normal break-words text-xs text-gray-400 leading-tight">{item.certificateName?.certificateName || 'N/A'}</div>
                                             </td>
                                             <td className="px-4 py-3 align-top">
                                                 <div className="flex flex-col gap-1.5">
@@ -596,7 +603,7 @@ export function ActiveAssessment() {
                         </div>
                         <div className="px-4 py-3 border-t border-[#E6FFFA] text-xs text-[#2D3748] flex flex-col sm:flex-row justify-between items-center gap-4">
                             <span>
-                                Showing {paginatedAssessments.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} to {Math.min(currentPage * itemsPerPage, assessments.length)} of {assessments.length} entries
+                                Showing {assessments.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} to {Math.min(currentPage * itemsPerPage, totalCount)} of {totalCount} entries
                             </span>
                             <div className="flex items-center gap-1">
                                 <button
@@ -607,15 +614,9 @@ export function ActiveAssessment() {
                                     Previous
                                 </button>
 
-                                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                                    <button
-                                        key={page}
-                                        onClick={() => setCurrentPage(page)}
-                                        className={`w-8 h-8 rounded transition-all duration-200 ${currentPage === page ? 'bg-[#319795] text-white shadow-md' : 'hover:bg-gray-100 text-gray-600'}`}
-                                    >
-                                        {page}
-                                    </button>
-                                ))}
+                                <span className="px-3 py-1.5 bg-[#319795] text-white rounded font-medium">
+                                    {currentPage}
+                                </span>
 
                                 <button
                                     onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
@@ -769,7 +770,12 @@ export function ActiveAssessment() {
 
                                         {showCertificateDropdown && (
                                             <div className="absolute z-10 w-full bg-white border border-gray-300 rounded mt-1 max-h-40 overflow-y-auto">
-                                                {filteredCertificates.length > 0 ? (
+                                                {certificateLoading ? (
+                                                    <div className="px-3 py-4 text-center">
+                                                        <Loader2 className="h-4 w-4 animate-spin text-[#319795] mx-auto mb-2" />
+                                                        <div className="text-xs text-gray-500">Loading certificates...</div>
+                                                    </div>
+                                                ) : filteredCertificates.length > 0 ? (
                                                     filteredCertificates.map((cert) => (
                                                         <div
                                                             key={cert._id}

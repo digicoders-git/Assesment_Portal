@@ -515,11 +515,11 @@ export function ManageStudents() {
                         <div className="font-medium">Showing {((currentPage - 1) * pagination.limit) + 1} to {Math.min(currentPage * pagination.limit, pagination.total)} of {pagination.total} entries</div>
                         <div className="flex items-center gap-2">
                             <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} className="px-4 py-1.5 rounded-lg border bg-white shadow-sm font-bold hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all">Prev</button>
-                            <div className="flex gap-1.5 overflow-x-auto max-w-[200px] sm:max-w-none no-scrollbar">
-                                {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map(p => (
-                                    <button key={p} onClick={() => handlePageChange(p)} className={`min-w-[36px] h-9 rounded-lg font-bold transition-all ${currentPage === p ? 'bg-[#319795] text-white ring-2 bg-teal-400' : 'bg-white border text-gray-700 hover:bg-gray-100'}`}>{p}</button>
-                                ))}
-                            </div>
+                            
+                            <span className="px-3 py-1.5 bg-[#319795] text-white rounded font-medium">
+                                {currentPage}
+                            </span>
+                            
                             <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === pagination.totalPages || pagination.totalPages === 0} className="px-4 py-1.5 rounded-lg border bg-white shadow-sm font-bold hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all">Next</button>
                         </div>
                     </div>

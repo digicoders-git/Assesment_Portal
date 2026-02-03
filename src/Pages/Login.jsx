@@ -79,10 +79,6 @@ export default function DigiCodersPortal() {
                     const template = response?.certificate || (response?._id ? response : null);
                     if (template) {
                         setCertTemplate(template);
-                        // Auto-fill assessment code if provided in URL
-                        if (assessmentCode) {
-                            setFormData(prev => ({ ...prev, code: assessmentCode }));
-                        }
                     } else {
                         toast.error("No certificate found for this link");
                         setCertNotFound(true);
@@ -125,34 +121,15 @@ export default function DigiCodersPortal() {
     };
 
     useEffect(() => {
-        // Auto-fill and validate assessment code from URL parameter
-        const validateAndFillCode = async () => {
-            if (code) {
-                try {
-                    // Fetch all active assessments to validate the code
-                    const response = await getAssessmentByStatusApi(true);
-                    if (response && response.assessments) {
-                        const activeAssessments = response.assessments;
-                        const isValidCode = activeAssessments.some(
-                            assesment => assesment.assessmentCode === code
-                        );
-
-                        if (isValidCode) {
-                            setFormData(prev => ({ ...prev, code: code }));
-                        } else {
-                            // If code is provided but not found in active list, redirect to base login
-                            navigate('/');
-                        }
-                    }
-                } catch (error) {
-                    console.error("Code validation error:", error);
-                    navigate('/');
-                }
-            }
-        };
-
-        validateAndFillCode();
-    }, [code, navigate]);
+        // Auto-fill assessment code from URL parameter without validation
+        if (code) {
+            setFormData(prev => ({ ...prev, code: code }));
+        }
+        // Auto-fill assessment code from certificate URL
+        if (assessmentCode) {
+            setFormData(prev => ({ ...prev, code: assessmentCode }));
+        }
+    }, [code, assessmentCode]);
 
     // Check for existing student when mobile number is valid
     useEffect(() => {

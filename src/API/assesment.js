@@ -17,10 +17,11 @@ export const getAllAssessmentsApi = async () => {
 
 
 // Get Assessment by Status
-export const getAssessmentByStatusApi = async (status) => {
-  const res = await api.get(`/admin/assesment/get/${status}`);
+export const getAssessmentByStatusApi = async (status, page = 1, limit = 10) => {
+  const res = await api.get(`/admin/assesment/get/${status}?page=${page}&limit=${limit}`);
   return res.data;
 };
+
 
 // Update Assessment
 export const updateAssessmentApi = async (id, payload) => {

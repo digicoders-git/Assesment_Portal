@@ -308,15 +308,9 @@ export function ManageTopics() {
                                     Previous
                                 </button>
 
-                                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                                    <button
-                                        key={page}
-                                        onClick={() => setCurrentPage(page)}
-                                        className={`w-8 h-8 rounded transition-all duration-200 ${currentPage === page ? 'bg-[#319795] text-white shadow-md' : 'hover:bg-gray-100 text-gray-600'}`}
-                                    >
-                                        {page}
-                                    </button>
-                                ))}
+                                <span className="px-3 py-1.5 bg-[#319795] text-white rounded font-medium">
+                                    {currentPage}
+                                </span>
 
                                 <button
                                     onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}

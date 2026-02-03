@@ -20,6 +20,7 @@ export default function Assessment() {
     const [submitting, setSubmitting] = useState(false);
     const [assesmentQuestionsId, setAssesmentQuestionsId] = useState(null);
     const [certificateId, setCertificateId] = useState(null);
+    const [assessmentCode, setAssessmentCode] = useState(null);
     const tabWarningsRef = useRef(0);
 
     const navigate = useNavigate();
@@ -46,6 +47,7 @@ export default function Assessment() {
                     setQuestions(mappedQuestions);
                     setAssesmentQuestionsId(response.data._id);
                     setCertificateId(response.data.assesmentId?.certificateName);
+                    setAssessmentCode(response.data.assesmentId?.assessmentCode);
                     const durationInMinutes = response.data.assesmentId?.timeDuration || 30;
                     setTimeLeft(durationInMinutes * 60);
                     setTotalDuration(durationInMinutes * 60);
@@ -331,6 +333,7 @@ export default function Assessment() {
         const payload = {
             student: studentId,
             assesmentQuestions: assesmentQuestionsId,
+            assessmentCode: assessmentCode,
             answers: answersArray,
             total: String(questions.length),
             attempted: String(attemptedCount),

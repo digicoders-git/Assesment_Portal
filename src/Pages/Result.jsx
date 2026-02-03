@@ -343,8 +343,12 @@ export default function Result() {
             if (certificateData.date) {
                 const dateFont = fontCSSMap[certificateData.date?.fontFamily] || 'Inter, sans-serif';
                 await ensureFontLoaded(dateFont);
-                const dateToUse = location.state?.submissionDate ||
-                    (resultData.createdAt ? new Date(resultData.createdAt).toLocaleDateString() : new Date().toLocaleDateString());
+                const dateToUse = location.state?.submissionDate || new Date().toLocaleDateString("en-IN", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric"
+                });
+            
                 drawText(dateToUse, {
                     ...certificateData.date,
                     fontFamily: dateFont
@@ -366,11 +370,11 @@ export default function Result() {
             // Generate blob with dynamic quality to keep size <= 3MB
             let quality = 1.0; // start with max quality
             let blob;
-            let dataUrl; 
+            let dataUrl;
             const maxBytes = 3 * 1024 * 1024; // 3 MB max
 
             do {
-                dataUrl = canvas.toDataURL('image/jpeg', quality); 
+                dataUrl = canvas.toDataURL('image/jpeg', quality);
                 blob = await (await fetch(dataUrl)).blob();
 
                 if (blob.size <= maxBytes) break; // size acceptable
@@ -522,15 +526,6 @@ export default function Result() {
 
                         {/* Actions */}
                         <div id="action-buttons" className="flex flex-col md:flex-row gap-4">
-                            {certificateData && (
-                                <button
-                                    onClick={handleDownloadCertificate}
-                                    className="flex items-center gap-2 px-8 py-3 bg-[#a855f7] hover:bg-[#9333ea] text-white rounded-xl font-bold shadow-lg shadow-purple-200 transition-all hover:-translate-y-1"
-                                >
-                                    <Download size={20} /> DOWNLOAD CERTIFICATE
-                                </button>
-                            )}
-
                             <button
                                 onClick={handleSaveResult}
                                 className="flex items-center gap-2 px-8 py-3 bg-[#0D9488] hover:bg-[#115E59] text-white rounded-xl font-bold shadow-lg transition-all hover:-translate-y-1"
@@ -573,7 +568,7 @@ export default function Result() {
                                     rel="noopener noreferrer"
                                     className="flex items-center gap-2 px-4 py-2 bg-pink-500 hover:bg-pink-600 text-white rounded-lg font-medium text-sm transition-all hover:scale-105 shadow-md"
                                 >
-                                    <Instagram size={16} /> 
+                                    <Instagram size={16} />
                                 </a>
                                 <a
                                     href="https://www.facebook.com/DigiCodersTech/"
@@ -581,7 +576,7 @@ export default function Result() {
                                     rel="noopener noreferrer"
                                     className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium text-sm transition-all hover:scale-105 shadow-md"
                                 >
-                                    <Facebook size={16} /> 
+                                    <Facebook size={16} />
                                 </a>
                                 <a
                                     href="https://t.me/digicoderstech"
@@ -589,7 +584,7 @@ export default function Result() {
                                     rel="noopener noreferrer"
                                     className="flex items-center gap-2 px-4 py-2 bg-blue-400 hover:bg-blue-500 text-white rounded-lg font-medium text-sm transition-all hover:scale-105 shadow-md"
                                 >
-                                    <Send size={16} /> 
+                                    <Send size={16} />
                                 </a>
                             </div>
                         </div>
@@ -598,6 +593,18 @@ export default function Result() {
                     </div>
                 </div>
             </div>
+
+            {/* Fixed Certificate Button at Bottom */}
+            {certificateData && (
+                <div className="fixed bottom-0 left-0 right-0 p-2 bg-white border-t border-gray-200 shadow-lg z-50 flex justify-center">
+                    <button
+                        onClick={handleDownloadCertificate}
+                        className="w-4/5 md:w-full md:max-w-2xl flex items-center justify-center gap-2 px-6 py-2 md:py-4 bg-[#a855f7] hover:bg-[#9333ea] text-white rounded-xl font-bold shadow-lg transition-all active:scale-95 text-sm md:text-lg"
+                    >
+                        <Download size={24} /> DOWNLOAD CERTIFICATE
+                    </button>
+                </div>
+            )}
         </div>
 
 

@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Download, Search, FileText, FileSpreadsheet, ChevronDown, ArrowLeft, Eye, Loader2, RotateCcw } from 'lucide-react';
+import { Download, Search, FileText, FileSpreadsheet, ChevronDown, ArrowLeft, Eye, Loader2, RotateCcw, Edit, X } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { getResultsByAssessmentIdApi, downloadResultsByAssessmentIdApi } from '../API/result';
+import { getSingleStudentApi, uploadStudentCertificateApi, updateStudentApi } from '../API/student';
+import { getSingleCertificateApi } from '../API/certificate';
 
 const handleExportData = async () => {
     if (!id) return;
@@ -22,7 +24,6 @@ const handleExportData = async () => {
         setExportLoading(false);
     }
 };
-import { getSingleStudentApi } from '../API/student';
 
 export default function AssessmentResult() {
     const { id } = useParams();
@@ -36,6 +37,8 @@ export default function AssessmentResult() {
     const [firstSubmissions, setFirstSubmissions] = useState([]);
     const [secondSubmissions, setSecondSubmissions] = useState([]);
     const [activeTab, setActiveTab] = useState('first');
+    const [assessmentName, setAssessmentName] = useState('');
+    const [certificateId, setCertificateId] = useState(null);
     const [pagination, setPagination] = useState({
         total: 0,
         totalPages: 1,
@@ -47,6 +50,10 @@ export default function AssessmentResult() {
         year: ''
     });
     const [isInitialLoad, setIsInitialLoad] = useState(true);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editingStudent, setEditingStudent] = useState(null);
+    const [submitting, setSubmitting] = useState(false);
+    const [updatedStudents, setUpdatedStudents] = useState(new Set());
 
 
     const fetchResults = async (page = 1) => {
@@ -63,11 +70,16 @@ export default function AssessmentResult() {
             });
 
             if (response.success) {
+                // Store assessment name and certificate ID from response
+                setAssessmentName(response.assessmentName || '');
+                setCertificateId(response.certificateName || null);
+
                 const formatData = (list, submissionType) => list.map(res => ({
                     id: res._id,
                     studentId: res.student?._id,
                     name: res.student?.name || "N/A",
                     phone: res.student?.mobile || "N/A",
+                    email: res.student?.email || "N/A",
                     course: res.student?.course || "N/A",
                     year: res.student?.year || "N/A",
                     college: res.student?.college || "N/A",
@@ -129,6 +141,51 @@ export default function AssessmentResult() {
         navigate(`/admin/assessment/details/${student.studentId}`);
     };
 
+    const handleEditStudent = (student) => {
+        setEditingStudent({ ...student });
+        setIsEditModalOpen(true);
+    };
+
+    const handleSaveStudent = async () => {
+        if (!editingStudent.name || !editingStudent.phone || !editingStudent.email || !editingStudent.college || !editingStudent.course || !editingStudent.year) {
+            toast.error("All fields are required!");
+            return;
+        }
+
+        setSubmitting(true);
+        try {
+            const payload = {
+                name: editingStudent.name,
+                mobile: editingStudent.phone,
+                email: editingStudent.email,
+                college: editingStudent.college,
+                course: editingStudent.course,
+                year: editingStudent.year
+            };
+
+            const response = await updateStudentApi(editingStudent.studentId, payload);
+
+            if (response.success) {
+                // Update both first and second submissions
+                setFirstSubmissions(prev => prev.map(s => s.studentId === editingStudent.studentId ? editingStudent : s));
+                setSecondSubmissions(prev => prev.map(s => s.studentId === editingStudent.studentId ? editingStudent : s));
+                
+                // Mark student as updated for certificate regeneration
+                setUpdatedStudents(prev => new Set([...prev, editingStudent.studentId]));
+                
+                setIsEditModalOpen(false);
+                toast.success("Student updated successfully!");
+            } else {
+                toast.error(response.message || "Failed to update student");
+            }
+        } catch (error) {
+            console.error("Update Error:", error);
+            toast.error(error.response?.data?.message || "Failed to update student");
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
     // Get current data based on active tab
     const getCurrentData = () => {
         return activeTab === 'first' ? firstSubmissions : secondSubmissions;
@@ -163,6 +220,32 @@ export default function AssessmentResult() {
         }
     };
 
+    // Font mapping
+    const fontCSSMap = {
+        'Inter': 'Inter, sans-serif',
+        'Roboto': 'Roboto, sans-serif',
+        'Playfair Display': 'Playfair Display, serif',
+        'Montserrat': 'Montserrat, sans-serif',
+        'Dancing Script': 'Dancing Script, cursive',
+        'Courier New': 'Courier New, monospace',
+        'Lobster': 'Lobster, cursive',
+        'Pacifico': 'Pacifico, cursive',
+        'Great Vibes': 'Great Vibes, cursive',
+        'Satisfy': 'Satisfy, cursive',
+        'Kaushan Script': 'Kaushan Script, cursive',
+        'Crimson Text': 'Crimson Text, serif',
+        'Libre Baskerville': 'Libre Baskerville, serif',
+        'Cormorant Garamond': 'Cormorant Garamond, serif'
+    };
+
+    const ensureFontLoaded = async (fontFamily) => {
+        if (!fontFamily) return;
+        const cleanName = fontFamily.split(',')[0].trim();
+        const isLoaded = document.fonts.check(`16px "${cleanName}"`);
+        if (isLoaded) return;
+        await document.fonts.ready;
+    };
+
     const downloadStudentResult = async (studentItem) => {
         if (!studentItem.studentId) {
             toast.error("Invalid Student ID");
@@ -172,31 +255,163 @@ export default function AssessmentResult() {
         try {
             const response = await getSingleStudentApi(studentItem.studentId);
 
-            if (response.success && response.student && response.student.certificate) {
-                const certUrl = response.student.certificate;
-
-                // Fetch the image to force download
-                const imageResponse = await fetch(certUrl);
-                if (!imageResponse.ok) {
-                    throw new Error("Failed to fetch certificate image");
+            if (response.success && response.student) {
+                const student = response.student;
+                const isStudentUpdated = updatedStudents.has(studentItem.studentId);
+                
+                // Check if certificate exists and student hasn't been updated
+                if (student.certificate && !isStudentUpdated) {
+                    const imageResponse = await fetch(student.certificate);
+                    if (!imageResponse.ok) throw new Error("Failed to fetch certificate");
+                    
+                    const blob = await imageResponse.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `Certificate_${student.name.replace(/\s+/g, '_')}.jpg`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                    toast.success("Certificate downloaded successfully!");
+                    return;
                 }
 
-                const blob = await imageResponse.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.style.display = 'none';
-                a.href = url;
-                // Extract extension or default to jpg
-                const ext = certUrl.split('.').pop().split('?')[0] || 'jpg';
-                a.download = `Certificate_${studentItem.name.replace(/\s+/g, '_')}.${ext}`;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
+                // Generate certificate if it doesn't exist OR student was updated if it doesn't exist
+                if (!certificateId) {
+                    toast.error("Certificate template not found for this assessment");
+                    return;
+                }
 
-                toast.success("Certificate downloaded successfully!");
+                const toastId = toast.loading("Generating certificate...");
+                
+                try {
+                    // Get certificate template
+                    const certResponse = await getSingleCertificateApi(certificateId);
+                    const certTemplate = certResponse?.certificate || certResponse;
+                    
+                    if (!certTemplate) {
+                        throw new Error("Certificate template not found");
+                    }
+
+                    // Generate certificate using canvas
+                    const img = new Image();
+                    img.crossOrigin = "anonymous";
+                    img.src = certTemplate.certificateImage;
+
+                    await new Promise((resolve, reject) => {
+                        img.onload = resolve;
+                        img.onerror = () => reject(new Error("Failed to load certificate template"));
+                    });
+
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    const w = certTemplate.width || img.width;
+                    const h = certTemplate.height || img.height;
+                    canvas.width = w;
+                    canvas.height = h;
+
+                    ctx.drawImage(img, 0, 0, w, h);
+                    await document.fonts.ready;
+
+                    const capitalizeText = (text) => {
+                        if (!text) return text;
+                        return text.toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+                    };
+
+                    const drawText = (text, style) => {
+                        if (!style || !text) return;
+                        const weight = style.bold ? 'bold ' : '';
+                        const italic = style.italic ? 'italic ' : '';
+                        const fontFamily = fontCSSMap[style.fontFamily] || 'Inter, sans-serif';
+
+                        const fontSizePx = style.fontSize?.toString().includes('%')
+                            ? (parseFloat(style.fontSize) / 100) * canvas.width
+                            : parseFloat(style.fontSize);
+
+                        ctx.font = `${weight}${italic}${fontSizePx}px ${fontFamily}`;
+                        ctx.fillStyle = style.textColor || '#000';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+
+                        const x = style.horizontalPosition?.toString().includes('%')
+                            ? (parseFloat(style.horizontalPosition) / 100) * canvas.width
+                            : parseFloat(style.horizontalPosition);
+                        const y = style.verticalPosition?.toString().includes('%')
+                            ? (parseFloat(style.verticalPosition) / 100) * canvas.height
+                            : parseFloat(style.verticalPosition);
+
+                        ctx.fillText(text, x, y);
+                    };
+
+                    // Draw certificate fields
+                    if (certTemplate.studentName?.status !== false) {
+                        await ensureFontLoaded(fontCSSMap[certTemplate.studentName?.fontFamily]);
+                        drawText(capitalizeText(student.name), certTemplate.studentName);
+                    }
+                    if (certTemplate.collegeName?.status !== false) {
+                        await ensureFontLoaded(fontCSSMap[certTemplate.collegeName?.fontFamily]);
+                        drawText(student.college, certTemplate.collegeName);
+                    }
+                    if (certTemplate.assessmentName?.status !== false) {
+                        await ensureFontLoaded(fontCSSMap[certTemplate.assessmentName?.fontFamily]);
+                        drawText(assessmentName, certTemplate.assessmentName);
+                    }
+                    if (certTemplate.date?.status !== false) {
+                        await ensureFontLoaded(fontCSSMap[certTemplate.date?.fontFamily]);
+                        drawText(new Date().toLocaleDateString(), certTemplate.date);
+                    }
+                    if (certTemplate.assessmentCode?.status !== false) {
+                        await ensureFontLoaded(fontCSSMap[certTemplate.assessmentCode?.fontFamily]);
+                        drawText(student.code || "DIGICODERS", certTemplate.assessmentCode);
+                    }
+
+                    const blob = await new Promise(resolve => {
+                        canvas.toBlob(resolve, 'image/jpeg', 0.75);
+                    });
+
+                    const fileName = `${certTemplate.certificateName}_${student.name}`.replace(/\s+/g, '_') + '.jpg';
+                    const file = new File([blob], fileName, { type: 'image/jpeg' });
+
+                    // Upload certificate
+                    await uploadStudentCertificateApi(student._id, file);
+
+                    // Remove student from updated list after successful regeneration
+                    if (isStudentUpdated) {
+                        setUpdatedStudents(prev => {
+                            const newSet = new Set(prev);
+                            newSet.delete(studentItem.studentId);
+                            return newSet;
+                        });
+                    }
+
+                    // Download certificate
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = fileName;
+                    document.body.appendChild(a);
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+
+                    toast.update(toastId, {
+                        render: "Certificate generated and downloaded!",
+                        type: "success",
+                        isLoading: false,
+                        autoClose: 3000
+                    });
+                } catch (certError) {
+                    console.error("Certificate generation error:", certError);
+                    toast.update(toastId, {
+                        render: certError.message || "Failed to generate certificate",
+                        type: "error",
+                        isLoading: false,
+                        autoClose: 3000
+                    });
+                }
             } else {
-                toast.error("Certificate not generated for this student");
+                toast.error("Student not found");
             }
         } catch (error) {
             console.error("Certificate Download Error:", error);
@@ -407,7 +622,7 @@ export default function AssessmentResult() {
                                         <th className="px-4 py-3 text-center min-w-[90px] text-xs uppercase tracking-wider">Score</th>
                                         <th className="px-4 py-3 text-center min-w-[100px] text-xs uppercase tracking-wider">Duration</th>
                                         <th className="px-4 py-3 min-w-[150px] text-xs uppercase tracking-wider">Date/Time</th>
-                                        <th className="px-4 py-3 text-center min-w-[70px] text-xs uppercase tracking-wider">Print</th>
+                                        <th className="px-4 py-3 text-center min-w-[70px] text-xs uppercase tracking-wider">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 bg-white">
@@ -476,12 +691,20 @@ export default function AssessmentResult() {
                                                 {item.time}
                                             </td>
                                             <td className="px-4 py-3 text-center">
-                                                <button
-                                                    onClick={() => downloadStudentResult(item)}
-                                                    className="text-teal-600 hover:text-teal-800 p-1.5 hover:bg-teal-100 rounded-lg transition-all active:scale-90"
-                                                >
-                                                    <Download className="h-4 w-4" />
-                                                </button>
+                                                <div className="flex justify-center gap-2">
+                                                    <button
+                                                        onClick={() => handleEditStudent(item)}
+                                                        className="text-teal-600 border border-teal-600 p-1.5 rounded-lg hover:bg-teal-50 transition-all active:scale-90"
+                                                    >
+                                                        <Edit className="h-4 w-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => downloadStudentResult(item)}
+                                                        className="text-teal-600 hover:text-teal-800 p-1.5 hover:bg-teal-100 rounded-lg transition-all active:scale-90"
+                                                    >
+                                                        <Download className="h-4 w-4" />
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
@@ -518,6 +741,97 @@ export default function AssessmentResult() {
                     </div>
                 </div>
             </div>
+
+            {isEditModalOpen && (
+                <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl transform transition-all animate-in zoom-in duration-200">
+                        <div className="bg-gradient-to-r from-teal-600 to-teal-500 text-white px-6 py-4 flex justify-between items-center">
+                            <h3 className="font-bold text-lg flex items-center gap-2">
+                                <Edit className="h-5 w-5" /> Edit Student Details
+                            </h3>
+                            <button onClick={() => setIsEditModalOpen(false)} className="text-white/80 hover:text-white">
+                                <X className="h-6 w-6" />
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Full Name</label>
+                                <input 
+                                    type="text" 
+                                    value={editingStudent?.name || ''} 
+                                    onChange={(e) => setEditingStudent({ ...editingStudent, name: e.target.value })} 
+                                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none" 
+                                />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Phone</label>
+                                    <input 
+                                        type="text" 
+                                        value={editingStudent?.phone || ''} 
+                                        onChange={(e) => setEditingStudent({ ...editingStudent, phone: e.target.value })} 
+                                        className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none" 
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">College</label>
+                                    <input 
+                                        type="text" 
+                                        value={editingStudent?.college || ''} 
+                                        onChange={(e) => setEditingStudent({ ...editingStudent, college: e.target.value })} 
+                                        className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none" 
+                                    />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Course</label>
+                                    <input 
+                                        type="text" 
+                                        value={editingStudent?.course || ''} 
+                                        onChange={(e) => setEditingStudent({ ...editingStudent, course: e.target.value })} 
+                                        className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none" 
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Year</label>
+                                    <input 
+                                        type="text" 
+                                        value={editingStudent?.year || ''} 
+                                        onChange={(e) => setEditingStudent({ ...editingStudent, year: e.target.value })} 
+                                        className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none" 
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Email</label>
+                                <input 
+                                    type="email" 
+                                    value={editingStudent?.email || ''} 
+                                    onChange={(e) => setEditingStudent({ ...editingStudent, email: e.target.value })} 
+                                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none" 
+                                />
+                            </div>
+                        </div>
+                        <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t border-gray-100">
+                            <button 
+                                onClick={() => setIsEditModalOpen(false)} 
+                                className="px-4 py-2 rounded-lg text-sm font-bold text-gray-500 hover:bg-gray-200"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleSaveStudent}
+                                disabled={submitting}
+                                className={`px-6 py-2 rounded-lg text-sm font-bold bg-teal-600 text-white hover:bg-teal-700 shadow-lg shadow-teal-500/20 active:scale-95 transition-all flex items-center gap-2 ${submitting ? 'opacity-70 cursor-not-allowed' : ''}`}
+                            >
+                                {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                                {submitting ? "Saving..." : "Save Changes"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
