@@ -284,7 +284,7 @@ export default function AdminDashboard() {
                 {/* Footer */}
                 <footer className="px-6 py-4 text-center border-t print:hidden" style={{ backgroundColor: '#FFFFFF', borderColor: 'rgba(0,0,0,0.1)' }}>
                     <p className="text-sm" style={{ color: '#2D3748' }}>
-                        © 2025 <span style={{ color: '#FF7F50', fontWeight: '600' }}>DigiCoders Assessment Portal</span>
+                        © 2026 <span style={{ color: '#FF7F50', fontWeight: '600' }}>DigiCoders Assessment Portal</span>
                     </p>
                 </footer>
             </div>

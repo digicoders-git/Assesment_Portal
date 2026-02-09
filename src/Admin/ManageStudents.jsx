@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Edit, Trash2, X, Download, Loader2, RotateCcw } from 'lucide-react';
+import { Search, Edit, X, Download, Loader2, RotateCcw } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { getAllStudentsApi, getStudentsByAssessmentApi, updateStudentApi, downloadStudentsByAssessmentApi, downloadStudentsPDFApi } from '../API/student';
 import { getAllAssessmentsApi } from '../API/assesment';
-import Swal from 'sweetalert2';
 
 export function ManageStudents() {
     const [searchQuery, setSearchQuery] = useState('');
@@ -212,26 +211,7 @@ export function ManageStudents() {
     };
 
     const handleDeleteStudent = (student) => {
-        Swal.fire({
-            title: 'Delete Student?',
-            text: `Are you sure you want to delete ${student.name}? This action cannot be undone.`,
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#F56565',
-            cancelButtonColor: '#319795',
-            confirmButtonText: 'Yes, Delete!',
-            cancelButtonText: 'Cancel'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                setStudents(students.filter(s => s.id !== student.id));
-                Swal.fire({
-                    title: 'Deleted!',
-                    text: `${student.name} has been deleted successfully.`,
-                    icon: 'success',
-                    confirmButtonColor: '#319795'
-                });
-            }
-        });
+        // Delete functionality removed
     };
 
     const downloadExcel = async () => {
@@ -495,7 +475,6 @@ export function ManageStudents() {
                                         <td className="px-6 py-4">
                                             <div className="flex justify-center gap-2">
                                                 <button onClick={() => handleEditStudent(student)} className="text-[#319795] border border-[#319795] p-1.5 rounded-lg hover:bg-[#E6FFFA] transition-all active:scale-90"><Edit className="h-4 w-4" /></button>
-                                                <button onClick={() => handleDeleteStudent(student)} className="text-[#F56565] border border-[#F56565] p-1.5 rounded-lg hover:bg-[#F56565]/10 transition-all active:scale-90"><Trash2 className="h-4 w-4" /></button>
                                             </div>
                                         </td>
                                     </tr>

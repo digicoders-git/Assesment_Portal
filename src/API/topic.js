@@ -7,8 +7,11 @@ export const createTopicApi = async (payload) => {
 };
 
 // Get All Topics
-export const getAllTopicsApi = async () => {
-  const res = await api.get("/admin/topic/get");
+export const getAllTopicsApi = async (status) => {
+  if(status) {
+    const res = await api.get(`/admin/topic/get?status=${status}`);
+    return res.data;
+  }const res = await api.get("/admin/topic/get");
   return res.data;
 };
 

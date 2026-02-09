@@ -166,27 +166,21 @@ export default function AcademicSetup() {
                 <p className="text-sm text-gray-500">
                     Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} entries
                 </p>
-                <div className="flex gap-1.5">
+                <div className="flex gap-2">
                     <button
                         onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                         disabled={currentPage === 1}
-                        className={`px-3 py-1.5 rounded-md border text-sm font-medium transition-all ${currentPage === 1 ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50 active:scale-95'}`}
+                        className="px-3 py-1.5 rounded transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 text-[#319795]"
                     >
                         Previous
                     </button>
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                        <button
-                            key={page}
-                            onClick={() => setCurrentPage(page)}
-                            className={`w-9 h-9 flex items-center justify-center rounded-md text-sm font-bold transition-all ${currentPage === page ? 'bg-[#319795] text-white shadow-md' : 'bg-white border text-gray-600 hover:bg-gray-50'}`}
-                        >
-                            {page}
-                        </button>
-                    ))}
+                    <span className="px-3 py-1.5 bg-[#319795] text-white rounded font-medium text-sm">
+                        {currentPage}
+                    </span>
                     <button
                         onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                         disabled={currentPage === totalPages}
-                        className={`px-3 py-1.5 rounded-md border text-sm font-medium transition-all ${currentPage === totalPages ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50 active:scale-95'}`}
+                        className="px-3 py-1.5 rounded transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 text-[#319795]"
                     >
                         Next
                     </button>

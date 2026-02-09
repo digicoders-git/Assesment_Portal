@@ -720,13 +720,6 @@ export function ManageCertificate() {
                                                                 <Edit className="h-4 w-4" />
                                                             </button>
                                                             <button
-                                                                onClick={() => handleCopyCertLink(cert._id)}
-                                                                className="text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 p-2 rounded-lg transition-all"
-                                                                title="Copy Direct Link"
-                                                            >
-                                                                <Copy className="h-4 w-4" />
-                                                            </button>
-                                                            <button
                                                                 onClick={() => handleDelete(cert._id)}
                                                                 className="text-slate-400 hover:text-red-500 hover:bg-red-50 p-2 rounded-lg transition-all"
                                                                 title="Delete Template"
@@ -759,27 +752,21 @@ export function ManageCertificate() {
                             <p className="text-xs text-gray-500">
                                 Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filtered.length)} of {filtered.length} templates
                             </p>
-                            <div className="flex gap-1.5">
+                            <div className="flex gap-2">
                                 <button
                                     onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                                     disabled={currentPage === 1}
-                                    className={`px-3 py-1 text-xs font-bold rounded-lg border transition-all ${currentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-100 active:scale-95 shadow-sm'}`}
+                                    className="px-3 py-1.5 rounded transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 text-teal-600"
                                 >
-                                    Prev
+                                    Previous
                                 </button>
-                                {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
-                                    <button
-                                        key={p}
-                                        onClick={() => setCurrentPage(p)}
-                                        className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${currentPage === p ? 'bg-teal-500 text-white shadow-md' : 'bg-white border text-gray-600 hover:bg-gray-100'}`}
-                                    >
-                                        {p}
-                                    </button>
-                                ))}
+                                <span className="px-3 py-1.5 bg-teal-500 text-white rounded font-medium text-sm">
+                                    {currentPage}
+                                </span>
                                 <button
                                     onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                                     disabled={currentPage === totalPages}
-                                    className={`px-3 py-1 text-xs font-bold rounded-lg border transition-all ${currentPage === totalPages ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-100 active:scale-95 shadow-sm'}`}
+                                    className="px-3 py-1.5 rounded transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 text-teal-600"
                                 >
                                     Next
                                 </button>

@@ -20,6 +20,7 @@ export default function AssignQuestions() {
 
     const [topics, setTopics] = useState([]);
     const [availableQuestions, setAvailableQuestions] = useState([]);
+    const [topicSearchQuery, setTopicSearchQuery] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
     const [loading, setLoading] = useState(false);
@@ -27,6 +28,7 @@ export default function AssignQuestions() {
     const [submitting, setSubmitting] = useState(false);
     const [junctionId, setJunctionId] = useState(null);
     const [isExpired, setIsExpired] = useState(false);
+    const [totalQuestions, setTotalQuestions] = useState(0);
 
     // Helper function to convert "DD/MM/YYYY, HH:MM:SS" to Date object
     const parseBackendDate = (dateStr) => {
@@ -80,7 +82,7 @@ export default function AssignQuestions() {
 
     const fetchTopics = async () => {
         try {
-            const response = await getAllTopicsApi();
+            const response = await getAllTopicsApi(true);
             if (response.success) {
                 setTopics(response.topics || []);
             }
@@ -136,6 +138,7 @@ export default function AssignQuestions() {
 
                 setJunctionId(jId);
                 setAssignedQuestions(Array.isArray(list) ? list : []);
+                setTotalQuestions(response.data?.assesmentId?.totalQuestions || 0);
             }
         } catch (error) {
             console.error("Error in fetchAssignedQuestions:", error);
@@ -191,10 +194,8 @@ export default function AssignQuestions() {
         const allSelected = availableIds.every(q_id => selectedQuestions.includes(q_id));
 
         if (allSelected) {
-            // Deselect all from current topic
             setSelectedQuestions(prev => prev.filter(q_id => !availableIds.includes(q_id)));
         } else {
-            // Select all from current topic
             setSelectedQuestions(prev => [...new Set([...prev, ...availableIds])]);
         }
     };
@@ -306,6 +307,11 @@ export default function AssignQuestions() {
         }
     };
 
+    // Filter topics based on search
+    const filteredTopics = topics.filter(topic => 
+        topic.topicName.toLowerCase().includes(topicSearchQuery.toLowerCase())
+    );
+
     // Filter out already assigned questions from current questions
     const assignedQuestionIds = assignedQuestions.map(q => typeof q === 'object' ? q._id : q);
     const finalAvailableQuestions = availableQuestions.filter(q => !assignedQuestionIds.includes(q._id));
@@ -397,7 +403,18 @@ export default function AssignQuestions() {
 
                     {isTopicDropdownOpen && (
                         <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg overflow-hidden z-[50]">
-                            {topics.map(topic => (
+                            <div className="p-2 border-b border-gray-200">
+                                <input
+                                    type="text"
+                                    value={topicSearchQuery}
+                                    onChange={(e) => setTopicSearchQuery(e.target.value)}
+                                    placeholder="Search topics..."
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-[#319795]"
+                                    onClick={(e) => e.stopPropagation()}
+                                />
+                            </div>
+                            <div className="max-h-96 overflow-y-auto custom-scrollbar">
+                            {filteredTopics.map(topic => (
                                 <button
                                     key={topic._id}
                                     onClick={() => {
@@ -409,11 +426,12 @@ export default function AssignQuestions() {
                                     <span className={`font-bold ${selectedTopic === topic._id ? 'text-[#319795]' : 'text-gray-600'}`}>{topic.topicName}</span>
                                     <div className="flex items-center gap-2">
                                         <span className="text-[10px] font-bold text-green-600 bg-green-100 px-2 py-1 rounded-md">
-                                            {getTopicAssignedCount(topic._id)} Assigned
+                                            {getTopicAssignedCount(topic._id)}/{topic.questionCout || 0}
                                         </span>
                                     </div>
                                 </button>
                             ))}
+                            </div>
                         </div>
                     )}
                 </div>
@@ -435,7 +453,7 @@ export default function AssignQuestions() {
                 ) : (
                     <>
                         {/* Select All Button */}
-                        <div className="mb-4">
+                        <div className="mb-4 flex items-center justify-between">
                             <button
                                 onClick={handleSelectAll}
                                 disabled={isExpired}
@@ -444,6 +462,7 @@ export default function AssignQuestions() {
                                 {finalAvailableQuestions.every(q => selectedQuestions.includes(q._id)) ? 'Deselect All' : 'Select All'}
                             </button>
                         </div>
+                        <div className="bg-white rounded-xl border border-gray-200 p-4 max-h-[600px] overflow-y-auto custom-scrollbar">
                         {finalAvailableQuestions.map((q) => (
                             <div
                                 key={q._id}
@@ -465,6 +484,7 @@ export default function AssignQuestions() {
                                 </div>
                             </div>
                         ))}
+                        </div>
                     </>
                 )}
             </div>
@@ -472,7 +492,7 @@ export default function AssignQuestions() {
             {assignedQuestions.length >= 0 && (
                 <div className="mt-8">
                     <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-bold text-gray-800">Already Assigned Questions ({assignedQuestions.length})</h3>
+                        <h3 className="text-lg font-bold text-gray-800">Already Assigned Questions ({assignedQuestions.length}/{totalQuestions})</h3>
                         {assignedQuestions.length > 0 && (
                             <div className="relative w-64">
                                 <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -562,32 +582,21 @@ export default function AssignQuestions() {
                                         <div className="text-sm text-gray-500">
                                             Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredAssignedQuestions.length)} of {filteredAssignedQuestions.length} entries
                                         </div>
-                                        <div className="flex items-center gap-1">
+                                        <div className="flex items-center gap-2">
                                             <button
                                                 onClick={() => handlePageChange(currentPage - 1)}
                                                 disabled={currentPage === 1}
-                                                className="px-3 py-1 text-sm text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="px-3 py-1.5 rounded transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 text-[#319795]"
                                             >
                                                 Previous
                                             </button>
-
-                                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                                                <button
-                                                    key={page}
-                                                    onClick={() => handlePageChange(page)}
-                                                    className={`px-3 py-1 text-sm rounded transition-colors ${currentPage === page
-                                                        ? 'bg-teal-500 text-white'
-                                                        : 'text-gray-600 hover:bg-gray-100'
-                                                        }`}
-                                                >
-                                                    {page}
-                                                </button>
-                                            ))}
-
+                                            <span className="px-3 py-1.5 bg-[#319795] text-white rounded font-medium text-sm">
+                                                {currentPage}
+                                            </span>
                                             <button
                                                 onClick={() => handlePageChange(currentPage + 1)}
                                                 disabled={currentPage === totalPages}
-                                                className="px-3 py-1 text-sm text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="px-3 py-1.5 rounded transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 text-[#319795]"
                                             >
                                                 Next
                                             </button>

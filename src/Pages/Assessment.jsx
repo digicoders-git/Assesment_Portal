@@ -349,6 +349,7 @@ export default function Assessment() {
             const response = await createResultApi(payload);
             if (response.success) {
                 navigate(`/result/${studentId}/${assesmentQuestionsId}/${certificateId}`, {
+                    replace: true,
                     state: {
                         submissionTime: new Date().toLocaleTimeString(),
                         submissionDate: new Date().toLocaleDateString(),

@@ -22,6 +22,21 @@ export default function Result() {
     const [certificateData, setCertificateData] = useState(null);
     const [loading, setLoading] = useState(true);
 
+    // Prevent back navigation
+    useEffect(() => {
+        window.history.pushState(null, '', window.location.href);
+        
+        const handlePopState = () => {
+            window.history.pushState(null, '', window.location.href);
+        };
+        
+        window.addEventListener('popstate', handlePopState);
+        
+        return () => {
+            window.removeEventListener('popstate', handlePopState);
+        };
+    }, []);
+
     // load fonts 
     const ensureFontLoaded = async (fontFamily) => {
         if (!fontFamily) return;
