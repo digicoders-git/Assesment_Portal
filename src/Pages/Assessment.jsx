@@ -22,6 +22,7 @@ export default function Assessment() {
     const [certificateId, setCertificateId] = useState(null);
     const [assessmentCode, setAssessmentCode] = useState(null);
     const tabWarningsRef = useRef(0);
+    const testStartTimeRef = useRef(null);
 
     const navigate = useNavigate();
     const { code, studentId } = useParams();
@@ -95,6 +96,7 @@ export default function Assessment() {
             allowEscapeKey: false
         }).then((result) => {
             if (result.isConfirmed) {
+                testStartTimeRef.current = Date.now();
                 setTestStarted(true);
             }
         });
@@ -327,8 +329,11 @@ export default function Assessment() {
             }
         });
 
-        const timeTaken = totalDuration - timeLeft;
-        const duration = `${Math.floor(timeTaken / 60)}:${(timeTaken % 60).toString().padStart(2, '0')}`;
+        if (!testStartTimeRef.current) {
+            testStartTimeRef.current = Date.now() - 5000;
+        }
+        const timeTakenInSeconds = Math.floor((Date.now() - testStartTimeRef.current) / 1000);
+        const duration = `${Math.floor(timeTakenInSeconds / 60)}:${(timeTakenInSeconds % 60).toString().padStart(2, '0')}`;
 
         const payload = {
             student: studentId,

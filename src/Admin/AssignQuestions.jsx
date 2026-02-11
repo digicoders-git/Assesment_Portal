@@ -28,7 +28,7 @@ export default function AssignQuestions() {
     const [submitting, setSubmitting] = useState(false);
     const [junctionId, setJunctionId] = useState(null);
     const [isExpired, setIsExpired] = useState(false);
-    const [totalQuestions, setTotalQuestions] = useState(0);
+    const [totalQuestions, setTotalQuestions] = useState(null);
 
     // Helper function to convert "DD/MM/YYYY, HH:MM:SS" to Date object
     const parseBackendDate = (dateStr) => {
@@ -108,6 +108,7 @@ export default function AssignQuestions() {
             const response = await getAssessmentByCodeApi(code);
 
             if (response && response.success) {
+                console.log('API Response:', response); // Debug log
                 let list = [];
                 let jId = null;
                 let assessmentDetails = null;
@@ -138,7 +139,14 @@ export default function AssignQuestions() {
 
                 setJunctionId(jId);
                 setAssignedQuestions(Array.isArray(list) ? list : []);
-                setTotalQuestions(response.data?.assesmentId?.totalQuestions || 0);
+                
+                // Set totalQuestions from assessment object in response
+                const total = response.assessment?.totalQuestions || 
+                              response.data?.assesmentId?.totalQuestions || 
+                              response.data?.totalQuestions || 
+                              assessmentDetails?.totalQuestions || 0;
+                setTotalQuestions(total);
+                console.log('Total Questions Set:', total); // Debug log
             }
         } catch (error) {
             console.error("Error in fetchAssignedQuestions:", error);
@@ -181,6 +189,16 @@ export default function AssignQuestions() {
 
     const toggleQuestion = (qId) => {
         if (isExpired) return;
+        
+        // Check if trying to select a new question
+        if (!selectedQuestions.includes(qId)) {
+            const remainingSlots = totalQuestions - assignedQuestions.length;
+            if (selectedQuestions.length >= remainingSlots) {
+                toast.error(`Selected Total limit: ${totalQuestions}`);
+                return;
+            }
+        }
+        
         setSelectedQuestions(prev =>
             prev.includes(qId)
                 ? prev.filter(q_id => q_id !== qId)
@@ -196,7 +214,21 @@ export default function AssignQuestions() {
         if (allSelected) {
             setSelectedQuestions(prev => prev.filter(q_id => !availableIds.includes(q_id)));
         } else {
-            setSelectedQuestions(prev => [...new Set([...prev, ...availableIds])]);
+            const remainingSlots = totalQuestions - assignedQuestions.length;
+            const canSelectCount = remainingSlots - selectedQuestions.length;
+            
+            if (canSelectCount <= 0) {
+                toast.error(`Total question limit reached: ${totalQuestions}`);
+                return;
+            }
+            
+            const questionsToAdd = availableIds.filter(q_id => !selectedQuestions.includes(q_id)).slice(0, canSelectCount);
+            
+            if (questionsToAdd.length < availableIds.length) {
+                toast.warning(`Only ${questionsToAdd.length} question(s) can be selected due to total limit of ${totalQuestions}`);
+            }
+            
+            setSelectedQuestions(prev => [...new Set([...prev, ...questionsToAdd])]);
         }
     };
 
@@ -252,6 +284,7 @@ export default function AssignQuestions() {
             if (response.success) {
                 toast.success(`Questions successfully added!`);
                 setSelectedQuestions([]);
+                setSelectedTopic(''); // Clear selected topic
                 fetchAssignedQuestions();
             } else {
                 toast.error(response.message || "Failed to assign questions");
@@ -492,7 +525,7 @@ export default function AssignQuestions() {
             {assignedQuestions.length >= 0 && (
                 <div className="mt-8">
                     <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-bold text-gray-800">Already Assigned Questions ({assignedQuestions.length}/{totalQuestions})</h3>
+                        <h3 className="text-lg font-bold text-gray-800">Already Assigned Questions ({assignedQuestions.length}/{totalQuestions !== null ? totalQuestions : '...'})</h3>
                         {assignedQuestions.length > 0 && (
                             <div className="relative w-64">
                                 <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />

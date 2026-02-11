@@ -193,7 +193,7 @@ export default function AdminDashboard() {
                             <button
                                 key={item.id}
                                 onClick={() => handleNavigation(item.path)}
-                                className={`w-full flex items-center ${sidebarOpen ? 'px-4' : 'justify-center'} py-3.5 rounded-xl transition-all duration-300 group relative`}
+                                className={`w-full flex items-center ${sidebarOpen ? 'px-4' : 'justify-center'} py-3.5 rounded-xl transition-all duration-300 group relative cursor-pointer`}
                                 style={{
                                     backgroundColor: isActive ? '#287D80' : 'transparent',
                                     color: isActive ? '#FFFFFF' : '#E6FFFA',
@@ -221,7 +221,7 @@ export default function AdminDashboard() {
                 <div className="mt-auto pb-6 px-3 border-t pt-4" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
                     <button
                         onClick={handleLogout}
-                        className={`w-full flex items-center ${sidebarOpen ? 'px-4' : 'justify-center'} py-3.5 rounded-xl transition-all duration-300 group relative border hover:bg-zinc-200 hover:text-red-400`}
+                        className={`w-full flex items-center ${sidebarOpen ? 'px-4' : 'justify-center'} py-3.5 rounded-xl transition-all duration-300 group relative border hover:bg-zinc-200 hover:text-red-400 cursor-pointer`}
 
                         title={!sidebarOpen ? 'Logout' : ''}
                     >

@@ -24,3 +24,9 @@
     scrollbar-width: thin;
     scrollbar-color: #cbd5e1 #f1f5f9;
 }
+
+
+/* Make all buttons show pointer cursor */
+button:not(:disabled) {
+    cursor: pointer;
+}

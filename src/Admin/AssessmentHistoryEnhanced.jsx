@@ -147,6 +147,14 @@ export function AssessmentHistory() {
         });
     };
 
+    const handleCopyName = (name) => {
+        navigator.clipboard.writeText(name).then(() => {
+            toast.success("Assessment name copied!");
+        }).catch(() => {
+            toast.error("Failed to copy name");
+        });
+    };
+
     const handleCopyLink = (item) => {
         let link;
         if (item.certificateOnly) {
@@ -192,7 +200,7 @@ export function AssessmentHistory() {
         name: '',
         code: '',
         totalQuestions: '',
-        duration: '',
+        duration: '15',
         startTime: '',
         endTime: '',
         hasCertificate: 'No',
@@ -270,7 +278,7 @@ export function AssessmentHistory() {
             name: '',
             code: generateAssessmentCode(),
             totalQuestions: '',
-            duration: '',
+            duration: '15',
             startTime: autoTimes.startTime,
             endTime: autoTimes.endTime,
             hasCertificate: 'No',
@@ -437,7 +445,7 @@ export function AssessmentHistory() {
                             setSearchQuery(e.target.value);
                             setCurrentPage(1);
                         }}
-                        className="border border-gray-300 rounded px-3 py-1.5 w-64 focus:outline-none focus:border-[#319795] transition-colors text-sm"
+                        className="border border-gray-300 bg-white rounded px-3 py-1.5 w-64 focus:outline-none focus:border-[#319795] transition-colors text-sm"
                     />
                 </div>
             </div>
@@ -508,7 +516,16 @@ export function AssessmentHistory() {
                                                 )}
                                             </td>
                                             <td className="px-4 py-3 align-top">
-                                                <div className="w-32 whitespace-normal break-words text-[#2D3748] font-medium leading-tight">{item.assessmentName}</div>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-32 whitespace-normal break-words text-[#2D3748] font-medium leading-tight">{item.assessmentName}</div>
+                                                    <button
+                                                        onClick={() => handleCopyName(item.assessmentName)}
+                                                        className="p-1 text-gray-400 hover:text-teal-600 hover:bg-teal-50 rounded transition-colors"
+                                                        title="Copy Assessment Name"
+                                                    >
+                                                        <Copy className="h-3 w-3" />
+                                                    </button>
+                                                </div>
                                                 {!item.certificateOnly && (
                                                     <div className="text-xs bg-[#F56565]/20 text-[#B8322F] inline-block px-1.5 rounded mt-1">
                                                         {item.timeDuration} Min
@@ -698,7 +715,12 @@ export function AssessmentHistory() {
                                         <input
                                             type="text"
                                             value={formData.duration}
-                                            onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                                            onChange={(e) => {
+                                                const value = e.target.value;
+                                                if (/^\d*$/.test(value)) {
+                                                    setFormData({ ...formData, duration: value });
+                                                }
+                                            }}
                                             className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#319795]"
                                         />
                                     </div>

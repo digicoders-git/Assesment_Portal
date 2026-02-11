@@ -145,7 +145,7 @@ export function ManageTopics() {
                         setEditingTopic(null);
                         setIsDialogOpen(true);
                     }}
-                    className="flex items-center gap-2 bg-[#319795] hover:bg-[#2B7A73] text-white px-5 py-2.5 rounded-lg font-medium transition-colors"
+                    className="flex items-center gap-2 bg-[#319795] hover:bg-[#2B7A73] text-white px-5 py-2.5 rounded-lg font-medium transition-colors cursor-pointer"
                 >
                     <Plus className="h-5 w-5" />
                     Add Topic
@@ -156,7 +156,7 @@ export function ManageTopics() {
                     <div className="relative" ref={filterRef}>
                         <button
                             onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
-                            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 transition-all duration-300 font-bold text-sm shadow-sm
+                            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 transition-all duration-300 font-bold text-sm shadow-sm cursor-pointer
                                 ${statusFilter === 'Active'
                                     ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'
                                     : 'bg-rose-50 border-rose-200 text-rose-700 hover:bg-rose-100'}`}
@@ -174,7 +174,7 @@ export function ManageTopics() {
                                         setCurrentPage(1);
                                         setIsFilterDropdownOpen(false);
                                     }}
-                                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold transition-colors
+                                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold transition-colors cursor-pointer
                                         ${statusFilter === 'Active' ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600 hover:bg-gray-50'}`}
                                 >
                                     <CheckCircle2 className={`h-4 w-4 ${statusFilter === 'Active' ? 'text-emerald-500' : 'text-gray-400'}`} />
@@ -186,7 +186,7 @@ export function ManageTopics() {
                                         setCurrentPage(1);
                                         setIsFilterDropdownOpen(false);
                                     }}
-                                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold transition-colors
+                                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold transition-colors cursor-pointer
                                         ${statusFilter === 'Inactive' ? 'bg-rose-50 text-rose-700' : 'text-gray-600 hover:bg-gray-50'}`}
                                 >
                                     <XCircle className={`h-4 w-4 ${statusFilter === 'Inactive' ? 'text-rose-500' : 'text-gray-400'}`} />
@@ -260,7 +260,7 @@ export function ManageTopics() {
                                                 <td className="px-6 py-4">
                                                     <button
                                                         onClick={() => navigate(`/admin/topic-questions/${topic._id}`, { state: { topicName: topic.topicName } })}
-                                                        className="bg-[#319795] hover:bg-[#2B7A73] text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                                                        className="bg-[#319795] hover:bg-[#2B7A73] text-white px-4 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer"
                                                     >
                                                         Questions ({topic.questionCout || 0})
                                                     </button>
@@ -269,19 +269,19 @@ export function ManageTopics() {
                                                     <div className="flex items-center gap-2">
                                                         <button
                                                             onClick={() => navigate(`/admin/print/${topic._id}`, { state: { topicName: topic.topicName } })}
-                                                            className="text-[#319795] hover:text-[#2B7A73] border border-[#319795] hover:border-[#2B7A73] px-3 py-1.5 rounded text-sm font-medium transition-colors"
+                                                            className="text-[#319795] hover:text-[#2B7A73] border border-[#319795] hover:border-[#2B7A73] px-3 py-1.5 rounded text-sm font-medium transition-colors cursor-pointer"
                                                         >
                                                             Print
                                                         </button>
                                                         <button
                                                             onClick={() => handleEdit(topic)}
-                                                            className="text-blue-600 hover:text-blue-700 border border-blue-600 hover:border-blue-700 p-1.5 rounded transition-colors"
+                                                            className="text-blue-600 hover:text-blue-700 border border-blue-600 hover:border-blue-700 p-1.5 rounded transition-colors cursor-pointer"
                                                         >
                                                             <Edit className="h-4 w-4" />
                                                         </button>
                                                         <button
                                                             onClick={() => handleDelete(topic)}
-                                                            className="text-red-600 hover:text-red-700 border border-red-600 hover:border-red-700 p-1.5 rounded transition-colors"
+                                                            className="text-red-600 hover:text-red-700 border border-red-600 hover:border-red-700 p-1.5 rounded transition-colors cursor-pointer"
                                                         >
                                                             <Trash2 className="h-4 w-4" />
                                                         </button>
@@ -303,7 +303,7 @@ export function ManageTopics() {
                                 <button
                                     onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                                     disabled={currentPage === 1}
-                                    className={`px-3 py-1.5 rounded transition-colors ${currentPage === 1 ? 'text-gray-400 cursor-not-allowed' : 'hover:bg-gray-100 text-[#319795] font-medium'}`}
+                                    className={`px-3 py-1.5 rounded transition-colors ${currentPage === 1 ? 'text-gray-400 cursor-not-allowed' : 'hover:bg-gray-100 text-[#319795] font-medium cursor-pointer'}`}
                                 >
                                     Previous
                                 </button>
@@ -315,7 +315,7 @@ export function ManageTopics() {
                                 <button
                                     onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                                     disabled={currentPage === totalPages || totalPages === 0}
-                                    className={`px-3 py-1.5 rounded transition-colors ${currentPage === totalPages || totalPages === 0 ? 'text-gray-400 cursor-not-allowed' : 'hover:bg-gray-100 text-[#319795] font-medium'}`}
+                                    className={`px-3 py-1.5 rounded transition-colors ${currentPage === totalPages || totalPages === 0 ? 'text-gray-400 cursor-not-allowed' : 'hover:bg-gray-100 text-[#319795] font-medium cursor-pointer'}`}
                                 >
                                     Next
                                 </button>
@@ -333,7 +333,7 @@ export function ManageTopics() {
                             <h3 className="text-xl font-semibold">{editingTopic ? 'Edit Topic' : 'Add Topic'}</h3>
                             <button
                                 onClick={() => setIsDialogOpen(false)}
-                                className="text-white hover:text-gray-200 transition-colors"
+                                className="text-white hover:text-gray-200 transition-colors cursor-pointer"
                             >
                                 <X className="h-6 w-6" />
                             </button>
@@ -355,7 +355,7 @@ export function ManageTopics() {
                             <button
                                 onClick={handleSubmit}
                                 disabled={submitting}
-                                className={`w-full ${submitting ? 'bg-[#319795]/70 cursor-not-allowed' : 'bg-[#319795] hover:bg-[#2B7A73]'} text-white py-2.5 rounded font-medium transition-colors flex items-center justify-center gap-2`}
+                                className={`w-full ${submitting ? 'bg-[#319795]/70 cursor-not-allowed' : 'bg-[#319795] hover:bg-[#2B7A73] cursor-pointer'} text-white py-2.5 rounded font-medium transition-colors flex items-center justify-center gap-2`}
                             >
                                 {submitting ? (
                                     <>
