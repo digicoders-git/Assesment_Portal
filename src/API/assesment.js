@@ -17,10 +17,28 @@ export const getAllAssessmentsApi = async () => {
 
 
 // Get Assessment by Status
-export const getAssessmentByStatusApi = async (status, page = 1, limit = 10) => {
-  const res = await api.get(`/admin/assesment/get/${status}?page=${page}&limit=${limit}`);
+export const getAssessmentByStatusApi = async (
+  status,
+  page = 1,
+  limit = 10,
+  search = "",
+  date = ""
+) => {
+  const params = new URLSearchParams({
+    page,
+    limit,
+  });
+
+  if (search) params.append("search", search);
+  if (date) params.append("date", date); // DD/MM/YYYY
+
+  const res = await api.get(
+    `/admin/assesment/get/${status}?${params.toString()}`
+  );
+
   return res.data;
 };
+;
 
 
 // Update Assessment

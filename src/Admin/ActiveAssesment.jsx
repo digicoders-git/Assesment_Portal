@@ -18,6 +18,10 @@ export function ActiveAssessment() {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(0);
     const [totalCount, setTotalCount] = useState(0);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchInput, setSearchInput] = useState('');
+    const [dateQuery, setDateQuery] = useState('');
+    const [dateInput, setDateInput] = useState('');
     const itemsPerPage = 10;
     const [certificateSearch, setCertificateSearch] = useState('');
     const [showCertificateDropdown, setShowCertificateDropdown] = useState(false);
@@ -74,8 +78,16 @@ export function ActiveAssessment() {
     };
 
     useEffect(() => {
+        const timer = setTimeout(() => {
+            setSearchQuery(searchInput);
+            setCurrentPage(1);
+        }, 1500);
+        return () => clearTimeout(timer);
+    }, [searchInput]);
+
+    useEffect(() => {
         fetchAssessments();
-    }, [currentPage]);
+    }, [currentPage, searchQuery, dateQuery]);
 
     const formatDisplayDate = (dateStr) => {
         if (!dateStr) return 'N/A';
@@ -116,7 +128,7 @@ export function ActiveAssessment() {
     const fetchAssessments = async () => {
         setLoading(true);
         try {
-            const response = await getAssessmentByStatusApi(true, currentPage, itemsPerPage);
+            const response = await getAssessmentByStatusApi(true, currentPage, itemsPerPage, searchQuery, dateQuery);
             setAssessments(response.assessments || []);
             setTotalPages(response.totalPages || 0);
             setTotalCount(response.totalCount || 0);
@@ -453,6 +465,45 @@ export function ActiveAssessment() {
                     <Plus className="h-4 w-4 text-white" />
                     Add Assessment
                 </button>
+
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
+                    <div className="relative flex items-center gap-2 w-full sm:w-auto">
+                        <span className="text-sm text-[#2D3748] whitespace-nowrap">Search:</span>
+                        <input
+                            type="text"
+                            value={searchInput}
+                            onChange={(e) => setSearchInput(e.target.value)}
+                            placeholder="Name/Code/Remark"
+                            className="border border-gray-300 bg-white rounded px-3 py-1.5 w-full sm:w-48 focus:outline-none focus:border-[#319795] transition-colors text-sm"
+                        />
+                    </div>
+                    <div className="relative flex items-center gap-2 w-full sm:w-auto">
+                        <span className="text-sm text-[#2D3748] whitespace-nowrap">Date:</span>
+                        <input
+                            type="text"
+                            value={dateInput}
+                            onChange={(e) => setDateInput(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    setDateQuery(dateInput);
+                                    setCurrentPage(1);
+                                }
+                            }}
+                            placeholder="DD/MM/YYYY"
+                            className="border border-gray-300 bg-white rounded px-3 py-1.5 flex-1 sm:w-32 focus:outline-none focus:border-[#319795] transition-colors text-sm"
+                        />
+                        <button
+                            onClick={() => {
+                                setDateQuery(dateInput);
+                                setCurrentPage(1);
+                            }}
+                            className="p-1.5 text-[#319795] hover:bg-[#E6FFFA] rounded transition-colors flex-shrink-0"
+                            title="Search by date"
+                        >
+                            <Search className="h-4 w-4" />
+                        </button>
+                    </div>
+                </div>
             </div>
 
             {/* Table */}

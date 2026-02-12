@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Save, X, GraduationCap, Calendar, BookOpen, Loader2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, X, GraduationCap, Calendar, BookOpen, Loader2, Search } from 'lucide-react';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 import { getAllCollegesApi, createCollegeApi, updateCollegeApi, deleteCollegeApi } from '../API/college';
@@ -17,6 +17,7 @@ export default function AcademicSetup() {
     const [colleges, setColleges] = useState([]);
     const [years, setYears] = useState([]);
     const [courses, setCourses] = useState([]);
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
         fetchData();
@@ -27,6 +28,7 @@ export default function AcademicSetup() {
 
     useEffect(() => {
         setCurrentPage(1);
+        setSearchQuery('');
     }, [activeTab]);
 
     const fetchData = async () => {
@@ -190,13 +192,20 @@ export default function AcademicSetup() {
     };
 
     const renderContent = () => {
+        let filteredData = [];
+        let dataToRender = [];
+
         if (activeTab === 'colleges') {
-            const paginatedColleges = colleges.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+            filteredData = colleges.filter(college => 
+                college.collegeName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                college.location.toLowerCase().includes(searchQuery.toLowerCase())
+            );
+            dataToRender = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
             return (
                 <div className="space-y-4">
-                    {paginatedColleges.length > 0 ? (
+                    {dataToRender.length > 0 ? (
                         <>
-                            {paginatedColleges.map((college, index) => (
+                            {dataToRender.map((college, index) => (
                                 <div key={college._id} className="bg-white p-4 rounded-lg border border-gray-200 flex justify-between items-center">
                                     <div className="flex items-center gap-4">
                                         <div className="bg-[#E6FFFA] text-[#319795] w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs">
@@ -217,7 +226,7 @@ export default function AcademicSetup() {
                                     </div>
                                 </div>
                             ))}
-                            {renderPagination(colleges.length)}
+                            {renderPagination(filteredData.length)}
                         </>
                     ) : (
                         <div className="text-center py-10 text-gray-500 italic">No colleges found</div>
@@ -227,12 +236,15 @@ export default function AcademicSetup() {
         }
 
         if (activeTab === 'years') {
-            const paginatedYears = years.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+            filteredData = years.filter(year => 
+                year.academicYear.toLowerCase().includes(searchQuery.toLowerCase())
+            );
+            dataToRender = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
             return (
                 <div className="space-y-4">
-                    {paginatedYears.length > 0 ? (
+                    {dataToRender.length > 0 ? (
                         <>
-                            {paginatedYears.map((year, index) => (
+                            {dataToRender.map((year, index) => (
                                 <div key={year._id} className="bg-white p-4 rounded-lg border border-gray-200 flex justify-between items-center">
                                     <div className="flex items-center gap-4">
                                         <div className="bg-[#E6FFFA] text-[#319795] w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs">
@@ -250,7 +262,7 @@ export default function AcademicSetup() {
                                     </div>
                                 </div>
                             ))}
-                            {renderPagination(years.length)}
+                            {renderPagination(filteredData.length)}
                         </>
                     ) : (
                         <div className="text-center py-10 text-gray-500 italic">No academic years found</div>
@@ -260,12 +272,15 @@ export default function AcademicSetup() {
         }
 
         if (activeTab === 'courses') {
-            const paginatedCourses = courses.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+            filteredData = courses.filter(course => 
+                course.course.toLowerCase().includes(searchQuery.toLowerCase())
+            );
+            dataToRender = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
             return (
                 <div className="space-y-4">
-                    {paginatedCourses.length > 0 ? (
+                    {dataToRender.length > 0 ? (
                         <>
-                            {paginatedCourses.map((course, index) => (
+                            {dataToRender.map((course, index) => (
                                 <div key={course._id} className="bg-white p-4 rounded-lg border border-gray-200 flex justify-between items-center">
                                     <div className="flex items-center gap-4">
                                         <div className="bg-[#E6FFFA] text-[#319795] w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs">
@@ -283,7 +298,7 @@ export default function AcademicSetup() {
                                     </div>
                                 </div>
                             ))}
-                            {renderPagination(courses.length)}
+                            {renderPagination(filteredData.length)}
                         </>
                     ) : (
                         <div className="text-center py-10 text-gray-500 italic">No courses found</div>
@@ -326,8 +341,8 @@ export default function AcademicSetup() {
                 </div>
             </div>
 
-            {/* Add Button */}
-            <div className="mb-6">
+            {/* Add Button and Search */}
+            <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <button
                     onClick={() => handleAdd(activeTab)}
                     className="flex items-center gap-2 bg-[#319795] hover:bg-[#2B7A73] text-white px-4 py-2 rounded-lg font-medium transition-all"
@@ -335,6 +350,19 @@ export default function AcademicSetup() {
                     <Plus className="h-4 w-4" />
                     Add {activeTab === 'colleges' ? 'College' : activeTab === 'years' ? 'Academic Year' : 'Course'}
                 </button>
+                <div className="relative w-full sm:w-auto">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => {
+                            setSearchQuery(e.target.value);
+                            setCurrentPage(1);
+                        }}
+                        placeholder={`Search ${activeTab === 'colleges' ? 'college name or location' : activeTab === 'years' ? 'academic year' : 'course name'}...`}
+                        className="w-full sm:w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#319795] transition-colors text-sm"
+                    />
+                </div>
             </div>
 
             {/* Content */}

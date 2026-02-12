@@ -25,6 +25,14 @@ const handleExportData = async () => {
     }
 };
 
+const normalizeHttpsUrl = (url) => {
+    if (!url) return url;
+    if (url.startsWith("https://")) return url;
+    if (url.startsWith("http://")) return url.replace("http://", "https://");
+    return url;
+};
+
+
 export default function AssessmentResult() {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -98,7 +106,7 @@ export default function AssessmentResult() {
                 // Set pagination for frontend based on current tab
                 const firstTotal = response.firstSubmission?.length || 0;
                 const secondTotal = response.reattempt?.length || 0;
-                
+
                 setPagination({
                     total: activeTab === 'first' ? firstTotal : secondTotal,
                     totalPages: Math.ceil((activeTab === 'first' ? firstTotal : secondTotal) / itemsPerPage),
@@ -169,10 +177,10 @@ export default function AssessmentResult() {
                 // Update both first and second submissions
                 setFirstSubmissions(prev => prev.map(s => s.studentId === editingStudent.studentId ? editingStudent : s));
                 setSecondSubmissions(prev => prev.map(s => s.studentId === editingStudent.studentId ? editingStudent : s));
-                
+
                 // Mark student as updated for certificate regeneration
                 setUpdatedStudents(prev => new Set([...prev, editingStudent.studentId]));
-                
+
                 setIsEditModalOpen(false);
                 toast.success("Student updated successfully!");
             } else {
@@ -258,12 +266,15 @@ export default function AssessmentResult() {
             if (response.success && response.student) {
                 const student = response.student;
                 const isStudentUpdated = updatedStudents.has(studentItem.studentId);
-                
+
                 // Check if certificate exists and student hasn't been updated
                 if (student.certificate && !isStudentUpdated) {
-                    const imageResponse = await fetch(student.certificate);
+                    // const imageResponse = await fetch(student.certificate);
+                    const certUrl = normalizeHttpsUrl(student.certificate);
+                    const imageResponse = await fetch(certUrl);
+
                     if (!imageResponse.ok) throw new Error("Failed to fetch certificate");
-                    
+
                     const blob = await imageResponse.blob();
                     const url = window.URL.createObjectURL(blob);
                     const a = document.createElement('a');
@@ -284,12 +295,12 @@ export default function AssessmentResult() {
                 }
 
                 const toastId = toast.loading("Generating certificate...");
-                
+
                 try {
                     // Get certificate template
                     const certResponse = await getSingleCertificateApi(certificateId);
                     const certTemplate = certResponse?.certificate || certResponse;
-                    
+
                     if (!certTemplate) {
                         throw new Error("Certificate template not found");
                     }
@@ -297,7 +308,9 @@ export default function AssessmentResult() {
                     // Generate certificate using canvas
                     const img = new Image();
                     img.crossOrigin = "anonymous";
-                    img.src = certTemplate.certificateImage;
+                    // img.src = certTemplate.certificateImage;
+                    img.src = normalizeHttpsUrl(certTemplate.certificateImage);
+
 
                     await new Promise((resolve, reject) => {
                         img.onload = resolve;
@@ -756,66 +769,66 @@ export default function AssessmentResult() {
                         <div className="p-6 space-y-4">
                             <div>
                                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Full Name</label>
-                                <input 
-                                    type="text" 
-                                    value={editingStudent?.name || ''} 
-                                    onChange={(e) => setEditingStudent({ ...editingStudent, name: e.target.value })} 
-                                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none" 
+                                <input
+                                    type="text"
+                                    value={editingStudent?.name || ''}
+                                    onChange={(e) => setEditingStudent({ ...editingStudent, name: e.target.value })}
+                                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none"
                                 />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Phone</label>
-                                    <input 
-                                        type="text" 
-                                        value={editingStudent?.phone || ''} 
-                                        onChange={(e) => setEditingStudent({ ...editingStudent, phone: e.target.value })} 
-                                        className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none" 
+                                    <input
+                                        type="text"
+                                        value={editingStudent?.phone || ''}
+                                        onChange={(e) => setEditingStudent({ ...editingStudent, phone: e.target.value })}
+                                        className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none"
                                     />
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">College</label>
-                                    <input 
-                                        type="text" 
-                                        value={editingStudent?.college || ''} 
-                                        onChange={(e) => setEditingStudent({ ...editingStudent, college: e.target.value })} 
-                                        className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none" 
+                                    <input
+                                        type="text"
+                                        value={editingStudent?.college || ''}
+                                        onChange={(e) => setEditingStudent({ ...editingStudent, college: e.target.value })}
+                                        className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none"
                                     />
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Course</label>
-                                    <input 
-                                        type="text" 
-                                        value={editingStudent?.course || ''} 
-                                        onChange={(e) => setEditingStudent({ ...editingStudent, course: e.target.value })} 
-                                        className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none" 
+                                    <input
+                                        type="text"
+                                        value={editingStudent?.course || ''}
+                                        onChange={(e) => setEditingStudent({ ...editingStudent, course: e.target.value })}
+                                        className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none"
                                     />
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Year</label>
-                                    <input 
-                                        type="text" 
-                                        value={editingStudent?.year || ''} 
-                                        onChange={(e) => setEditingStudent({ ...editingStudent, year: e.target.value })} 
-                                        className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none" 
+                                    <input
+                                        type="text"
+                                        value={editingStudent?.year || ''}
+                                        onChange={(e) => setEditingStudent({ ...editingStudent, year: e.target.value })}
+                                        className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none"
                                     />
                                 </div>
                             </div>
                             <div>
                                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Email</label>
-                                <input 
-                                    type="email" 
-                                    value={editingStudent?.email || ''} 
-                                    onChange={(e) => setEditingStudent({ ...editingStudent, email: e.target.value })} 
-                                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none" 
+                                <input
+                                    type="email"
+                                    value={editingStudent?.email || ''}
+                                    onChange={(e) => setEditingStudent({ ...editingStudent, email: e.target.value })}
+                                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none"
                                 />
                             </div>
                         </div>
                         <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t border-gray-100">
-                            <button 
-                                onClick={() => setIsEditModalOpen(false)} 
+                            <button
+                                onClick={() => setIsEditModalOpen(false)}
                                 className="px-4 py-2 rounded-lg text-sm font-bold text-gray-500 hover:bg-gray-200"
                             >
                                 Cancel
