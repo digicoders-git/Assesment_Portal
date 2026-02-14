@@ -52,9 +52,9 @@ export default function AcademicSetup() {
     };
 
     const tabs = [
-        { id: 'colleges', label: 'Colleges', icon: GraduationCap, count: colleges.length },
-        { id: 'years', label: 'Academic Years', icon: Calendar, count: years.length },
-        { id: 'courses', label: 'Courses', icon: BookOpen, count: courses.length }
+        { id: 'colleges', label: 'Colleges', mobileLabel: 'Colleges', icon: GraduationCap, count: colleges.length },
+        { id: 'years', label: 'Academic Years', mobileLabel: 'Years', icon: Calendar, count: years.length },
+        { id: 'courses', label: 'Courses', mobileLabel: 'Courses', icon: BookOpen, count: courses.length }
     ];
 
     const handleAdd = (type) => {
@@ -325,14 +325,15 @@ export default function AcademicSetup() {
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-md font-medium text-sm transition-all ${activeTab === tab.id
+                                className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 rounded-md font-medium text-xs sm:text-sm transition-all ${activeTab === tab.id
                                     ? 'bg-white text-[#319795] shadow-sm'
                                     : 'text-gray-600 hover:text-gray-800'
                                     }`}
                             >
                                 <Icon className="h-4 w-4" />
-                                {tab.label}
-                                <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full text-xs">
+                                <span className="hidden sm:inline">{tab.label}</span>
+                                <span className="sm:hidden">{tab.mobileLabel}</span>
+                                <span className="bg-gray-200 text-gray-700 px-1.5 sm:px-2 py-0.5 rounded-full text-xs">
                                     {tab.count}
                                 </span>
                             </button>
@@ -360,7 +361,7 @@ export default function AcademicSetup() {
                             setCurrentPage(1);
                         }}
                         placeholder={`Search ${activeTab === 'colleges' ? 'college name or location' : activeTab === 'years' ? 'academic year' : 'course name'}...`}
-                        className="w-full sm:w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#319795] transition-colors text-sm"
+                        className="w-full sm:w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#319795] transition-colors text-sm bg-white"
                     />
                 </div>
             </div>

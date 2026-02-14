@@ -76,19 +76,17 @@ export default function AssessmentDetails() {
 
             <div id="printableArea" style={{ backgroundColor: 'white', color: 'black' }}>
                 {/* Student Info Section */}
-                <div style={{ backgroundColor: 'white', padding: '20px', marginBottom: '20px', border: '1px solid #ccc' }}>
-                    <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '16px' }}>Student Assessment Report</h1>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                        <div>
-                            <p><strong>Student Name:</strong> {studentInfo.name || 'N/A'}</p>
-                            <p><strong>Course:</strong> {studentInfo.course || 'N/A'}</p>
-                            <p><strong>Year:</strong> {studentInfo.year || 'N/A'}</p>
-                            <p><strong>Student Code:</strong> {studentInfo.code || 'N/A'}</p>
-                        </div>
-                        <div>
-                            <p><strong>Phone:</strong> {studentInfo.mobile || 'N/A'}</p>
-                            <p><strong>Email:</strong> {studentInfo.email || 'N/A'}</p>
-                            <p><strong>College:</strong> {studentInfo.college || 'N/A'}</p>
+                <div style={{ backgroundColor: 'white', padding: '16px', marginBottom: '20px', border: '1px solid #ccc', borderRadius: '8px' }}>
+                    <h1 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '12px' }}>Student Assessment Report</h1>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px' }}>
+                        <div style={{ fontSize: '13px', lineHeight: '1.6' }}>
+                            <p style={{ marginBottom: '6px', wordBreak: 'break-word' }}><strong>Name:</strong> {studentInfo.name || 'N/A'}</p>
+                            <p style={{ marginBottom: '6px', wordBreak: 'break-word' }}><strong>Phone:</strong> {studentInfo.mobile || 'N/A'}</p>
+                            <p style={{ marginBottom: '6px', wordBreak: 'break-word' }}><strong>Email:</strong> {studentInfo.email || 'N/A'}</p>
+                            <p style={{ marginBottom: '6px', wordBreak: 'break-word' }}><strong>College:</strong> {studentInfo.college || 'N/A'}</p>
+                            <p style={{ marginBottom: '6px', wordBreak: 'break-word' }}><strong>Course:</strong> {studentInfo.course || 'N/A'}</p>
+                            <p style={{ marginBottom: '6px', wordBreak: 'break-word' }}><strong>Year:</strong> {studentInfo.year || 'N/A'}</p>
+                            <p style={{ marginBottom: '6px', wordBreak: 'break-word' }}><strong>Code:</strong> {studentInfo.code || 'N/A'}</p>
                         </div>
                     </div>
                 </div>

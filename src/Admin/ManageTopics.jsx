@@ -151,19 +151,20 @@ export function ManageTopics() {
                     Add Topic
                 </button>
 
-                <div className="flex items-center gap-4 w-full sm:w-auto">
+                <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto">
                     {/* Custom Premium Filter Dropdown */}
                     <div className="relative" ref={filterRef}>
                         <button
                             onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
-                            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 transition-all duration-300 font-bold text-sm shadow-sm cursor-pointer
+                            className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 sm:py-2.5 rounded-lg border-2 transition-all duration-300 font-bold text-xs sm:text-sm shadow-sm cursor-pointer whitespace-nowrap
                                 ${statusFilter === 'Active'
                                     ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'
                                     : 'bg-rose-50 border-rose-200 text-rose-700 hover:bg-rose-100'}`}
                         >
-                            <Filter className="h-4 w-4" />
-                            <span>Status: {statusFilter}</span>
-                            <ChevronDown className={`h-4 w-4 transition-transform duration-300 ${isFilterDropdownOpen ? 'rotate-180' : ''}`} />
+                            <Filter className="h-3 w-3 sm:h-4 sm:w-4" />
+                            <span className="hidden sm:inline">Status: {statusFilter}</span>
+                            <span className="sm:hidden">{statusFilter}</span>
+                            <ChevronDown className={`h-3 w-3 sm:h-4 sm:w-4 transition-transform duration-300 ${isFilterDropdownOpen ? 'rotate-180' : ''}`} />
                         </button>
 
                         {isFilterDropdownOpen && (
@@ -196,7 +197,7 @@ export function ManageTopics() {
                         )}
                     </div>
 
-                    <div className="relative flex items-center bg-white border-2 border-gray-100 rounded-lg px-3 py-0.5 focus-within:border-[#319795] transition-all shadow-sm">
+                    <div className="relative flex items-center bg-white border-2 border-gray-100 rounded-lg px-2 sm:px-3 py-0.5 focus-within:border-[#319795] transition-all shadow-sm flex-1 sm:flex-initial">
                         <input
                             type="text"
                             value={searchQuery}
@@ -205,7 +206,7 @@ export function ManageTopics() {
                                 setCurrentPage(1);
                             }}
                             placeholder="Find topics..."
-                            className="bg-transparent py-2 w-48 focus:outline-none text-sm font-medium text-gray-700"
+                            className="bg-transparent py-2 w-full sm:w-48 focus:outline-none text-xs sm:text-sm font-medium text-gray-700"
                         />
                     </div>
                 </div>
