@@ -21,6 +21,10 @@ export default function Assessment() {
     const [assesmentQuestionsId, setAssesmentQuestionsId] = useState(null);
     const [certificateId, setCertificateId] = useState(null);
     const [assessmentCode, setAssessmentCode] = useState(null);
+    const [honeypotValue, setHoneypotValue] = useState('');
+    const [isBotDetected, setIsBotDetected] = useState(false);
+    const [showBotModal, setShowBotModal] = useState(false);
+    const [adminPassword, setAdminPassword] = useState('');
     const tabWarningsRef = useRef(0);
     const testStartTimeRef = useRef(null);
 
@@ -286,6 +290,15 @@ export default function Assessment() {
     };
 
     const finalizeSubmission = async () => {
+        // Bot Detection Check - Before API hit
+        if (honeypotValue.trim() !== '') {
+            toast.error('🤖 Bot Detected!', { autoClose: 3000, theme: 'colored' });
+            setIsBotDetected(true);
+            setShowBotModal(true);
+            resetAssessment();
+            return;
+        }
+
         let correctCount = 0;
         let incorrectCount = 0;
         let attemptedCount = 0;
@@ -445,6 +458,54 @@ export default function Assessment() {
         }
     };
 
+    const resetAssessment = () => {
+        setCurrentQuestion(0);
+        setSelectedAnswers({});
+        setSkippedQuestions(new Set());
+        setVisitedQuestions(new Set([0]));
+        setTimeLeft(totalDuration);
+        setTestStarted(false);
+        testStartTimeRef.current = null;
+        setHoneypotValue('');
+        tabWarningsRef.current = 0;
+    };
+
+    const handleAdminPasswordSubmit = () => {
+        const envPassword = import.meta.env.VITE_BOT_DETECTED_RELEASE;
+        if (adminPassword === envPassword) {
+            setShowBotModal(false);
+            setAdminPassword('');
+            setIsBotDetected(false);
+            // Show instruction modal again
+            Swal.fire({
+                title: 'Assessment Restarted',
+                html: `
+                <div class="text-left">
+                    <p class="mb-2">Please read the instructions carefully:</p>
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li><b>Do not switch tabs</b> or minimize the browser.</li>
+                        <li><b>Do not close</b> the test window.</li>
+                        <li>If you switch tabs, you will be <b>Out from the TEST</b>.</li>
+                    </ul>
+                </div>
+            `,
+                icon: 'info',
+                iconColor: '#ef4444',
+                confirmButtonText: 'I Understand, Start Test',
+                confirmButtonColor: '#0D9488',
+                allowOutsideClick: false,
+                allowEscapeKey: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    testStartTimeRef.current = Date.now(); // Fresh start time
+                    setTestStarted(true);
+                }
+            });
+        } else {
+            toast.error('❌ Invalid Password! Contact Admin/Invigilator.', { autoClose: 3000, theme: 'colored' });
+        }
+    };
+
     const jumpToQuestion = (index) => {
         setCurrentQuestion(index);
         setIsPaletteOpen(false); // Close on mobile after selection
@@ -544,6 +605,21 @@ export default function Assessment() {
                                     </div>
                                 ))}
                             </div>
+                            
+                            {/* Honeypot Field - Hidden trap for bots */}
+                            <label style={{ position: 'absolute', left: '-9999px', opacity: 0 }}>
+                                Your Name
+                                <input 
+                                    type="text"
+                                    name="fullname"
+                                    value={honeypotValue}
+                                    onChange={(e) => setHoneypotValue(e.target.value)}
+                                    placeholder="Enter your full name"
+                                    tabIndex="-1"
+                                    autoComplete="off"
+                                    aria-hidden="true"
+                                />
+                            </label>
                         </div>
 
                         {/* Footer / Navigation */}
@@ -676,6 +752,51 @@ export default function Assessment() {
             <footer className="text-center mt-8 text-gray-400 text-sm font-medium">
                 © 2026 DigiCoders Technologies. All Rights Reserved.
             </footer>
+
+            {/* Bot Detection Modal */}
+            {showBotModal && (
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+                    <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl transform transition-all">
+                        <div className="bg-gradient-to-r from-red-600 to-red-500 text-white px-6 py-4 rounded-t-2xl">
+                            <h3 className="font-bold text-xl flex items-center gap-2">
+                                🤖 Bot Detected!
+                            </h3>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
+                                <p className="text-red-800 font-semibold text-sm">
+                                    ⚠️ Automated activity detected during the assessment.
+                                </p>
+                            </div>
+                            <p className="text-gray-700 font-medium">
+                                Please contact your <strong>Admin</strong> or <strong>Invigilator</strong> to continue the test.
+                            </p>
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">
+                                    Admin Password <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="password"
+                                    value={adminPassword}
+                                    onChange={(e) => setAdminPassword(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleAdminPasswordSubmit()}
+                                    placeholder="Enter password to continue"
+                                    className="w-full border-2 border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-[#0D9488] transition-colors"
+                                    autoFocus
+                                />
+                            </div>
+                        </div>
+                        <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t border-gray-200 rounded-b-2xl">
+                            <button
+                                onClick={handleAdminPasswordSubmit}
+                                className="px-6 py-2.5 rounded-lg text-sm font-bold bg-[#0D9488] text-white hover:bg-[#115E59] shadow-lg transition-all"
+                            >
+                                Verify & Continue
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div >
     );
 }
