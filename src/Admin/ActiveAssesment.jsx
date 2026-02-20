@@ -281,7 +281,7 @@ export function ActiveAssessment() {
         const now = new Date();
         const startTime = new Date(now.getTime() - 3 * 60 * 60 * 1000); // 3 hours before
         const endTime = new Date(now.getTime() + 6 * 60 * 60 * 1000); // 6 hours after
-        
+
         const formatDateTime = (date) => {
             const year = date.getFullYear();
             const month = (date.getMonth() + 1).toString().padStart(2, '0');
@@ -290,7 +290,7 @@ export function ActiveAssessment() {
             const minutes = date.getMinutes().toString().padStart(2, '0');
             return `${year}-${month}-${day}T${hours}:${minutes}`;
         };
-        
+
         return {
             startTime: formatDateTime(startTime),
             endTime: formatDateTime(endTime)

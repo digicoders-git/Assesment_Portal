@@ -1,11 +1,14 @@
-import React, { useState } from 'react';
-import { Phone, MessageCircle } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Phone, MessageCircle, Download, FileSpreadsheet, Upload } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import Swal from 'sweetalert2';
 
 export default function LastYearData() {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
+    const fileInputRef = useRef(null);
 
-    const data = [
+    const initialData = [
         { id: 1, name: "Bittu kumar yadav", obtainedMarks: 10, totalMarks: 10, dateTime: "29-01-2026 02:08:29pm", phone: "6392907806", batch: "Seminar/Workshop 2026", college: "Goverment polytechnic bansdeeh ballia", course: "Diploma [Electronics]", year: "1st Year" },
         { id: 2, name: "Raghu kumar yadav", obtainedMarks: 10, totalMarks: 10, dateTime: "29-01-2026 02:08:23pm", phone: "9129811456", batch: "Summer Training [2026]", college: "GOVERNMENT POLYTECHNIC BANSDEEH BALLIA", course: "Diploma [Electronics]", year: "2nd Year" },
         { id: 3, name: "Raghu kumar yadav", obtainedMarks: 10, totalMarks: 10, dateTime: "29-01-2026 02:08:23pm", phone: "9129811456", batch: "Summer Training [2026]", college: "GOVERNMENT POLYTECHNIC BANSDEEH BALLIA", course: "Diploma [Electronics]", year: "2nd Year" },
@@ -65,14 +68,114 @@ export default function LastYearData() {
         { id: 57, name: "Aditya Prajapati", obtainedMarks: 2, totalMarks: 10, dateTime: "29-01-2026 01:57:09pm", phone: "8810881771", batch: "Seminar/Workshop 2026", college: "Government polytechnic bansdeeh", course: "Diploma [Electronics]", year: "1st Year" }
     ];
 
-    const totalPages = Math.ceil(data.length / itemsPerPage);
-    const paginatedData = data.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+    const [tableData, setTableData] = useState(initialData);
+
+    const handleImport = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const data = new Uint8Array(event.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+                if (jsonData.length === 0) {
+                    Swal.fire('Error', 'The selected file is empty.', 'error');
+                    return;
+                }
+
+                // Format validation
+                const requiredFields = ['Student Name', 'Obtained Marks', 'Total Marks', 'Date Time', 'Phone', 'Student Batch', 'College', 'Course', 'Year'];
+                const firstRow = jsonData[0];
+                const missingFields = requiredFields.filter(field => !(field in firstRow));
+
+                if (missingFields.length > 0) {
+                    Swal.fire('Error', `Invalid format. Missing columns: ${missingFields.join(', ')}`, 'error');
+                    return;
+                }
+
+                const newData = jsonData.map((item, index) => ({
+                    id: tableData.length + index + 1,
+                    name: item['Student Name'],
+                    obtainedMarks: item['Obtained Marks'],
+                    totalMarks: item['Total Marks'],
+                    dateTime: item['Date Time'],
+                    phone: item['Phone']?.toString(),
+                    batch: item['Student Batch'],
+                    college: item['College'],
+                    course: item['Course'],
+                    year: item['Year']
+                }));
+
+                setTableData([...tableData, ...newData]);
+                Swal.fire('Success', 'Data imported successfully!', 'success');
+                e.target.value = ''; // Reset file input
+            } catch (error) {
+                console.error('Import error:', error);
+                Swal.fire('Error', 'Failed to parse the Excel file.', 'error');
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    };
+
+    const downloadSample = () => {
+        const sampleData = [
+            {
+                'Student Name': 'John Doe',
+                'Obtained Marks': 85,
+                'Total Marks': 100,
+                'Date Time': '20-02-2026 10:30:00am',
+                'Phone': '9876543210',
+                'Student Batch': 'Winter 2026',
+                'College': 'Sample Engineering College',
+                'Course': 'B.Tech',
+                'Year': '3rd Year'
+            }
+        ];
+
+        const worksheet = XLSX.utils.json_to_sheet(sampleData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'SampleData');
+        XLSX.writeFile(workbook, 'last_year_data_sample.xlsx');
+    };
+
+    const totalPages = Math.ceil(tableData.length / itemsPerPage);
+    const paginatedData = tableData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     return (
         <div className="p-6 bg-[#EDF2F7] min-h-screen">
-            <div className="mb-6">
-                <h2 className="text-2xl font-bold text-gray-800">Last Year Data</h2>
-                <p className="text-sm text-gray-500">DigiCoders Assessment Portal - Historical Records</p>
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <div>
+                    <h2 className="text-2xl font-bold text-gray-800">Last Year Data</h2>
+                    <p className="text-sm text-gray-500">DigiCoders Assessment Portal - Historical Records</p>
+                </div>
+                <div className="flex gap-3">
+                    <button
+                        onClick={downloadSample}
+                        className="flex items-center gap-2 bg-[#E6FFFA] text-[#319795] border border-[#319795] px-4 py-2 rounded-lg hover:bg-[#B2F5EA] transition-colors font-medium text-sm"
+                    >
+                        <Download className="h-4 w-4" />
+                        Download Sample
+                    </button>
+                    <button
+                        onClick={() => fileInputRef.current.click()}
+                        className="flex items-center gap-2 bg-[#319795] text-white px-4 py-2 rounded-lg hover:bg-[#2C7A7B] transition-colors font-medium text-sm shadow-sm"
+                    >
+                        <Upload className="h-4 w-4" />
+                        Import Excel
+                    </button>
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleImport}
+                        accept=".xlsx, .xls"
+                        className="hidden"
+                    />
+                </div>
             </div>
 
             <div className="bg-white rounded-lg border border-[#E6FFFA] overflow-hidden shadow-sm">
@@ -81,23 +184,32 @@ export default function LastYearData() {
                         <thead className="bg-[#E6FFFA] text-[#2D3748] font-semibold border-b border-[#319795]">
                             <tr>
                                 <th className="px-4 py-3">#</th>
+                                <th className="px-4 py-3">Certificate</th>
                                 <th className="px-4 py-3">Student Name</th>
-                                <th className="px-4 py-3">Marks</th>
+                                <th className="px-4 py-3">Obtained Marks</th>
+                                <th className="px-4 py-3">Total Marks</th>
                                 <th className="px-4 py-3">Date Time</th>
                                 <th className="px-4 py-3">Phone</th>
                                 <th className="px-4 py-3">Student Batch</th>
                                 <th className="px-4 py-3">College</th>
                                 <th className="px-4 py-3">Course</th>
                                 <th className="px-4 py-3">Year</th>
+                                <th className="px-4 py-3">Action</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[#E6FFFA]">
                             {paginatedData.map((item, index) => (
                                 <tr key={item.id} className="hover:bg-gray-50 transition-colors">
                                     <td className="px-4 py-3 text-[#4A5568]">{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                                    <td className="px-4 py-3">
+                                        <span className="bg-green-50 text-green-700 px-2 py-1 rounded text-xs font-medium">Certificate</span>
+                                    </td>
                                     <td className="px-4 py-3 font-bold text-[#2D3748]">{item.name}</td>
                                     <td className="px-4 py-3 text-center">
-                                        <span className="bg-orange-50 text-orange-700 px-2 py-1 rounded text-xs font-bold">{item.obtainedMarks}/{item.totalMarks}</span>
+                                        <span className="bg-orange-50 text-orange-700 px-2 py-1 rounded text-xs font-bold">{item.obtainedMarks}</span>
+                                    </td>
+                                    <td className="px-4 py-3 text-center">
+                                        <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs font-bold">{item.totalMarks}</span>
                                     </td>
                                     <td className="px-4 py-3 text-[#718096] text-xs">{item.dateTime}</td>
                                     <td className="px-4 py-3 text-[#4A5568]">
@@ -135,13 +247,18 @@ export default function LastYearData() {
                                     <td className="px-4 py-3">
                                         <span className="bg-purple-50 text-purple-700 px-2 py-1 rounded text-xs font-bold">{item.year}</span>
                                     </td>
+                                    <td className="px-4 py-3">
+                                        <button className="p-1.5 text-teal-600 hover:bg-teal-50 rounded transition-colors" title="Download Certificate">
+                                            <Download className="h-4 w-4" />
+                                        </button>
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
                 </div>
                 <div className="px-4 py-3 border-t border-[#E6FFFA] text-xs text-[#2D3748] flex flex-col sm:flex-row justify-between items-center gap-4">
-                    <span>Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, data.length)} of {data.length} entries</span>
+                    <span>Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, tableData.length)} of {tableData.length} entries</span>
                     <div className="flex items-center gap-1">
                         <button
                             onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
