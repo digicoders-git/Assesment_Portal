@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { Search, ArrowLeft, Download, Loader2, RotateCcw } from 'lucide-react';
+import { Search, ArrowLeft, Download, Loader2, RotateCcw, Phone, MessageCircle } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { getStudentsByAssessmentApi, downloadStudentsByAssessmentApi } from '../API/student';
 
@@ -45,6 +45,7 @@ export default function StartedStudents() {
                 course: filters.course,
                 year: filters.year
             });
+            console.log(response);
 
             if (response.success) {
                 const studentsList = response.students || [];
@@ -56,6 +57,8 @@ export default function StartedStudents() {
                     college: stu.college || "N/A",
                     course: stu.course || "N/A",
                     year: stu.year || "N/A",
+                    marks: stu.marks,
+                    total: stu.total,
                     dateTime: stu.createdAt ? new Date(stu.createdAt).toLocaleString() : "N/A"
                 }));
 
@@ -239,6 +242,7 @@ export default function StartedStudents() {
                                 <th className="px-6 py-4">College</th>
                                 <th className="px-6 py-4">Course</th>
                                 <th className="px-6 py-4">Year</th>
+                                <th className="px-6 py-4">Marks</th>
                                 <th className="px-6 py-4">Date-Time</th>
                             </tr>
                         </thead>
@@ -252,7 +256,29 @@ export default function StartedStudents() {
                                         {student.name}
                                     </td>
                                     <td className="px-6 py-4 text-[#4A5568]">
-                                        {student.phone}
+                                        <div className="flex items-center gap-2">
+                                            <span>{student.phone}</span>
+                                            {student.phone !== "N/A" && (
+                                                <div className="flex gap-1">
+                                                    <a
+                                                        href={`tel:${student.phone}`}
+                                                        className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                                        title="Call"
+                                                    >
+                                                        <Phone className="h-3.5 w-3.5" />
+                                                    </a>
+                                                    <a
+                                                        href={`https://wa.me/${student.phone}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="p-1 text-green-600 hover:bg-green-50 rounded transition-colors"
+                                                        title="WhatsApp"
+                                                    >
+                                                        <MessageCircle className="h-3.5 w-3.5" />
+                                                    </a>
+                                                </div>
+                                            )}
+                                        </div>
                                     </td>
                                     <td className="px-6 py-4 text-[#4A5568]">
                                         <span className="bg-green-50 text-green-700 py-1 px-3 rounded text-xs border border-green-100 font-medium whitespace-normal inline-block max-w-[200px]">
@@ -268,6 +294,15 @@ export default function StartedStudents() {
                                         <span className="bg-purple-50 text-purple-700 py-1 px-3 rounded-full text-xs font-bold border border-purple-100 uppercase tracking-wide">
                                             {student.year}
                                         </span>
+                                    </td>
+                                    <td className="px-6 py-4 text-[#4A5568]">
+                                        {student.marks !== null && student.total !== null ? (
+                                            <span className="bg-orange-50 text-orange-700 py-1 px-3 rounded text-xs font-bold border border-orange-100">
+                                                {student.marks}/{student.total}
+                                            </span>
+                                        ) : (
+                                            <span className="text-gray-400 italic text-xs">Not Submitted</span>
+                                        )}
                                     </td>
                                     <td className="px-6 py-4 text-[#718096] text-xs">
                                         {student.dateTime}

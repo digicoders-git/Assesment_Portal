@@ -12,7 +12,8 @@ import {
     X,
     GraduationCap,
     User,
-    LogOut
+    LogOut,
+    Database
 } from 'lucide-react';
 
 import { getAdminApi } from '../../API/admin';
@@ -84,6 +85,7 @@ export default function AdminDashboard() {
         { id: 'students', label: 'Manage Students', icon: Users, path: '/admin/students' },
         { id: 'certificate', label: 'Manage Certificates', icon: Award, path: '/admin/certificate' },
         { id: 'academic', label: 'Academic Setup', icon: GraduationCap, path: '/admin/academic' },
+        { id: 'last-year-data', label: 'Last Year Data', icon: Database, path: '/admin/last-year-data' },
         { id: 'security', label: 'Profile', icon: User, path: '/admin/security' },
     ];
 

@@ -10,7 +10,7 @@ function App() {
       <Router>
         <AppRoutes />
       </Router>
-      <ToastContainer position="top-right" autoClose={2000} />
+      <ToastContainer position="bottom-center" autoClose={1500} />
     </UserProvider>
   )
 }

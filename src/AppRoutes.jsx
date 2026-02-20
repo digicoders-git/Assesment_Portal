@@ -20,6 +20,7 @@ import { AssessmentHistory } from "./Admin/AssessmentHistoryEnhanced";
 import { ManageStudents } from "./Admin/ManageStudents";
 import { SecuritySettings } from "./Admin/SecuritySettings";
 import { ManageCertificate } from "./Admin/ManageCertificate";
+import LastYearData from "./Admin/LastYearData";
 
 const AppRoutes = () => {
   return (
@@ -41,6 +42,7 @@ const AppRoutes = () => {
         <Route path="certificate" element={<ManageCertificate />} />
         <Route path="academic" element={<AcademicSetup />} />
         <Route path="security" element={<SecuritySettings />} />
+        <Route path="last-year-data" element={<LastYearData />} />
         <Route path="topic-questions/:topicId" element={<TopicQuestions />} />
         <Route path="assessment/result/:id" element={<AssessmentResult />} />
         <Route path="assessment/details/:id" element={<AssessmentDetails />} />

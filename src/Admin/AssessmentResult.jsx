@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Download, Search, FileText, FileSpreadsheet, ChevronDown, ArrowLeft, Eye, Loader2, RotateCcw, Edit, X, Trophy } from 'lucide-react';
+import { Download, Search, FileText, FileSpreadsheet, ChevronDown, ArrowLeft, Eye, Loader2, RotateCcw, Edit, X, Trophy, Phone, MessageCircle } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { getResultsByAssessmentIdApi, downloadResultsByAssessmentIdApi } from '../API/result';
@@ -795,7 +795,29 @@ export default function AssessmentResult() {
                                                 </span>
                                             </td>
                                             <td className="px-4 py-3 text-gray-700 font-medium">
-                                                {item.phone}
+                                                <div className="flex items-center gap-2">
+                                                    <span>{item.phone}</span>
+                                                    {item.phone !== "N/A" && (
+                                                        <div className="flex gap-1">
+                                                            <a
+                                                                href={`tel:${item.phone}`}
+                                                                className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                                                title="Call"
+                                                            >
+                                                                <Phone className="h-3.5 w-3.5" />
+                                                            </a>
+                                                            <a
+                                                                href={`https://wa.me/${item.phone}`}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="p-1 text-green-600 hover:bg-green-50 rounded transition-colors"
+                                                                title="WhatsApp"
+                                                            >
+                                                                <MessageCircle className="h-3.5 w-3.5" />
+                                                            </a>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </td>
                                             <td className="px-4 py-3">
                                                 <div className="truncate max-w-[200px] text-gray-600 font-medium" title={item.college}>
@@ -1126,7 +1148,6 @@ export default function AssessmentResult() {
                                                 <th style="padding:12px;text-align:left;border:1px solid #B2F5EA;font-size:11px;font-weight:bold;vertical-align:middle;">REF CODE</th>
                                                 <th style="padding:12px;text-align:left;border:1px solid #B2F5EA;font-size:11px;font-weight:bold;vertical-align:middle;">COURSE</th>
                                                 <th style="padding:12px;text-align:center;border:1px solid #B2F5EA;font-size:11px;font-weight:bold;vertical-align:middle;">YEAR</th>
-                                                <th style="padding:12px;text-align:left;border:1px solid #B2F5EA;font-size:11px;font-weight:bold;vertical-align:middle;">PHONE</th>
                                                 <th style="padding:12px;text-align:left;border:1px solid #B2F5EA;font-size:11px;font-weight:bold;vertical-align:middle;">COLLEGE</th>
                                                 <th style="padding:12px;text-align:center;border:1px solid #B2F5EA;font-size:11px;font-weight:bold;vertical-align:middle;">SCORE</th>
                                                 <th style="padding:12px;text-align:center;border:1px solid #B2F5EA;font-size:11px;font-weight:bold;vertical-align:middle;">DURATION</th>
@@ -1144,7 +1165,6 @@ export default function AssessmentResult() {
                                                     <td style="padding:12px;border:1px solid #e5e7eb;font-family:monospace;font-size:11px;"><div style="display:flex;align-items:center;height:100%;">${item.refNo}</div></td>
                                                     <td style="padding:12px;border:1px solid #e5e7eb;"><div style="display:flex;align-items:center;height:100%;"><span style="background:#dbeafe;color:#1e40af;padding:6px 10px;border-radius:4px;font-size:11px;font-weight:bold;display:inline-flex;align-items:center;justify-content:center;">${item.course}</span></div></td>
                                                     <td style="padding:12px;text-align:center;border:1px solid #e5e7eb;"><div style="display:flex;align-items:center;justify-content:center;height:100%;"><span style="background:#f3e8ff;color:#6b21a8;padding:6px 10px;border-radius:4px;font-size:11px;font-weight:bold;display:inline-flex;align-items:center;justify-content:center;">${item.year}</span></div></td>
-                                                    <td style="padding:12px;border:1px solid #e5e7eb;"><div style="display:flex;align-items:center;height:100%;">${item.phone}</div></td>
                                                     <td style="padding:12px;border:1px solid #e5e7eb;"><div style="display:flex;align-items:center;height:100%;">${item.college}</div></td>
                                                     <td style="padding:12px;text-align:center;border:1px solid #e5e7eb;"><div style="display:flex;align-items:center;justify-content:center;height:100%;"><span style="background:#ccfbf1;color:#0f766e;padding:6px 12px;border-radius:8px;font-weight:bold;display:inline-flex;align-items:center;justify-content:center;">${item.marks}</span></div></td>
                                                     <td style="padding:12px;text-align:center;border:1px solid #e5e7eb;font-weight:bold;font-size:11px;"><div style="display:flex;align-items:center;justify-content:center;height:100%;">${item.duration}</div></td>
@@ -1200,7 +1220,6 @@ export default function AssessmentResult() {
                                                 <th className="px-4 py-3 text-xs uppercase">Ref Code</th>
                                                 <th className="px-4 py-3 text-xs uppercase">Course</th>
                                                 <th className="px-4 py-3 text-center text-xs uppercase">Year</th>
-                                                <th className="px-4 py-3 text-xs uppercase">Phone</th>
                                                 <th className="px-4 py-3 text-xs uppercase">College</th>
                                                 <th className="px-4 py-3 text-center text-xs uppercase">Score</th>
                                                 <th className="px-4 py-3 text-center text-xs uppercase">Duration</th>
@@ -1223,7 +1242,6 @@ export default function AssessmentResult() {
                                                     <td className="px-4 py-3 text-gray-600 font-mono text-xs font-semibold">{item.refNo}</td>
                                                     <td className="px-4 py-3"><span className="bg-blue-50 text-blue-700 px-2.5 py-1 rounded text-xs font-bold border border-blue-100 uppercase">{item.course}</span></td>
                                                     <td className="px-4 py-3 text-center"><span className="bg-purple-50 text-purple-700 px-2.5 py-1 rounded text-xs font-bold border border-purple-100">{item.year}</span></td>
-                                                    <td className="px-4 py-3 text-gray-700 font-medium">{item.phone}</td>
                                                     <td className="px-4 py-3"><div className="truncate max-w-[200px] text-gray-600 font-medium" title={item.college}>{item.college}</div></td>
                                                     <td className="px-4 py-3 text-center"><span className="bg-teal-50 text-teal-700 font-extrabold px-3 py-1 rounded-lg text-sm border border-teal-200 shadow-sm">{item.marks}</span></td>
                                                     <td className="px-4 py-3 text-center text-gray-600 font-bold text-xs uppercase">{item.duration}</td>
