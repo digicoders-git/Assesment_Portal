@@ -1,26 +1,39 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Phone, MessageCircle, Download, Upload, Loader2 } from 'lucide-react';
+import { Phone, MessageCircle, Download, Upload, Loader2, Search } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { importLastYearExcelApi, getLastYearData } from '../API/lastYearData';
+import { importLastYearExcelApi, getLastYearDataApi } from '../API/lastYearData';
 
 export default function LastYearData() {
     const [currentPage, setCurrentPage] = useState(1);
     const [uploading, setUploading] = useState(false);
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState([]);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+    const [totalPages, setTotalPages] = useState(0);
+    const [total, setTotal] = useState(0);
     const fileInputRef = useRef(null);
     const itemsPerPage = 10;
 
     useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchQuery);
+        }, 1000);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
+
+    useEffect(() => {
         fetchData();
-    }, []);
+    }, [currentPage, debouncedSearch]);
 
     const fetchData = async () => {
         setLoading(true);
         try {
-            const response = await getLastYearData();
+            const response = await getLastYearDataApi(currentPage, debouncedSearch);
             if (response.success) {
                 setData(response.data || []);
+                setTotalPages(response.totalPages || 0);
+                setTotal(response.total || 0);
             }
         } catch (error) {
             toast.error('Failed to fetch data');
@@ -28,9 +41,6 @@ export default function LastYearData() {
             setLoading(false);
         }
     };
-
-    const totalPages = Math.ceil(data.length / itemsPerPage);
-    const paginatedData = data.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     const handleFileSelect = async (e) => {
         const file = e.target.files?.[0];
@@ -60,27 +70,42 @@ export default function LastYearData() {
 
     return (
         <div className="p-6 bg-[#EDF2F7] min-h-screen">
-            <div className="mb-6 flex justify-between items-center">
+            <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h2 className="text-2xl font-bold text-gray-800">Last Year Data</h2>
                     <p className="text-sm text-gray-500">DigiCoders Assessment Portal - Historical Records</p>
                 </div>
-                <div>
-                    <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept=".xlsx,.xls"
-                        onChange={handleFileSelect}
-                        className="hidden"
-                    />
-                    <button
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={uploading}
-                        className="flex items-center gap-2 bg-[#319795] hover:bg-[#2c7a7b] text-white px-4 py-2 rounded-md font-medium transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        <Upload className="h-4 w-4" />
-                        {uploading ? 'Importing...' : 'Import Excel'}
-                    </button>
+                <div className="flex gap-2 w-full sm:w-auto">
+                    <div className="relative flex-1 sm:flex-initial">
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => {
+                                setSearchQuery(e.target.value);
+                                setCurrentPage(1);
+                            }}
+                            placeholder="Search..."
+                            className="w-full sm:w-64 bg-white border border-gray-300 rounded-md px-3 py-2 pl-10 text-sm focus:outline-none focus:border-[#319795]"
+                        />
+                        <Search className="h-4 w-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    </div>
+                    <div>
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept=".xlsx,.xls"
+                            onChange={handleFileSelect}
+                            className="hidden"
+                        />
+                        <button
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={uploading}
+                            className="flex items-center gap-2 bg-[#319795] hover:bg-[#2c7a7b] text-white px-4 py-2 rounded-md font-medium transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                        >
+                            <Upload className="h-4 w-4" />
+                            {uploading ? 'Importing...' : 'Import Excel'}
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -107,11 +132,10 @@ export default function LastYearData() {
                                 <th className="px-4 py-3">College</th>
                                 <th className="px-4 py-3">Course</th>
                                 <th className="px-4 py-3">Year</th>
-                                <th className="px-4 py-3">Action</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[#E6FFFA]">
-                            {paginatedData.map((item, index) => (
+                            {data.map((item, index) => (
                                 <tr key={item._id} className="hover:bg-gray-50 transition-colors">
                                     <td className="px-4 py-3 text-[#4A5568]">{(currentPage - 1) * itemsPerPage + index + 1}</td>
                                     <td className="px-4 py-3">
@@ -160,18 +184,13 @@ export default function LastYearData() {
                                     <td className="px-4 py-3">
                                         <span className="bg-purple-50 text-purple-700 px-2 py-1 rounded text-xs font-bold">{item.year}</span>
                                     </td>
-                                    <td className="px-4 py-3">
-                                        <button className="p-1.5 text-teal-600 hover:bg-teal-50 rounded transition-colors" title="Download Certificate">
-                                            <Download className="h-4 w-4" />
-                                        </button>
-                                    </td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
                 </div>
                 <div className="px-4 py-3 border-t border-[#E6FFFA] text-xs text-[#2D3748] flex flex-col sm:flex-row justify-between items-center gap-4">
-                    <span>Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, data.length)} of {data.length} entries</span>
+                    <span>Showing {data.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} to {Math.min(currentPage * itemsPerPage, total)} of {total} entries</span>
                     <div className="flex items-center gap-1">
                         <button
                             onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
@@ -183,8 +202,8 @@ export default function LastYearData() {
                         <span className="px-3 py-1.5 bg-[#319795] text-white rounded font-medium">{currentPage}</span>
                         <button
                             onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                            disabled={currentPage === totalPages}
-                            className={`px-3 py-1.5 rounded transition-colors ${currentPage === totalPages ? 'text-gray-400 cursor-not-allowed' : 'hover:bg-gray-100 text-[#319795] font-medium'}`}
+                            disabled={currentPage === totalPages || totalPages === 0}
+                            className={`px-3 py-1.5 rounded transition-colors ${currentPage === totalPages || totalPages === 0 ? 'text-gray-400 cursor-not-allowed' : 'hover:bg-gray-100 text-[#319795] font-medium'}`}
                         >
                             Next
                         </button>

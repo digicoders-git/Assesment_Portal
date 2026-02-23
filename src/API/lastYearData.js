@@ -18,7 +18,9 @@ export const importLastYearExcelApi = async (file) => {
   return res.data;
 };
 
-export const getLastYearData = async () => {
-  const res = await api.get("/admin/last-year-data-get");
+export const getLastYearDataApi = async (page = 1, search = "") => {
+  const res = await api.get(
+    `/admin/last-year-data-get?page=${page}&search=${search}`
+  );
   return res.data;
 };
