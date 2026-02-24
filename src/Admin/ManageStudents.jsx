@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Edit, X, Download, Loader2, RotateCcw } from 'lucide-react';
+import { Search, Edit, X, Download, Loader2, RotateCcw, Phone, MessageCircle } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { getAllStudentsApi, getStudentsByAssessmentApi, updateStudentApi, downloadStudentsByAssessmentApi, downloadStudentsPDFApi } from '../API/student';
 import { getAllAssessmentsApi } from '../API/assesment';
@@ -466,7 +466,29 @@ export function ManageStudents() {
                                     <tr key={student.id} className="hover:bg-gray-50 transition-colors">
                                         <td className="px-6 py-4 text-[#4A5568]">{(currentPage - 1) * itemsPerPage + index + 1}</td>
                                         <td className="px-6 py-4 font-bold text-[#2D3748]">{student.name}</td>
-                                        <td className="px-6 py-4 text-[#4A5568]">{student.phone}</td>
+                                        <td className="px-6 py-4 text-[#4A5568]">
+                                            <div className="flex items-center gap-2">
+                                                <span>{student.phone}</span>
+                                                <div className="flex gap-1">
+                                                    <a
+                                                        href={`tel:${student.phone}`}
+                                                        className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                                        title="Call"
+                                                    >
+                                                        <Phone className="h-3.5 w-3.5" />
+                                                    </a>
+                                                    <a
+                                                        href={`https://wa.me/${student.phone}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="p-1 text-green-600 hover:bg-green-50 rounded transition-colors"
+                                                        title="WhatsApp"
+                                                    >
+                                                        <MessageCircle className="h-3.5 w-3.5" />
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </td>
                                         <td className="px-6 py-4 text-[#4A5568]">{student.email}</td>
                                         <td className="px-6 py-4 text-[#4A5568]"><span className="bg-green-50 text-green-600 py-1 px-2 rounded text-xs border border-green-100 font-medium">{student.college}</span></td>
                                         <td className="px-6 py-4 text-[#4A5568]"><span className="bg-blue-50 text-blue-600 py-1 px-2 rounded text-xs border border-blue-100 font-medium">{student.course}</span></td>
