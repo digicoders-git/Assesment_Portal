@@ -502,7 +502,7 @@ export default function Assessment() {
                 }
             });
         } else {
-            toast.error('❌ Invalid Password! Contact Admin/Invigilator.', { autoClose: 3000, theme: 'colored' });
+            toast.error('Invalid Password! Contact Admin/Invigilator.', { autoClose: 3000, theme: 'colored' });
         }
     };
 
