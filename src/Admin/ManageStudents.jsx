@@ -3,6 +3,7 @@ import { Search, Edit, X, Download, Loader2, RotateCcw, Phone, MessageCircle } f
 import { toast } from 'react-toastify';
 import { getAllStudentsApi, getStudentsByAssessmentApi, updateStudentApi, downloadStudentsByAssessmentApi, downloadStudentsPDFApi } from '../API/student';
 import { getAllAssessmentsApi } from '../API/assesment';
+import * as XLSX from 'xlsx';
 
 export function ManageStudents() {
     const [searchQuery, setSearchQuery] = useState('');
@@ -256,6 +257,30 @@ export function ManageStudents() {
         }
     };
 
+    const downloadFrontendExcel = () => {
+        if (students.length === 0) {
+            toast.error("No data to download");
+            return;
+        }
+
+        const data = students.map((s, i) => ({
+            'Sr No.': (currentPage - 1) * itemsPerPage + i + 1,
+            'Name': s.name,
+            'Phone': s.phone,
+            'Email': s.email,
+            'College': s.college,
+            'Course': s.course,
+            'Year': s.year,
+            'Registration Date': s.date
+        }));
+
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Students');
+        XLSX.writeFile(wb, `Students_${new Date().toISOString().split('T')[0]}.xlsx`);
+        toast.success("Excel downloaded!");
+    };
+
     return (
         <div className="p-6">
             <div className="mb-6">
@@ -409,21 +434,31 @@ export function ManageStudents() {
 
                     <div className="flex gap-2 items-end">
                         <button
+                            onClick={downloadFrontendExcel}
+                            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
+                            title="Download current page data"
+                        >
+                            <Download className="h-4 w-4" />
+                            Excel
+                        </button>
+                        <button
                             onClick={downloadExcel}
                             disabled={exportLoading}
-                            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 shadow-sm"
+                            title="Download all filtered data from server"
                         >
                             {exportLoading ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />
                             ) : (
                                 <Download className="h-4 w-4" />
                             )}
-                            Excel
+                            All Data
                         </button>
                         <button
                             onClick={downloadPDF}
                             disabled={exportLoading}
-                            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 shadow-sm"
+                            title="Download PDF report"
                         >
                             {exportLoading ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -432,9 +467,6 @@ export function ManageStudents() {
                             )}
                             PDF
                         </button>
-                        <div className="text-sm text-gray-500 whitespace-nowrap">
-                            Total: <span className="font-semibold text-gray-700">{pagination.total}</span>
-                        </div>
                     </div>
                 </div>
             </div>
