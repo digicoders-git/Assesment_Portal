@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Save, X, GraduationCap, Calendar, BookOpen, Loader2, Search } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, X, GraduationCap, Calendar, BookOpen, Loader2, Search, Download } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 import { getAllCollegesApi, createCollegeApi, updateCollegeApi, deleteCollegeApi } from '../API/college';
@@ -130,6 +131,27 @@ export default function AcademicSetup() {
         } finally {
             setSubmitting(false);
         }
+    };
+
+    const handleExport = () => {
+        let data = [];
+        let filename = '';
+
+        if (activeTab === 'colleges') {
+            data = colleges.map((c, i) => ({ '#': i + 1, 'College Name': c.collegeName, 'Location': c.location }));
+            filename = 'Colleges';
+        } else if (activeTab === 'years') {
+            data = years.map((y, i) => ({ '#': i + 1, 'Academic Year': y.academicYear }));
+            filename = 'Academic_Years';
+        } else {
+            data = courses.map((c, i) => ({ '#': i + 1, 'Course Name': c.course }));
+            filename = 'Courses';
+        }
+
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, filename);
+        XLSX.writeFile(wb, `${filename}.xlsx`);
     };
 
     const handleDelete = (id, type) => {
@@ -344,13 +366,22 @@ export default function AcademicSetup() {
 
             {/* Add Button and Search */}
             <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <button
-                    onClick={() => handleAdd(activeTab)}
-                    className="flex items-center gap-2 bg-[#319795] hover:bg-[#2B7A73] text-white px-4 py-2 rounded-lg font-medium transition-all"
-                >
-                    <Plus className="h-4 w-4" />
-                    Add {activeTab === 'colleges' ? 'College' : activeTab === 'years' ? 'Academic Year' : 'Course'}
-                </button>
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => handleAdd(activeTab)}
+                        className="flex items-center gap-2 bg-[#319795] hover:bg-[#2B7A73] text-white px-4 py-2 rounded-lg font-medium transition-all"
+                    >
+                        <Plus className="h-4 w-4" />
+                        Add {activeTab === 'colleges' ? 'College' : activeTab === 'years' ? 'Academic Year' : 'Course'}
+                    </button>
+                    <button
+                        onClick={handleExport}
+                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-all"
+                    >
+                        <Download className="h-4 w-4" />
+                        Export Excel
+                    </button>
+                </div>
                 <div className="relative w-full sm:w-auto">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <input
