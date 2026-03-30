@@ -270,6 +270,31 @@ export default function DigiCodersPortal() {
             return;
         }
 
+        // Email validation
+        if (!formData.email.trim()) return alertAndFocus('Please enter your Email Address.', 'email');
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(formData.email)) {
+            Swal.fire({
+                title: 'Invalid Email!',
+                text: 'Please enter a valid email address.',
+                icon: 'error',
+                confirmButtonColor: '#0D9488',
+            });
+            return;
+        }
+
+        // Mobile validation
+        if (!formData.mobile.trim()) return alertAndFocus('Please enter your Mobile Number.', 'mobile');
+        const mobileRegex = /^[6-9]\d{9}$/;
+        if (!mobileRegex.test(formData.mobile)) {
+            Swal.fire({
+                title: 'Invalid Mobile!',
+                text: 'Mobile number must be 10 digits and start with 6, 7, 8, or 9.',
+                icon: 'error',
+                confirmButtonColor: '#0D9488',
+            });
+            return;
+        }
 
         // College validation
         if (!formData.college.trim()) return alertAndFocus('Please select your College.', 'college');
@@ -690,7 +715,7 @@ export default function DigiCodersPortal() {
                                 <div className="group">
                                     <label className="flex items-center text-sm font-bold text-black mb-3">
 
-                                        MOBILE NUMBER
+                                        MOBILE NUMBER <span className="text-pink-500 ml-1">*</span>
                                     </label>
                                     <input
                                         type="text"
@@ -727,7 +752,7 @@ export default function DigiCodersPortal() {
                             {/* Row 2: Email */}
                             <div className="group">
                                 <label className="flex items-center text-sm font-bold text-black mb-3">
-                                    EMAIL ADDRESS
+                                    EMAIL ADDRESS <span className="text-pink-500 ml-1">*</span>
                                 </label>
                                 <input
                                     type="email"
