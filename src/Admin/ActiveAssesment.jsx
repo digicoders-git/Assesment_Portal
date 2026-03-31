@@ -615,16 +615,7 @@ export function ActiveAssessment() {
                                                         Copy Link
                                                     </button>
                                                 </div>
-                                                <div className="flex gap-1 mb-1">
-                                                    <button
-                                                        onClick={() => handleCopyLinkNoContact(item)}
-                                                        className="flex items-center gap-1 px-2 py-1 bg-purple-50 text-purple-600 rounded text-xs hover:bg-purple-100 transition-colors"
-                                                        title="Copy Link without Mobile/Email"
-                                                    >
-                                                        <Link className="h-3 w-3" />
-                                                        No Contact Link
-                                                    </button>
-                                                </div>
+
                                                 <div className="space-y-1 space-x-1">
                                                     <div className="text-xs bg-[#319795]/20 text-[#2B7A73] inline-block px-1.5 rounded">
                                                         Start: {item.start || 0}
