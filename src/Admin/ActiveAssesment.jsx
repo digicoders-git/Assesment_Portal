@@ -192,6 +192,15 @@ export function ActiveAssessment() {
         });
     };
 
+    const handleCopyLinkNoContact = (item) => {
+        const link = `${window.location.origin}/register/${item.assessmentCode}`;
+        navigator.clipboard.writeText(link).then(() => {
+            toast.success("Link (No Contact) copied!");
+        }).catch(() => {
+            toast.error("Failed to copy link");
+        });
+    };
+
     const handleExport = (assessment) => {
         const headers = ["Name", "Code", "Total Questions", "Duration", "Start Time", "End Time", "Status", "Remark"];
         const row = [
@@ -604,6 +613,16 @@ export function ActiveAssessment() {
                                                     >
                                                         <Link className="h-3 w-3" />
                                                         Copy Link
+                                                    </button>
+                                                </div>
+                                                <div className="flex gap-1 mb-1">
+                                                    <button
+                                                        onClick={() => handleCopyLinkNoContact(item)}
+                                                        className="flex items-center gap-1 px-2 py-1 bg-purple-50 text-purple-600 rounded text-xs hover:bg-purple-100 transition-colors"
+                                                        title="Copy Link without Mobile/Email"
+                                                    >
+                                                        <Link className="h-3 w-3" />
+                                                        No Contact Link
                                                     </button>
                                                 </div>
                                                 <div className="space-y-1 space-x-1">

@@ -1,5 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import Login from "./Pages/Login";
+import Register from "./Pages/Register";
+import RegisterNew from "./Pages/RegisterNew";
 import Assessment from "./Pages/Assessment";
 import Result from "./Pages/Result";
 import AdminLogin from "./Admin/AdminLogin";
@@ -52,6 +54,10 @@ const AppRoutes = () => {
       </Route>
       <Route path="/admin/print-assigned-questions/:id" element={<PrintAssignedQuestions />} />
       <Route path="/admin/print/:topicId" element={<PrintPaper />} />
+
+      {/* Register Route */}
+      <Route path="/register" element={<RegisterNew />} />
+      <Route path="/register/:code" element={<RegisterNew />} />
 
       {/* Catch-all route for assessment codes */}
       <Route path="/:code" element={<Login />} />
