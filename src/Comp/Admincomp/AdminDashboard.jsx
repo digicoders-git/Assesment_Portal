@@ -13,36 +13,36 @@ import {
     GraduationCap,
     User,
     LogOut,
-    Database
+    Database,
+    UserPlus
 } from 'lucide-react';
 
 import { getAdminApi } from '../../API/admin';
-import { adminLogout } from '../../API/auth';
+import { adminLogout, getMeApi } from '../../API/auth';
 import Swal from 'sweetalert2';
 
 export default function AdminDashboard() {
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [admin, setAdmin] = useState(null);
+    const [currentRole, setCurrentRole] = useState(null);
     const navigate = useNavigate();
     const location = useLocation();
-
     const [isLoading, setIsLoading] = useState(true);
 
     React.useEffect(() => {
         const verifySession = async () => {
             try {
-                // If the cookie is HttpOnly, we can't read it via document.cookie.
-                // We rely on the API validation instead.
-                const response = await getAdminApi();
-                if (response.success && response.admin?.length > 0) {
-                    setAdmin(response.admin[0]);
+                const meRes = await getMeApi();
+                if (meRes.success && meRes.admin) {
+                    setAdmin(meRes.admin);
+                    setCurrentRole(meRes.admin.role);
+                    if (meRes.admin.role === 'user' && (location.pathname === '/admin' || location.pathname === '/admin/dashboard')) {
+                        navigate('/admin/students');
+                    }
                 } else {
-                    // If API returns success: false, it implies not authenticated or other issue
-                    throw new Error("Session invalid");
+                    throw new Error('Session invalid');
                 }
             } catch (error) {
-                console.error("Auth verification failed:", error);
-                // Redirect if authentication fails (401 or generic error implying no session)
                 navigate('/admin/login');
             } finally {
                 setIsLoading(false);
@@ -51,18 +51,28 @@ export default function AdminDashboard() {
 
         verifySession();
 
-        const fetchAdmin = async () => {
-            // Re-fetch for updates, redundant if verifySession does it, but kept for the event listener
+        // Auto logout after 5 hours - check every minute
+        const sessionInterval = setInterval(async () => {
             try {
-                const response = await getAdminApi();
-                if (response.success && response.admin?.length > 0) {
-                    setAdmin(response.admin[0]);
-                }
+                await getMeApi();
+            } catch {
+                clearInterval(sessionInterval);
+                navigate('/admin/login');
+            }
+        }, 60 * 1000);
+
+        const fetchAdmin = async () => {
+            try {
+                const meRes = await getMeApi();
+                if (meRes.success && meRes.admin) setAdmin(meRes.admin);
             } catch (e) { console.error(e); }
-        }
+        };
 
         window.addEventListener('adminUpdated', fetchAdmin);
-        return () => window.removeEventListener('adminUpdated', fetchAdmin);
+        return () => {
+            window.removeEventListener('adminUpdated', fetchAdmin);
+            clearInterval(sessionInterval);
+        };
     }, [navigate]);
 
     if (isLoading) {
@@ -77,17 +87,20 @@ export default function AdminDashboard() {
         );
     }
 
-    const menuItems = [
-        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
-        { id: 'topics', label: 'Manage Topics', icon: BookOpen, path: '/admin/topics' },
-        { id: 'assessment', label: 'Active Assessment', icon: Clock, path: '/admin/assessment' },
-        { id: 'history', label: 'Assessment History', icon: History, path: '/admin/history' },
-        { id: 'students', label: 'Manage Students', icon: Users, path: '/admin/students' },
-        { id: 'certificate', label: 'Manage Certificates', icon: Award, path: '/admin/certificate' },
-        { id: 'academic', label: 'Academic Setup', icon: GraduationCap, path: '/admin/academic' },
-        { id: 'last-year-data', label: 'Last Year Data', icon: Database, path: '/admin/last-year-data' },
-        { id: 'security', label: 'Profile', icon: User, path: '/admin/security' },
+    const allMenuItems = [
+        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/admin', roles: ['admin'] },
+        { id: 'create-admin', label: 'Create User', icon: UserPlus, path: '/admin/create-admin', roles: ['admin'] },
+        { id: 'topics', label: 'Manage Topics', icon: BookOpen, path: '/admin/topics', roles: ['admin'] },
+        { id: 'assessment', label: 'Active Assessment', icon: Clock, path: '/admin/assessment', roles: ['admin'] },
+        { id: 'history', label: 'Assessment History', icon: History, path: '/admin/history', roles: ['admin'] },
+        { id: 'students', label: 'Manage Students', icon: Users, path: '/admin/students', roles: ['admin', 'user'] },
+        { id: 'certificate', label: 'Manage Certificates', icon: Award, path: '/admin/certificate', roles: ['admin'] },
+        { id: 'academic', label: 'Academic Setup', icon: GraduationCap, path: '/admin/academic', roles: ['admin'] },
+        { id: 'last-year-data', label: 'Last Year Data', icon: Database, path: '/admin/last-year-data', roles: ['admin'] },
+        { id: 'security', label: 'Profile', icon: User, path: '/admin/security', roles: ['admin', 'user'] },
     ];
+
+    const menuItems = allMenuItems.filter(item => item.roles.includes(currentRole));
 
     const handleNavigation = (path) => {
         navigate(path);
@@ -186,7 +199,7 @@ export default function AdminDashboard() {
 
 
                 {/* Menu */}
-                <nav className="mt-6 px-3 space-y-2 flex-grow">
+                <nav className="mt-6 px-3 space-y-2 flex-grow overflow-y-auto">
                     {menuItems.map((item) => {
                         const Icon = item.icon;
                         const isActive = location.pathname === item.path || (item.id === 'dashboard' && location.pathname === '/admin/dashboard');
@@ -223,20 +236,17 @@ export default function AdminDashboard() {
                 <div className="mt-auto pb-6 px-3 border-t pt-4" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
                     <button
                         onClick={handleLogout}
-                        className={`w-full flex items-center ${sidebarOpen ? 'px-4' : 'justify-center'} py-3.5 rounded-xl transition-all duration-300 group relative border hover:bg-zinc-200 hover:text-red-400 cursor-pointer`}
-
+                        className={`w-full flex items-center ${sidebarOpen ? 'px-4' : 'justify-center'} py-3.5 rounded-xl transition-all duration-300 group relative cursor-pointer bg-red-500 hover:bg-red-700`}
                         title={!sidebarOpen ? 'Logout' : ''}
                     >
                         <LogOut className={`h-6 w-6 shrink-0 transition-all duration-300 text-white group-hover:scale-110 ${!sidebarOpen ? 'scale-110' : ''}`} />
-                        <span className={`text-[15px] whitespace-nowrap font-bold tracking-wide transition-all duration-500 overflow-hidden ${sidebarOpen ? 'opacity-100 ml-4 w-auto' : 'opacity-0 w-0 ml-0'}`}>
+                        <span className={`text-[15px] whitespace-nowrap font-bold tracking-wide text-white transition-all duration-500 overflow-hidden ${sidebarOpen ? 'opacity-100 ml-4 w-auto' : 'opacity-0 w-0 ml-0'}`}>
                             Logout
                         </span>
-
-                        {/* Tooltip for collapsed state */}
                         {!sidebarOpen && (
-                            <div className="absolute left-full ml-2 px-3 py-2 bg-[#C53030] text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-[60] shadow-xl">
+                            <div className="absolute left-full ml-2 px-3 py-2 bg-red-700 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-[60] shadow-xl">
                                 Logout
-                                <div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 bg-[#C53030] rotate-45"></div>
+                                <div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 bg-red-700 rotate-45"></div>
                             </div>
                         )}
                     </button>

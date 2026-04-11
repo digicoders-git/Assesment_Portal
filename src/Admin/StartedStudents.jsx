@@ -3,6 +3,8 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Search, ArrowLeft, Download, Loader2, RotateCcw, Phone, MessageCircle } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { getStudentsByAssessmentApi, downloadStudentsByAssessmentApi } from '../API/student';
+import { getMeApi } from '../API/admin';
+import { OtpVerificationModal } from '../Comp/OtpVerificationModal';
 
 export default function StartedStudents() {
     // Route parameter is :id, but we need code passed via state
@@ -25,6 +27,8 @@ export default function StartedStudents() {
     const [loading, setLoading] = useState(true);
     const [exportLoading, setExportLoading] = useState(false);
     const [startedStudents, setStartedStudents] = useState([]);
+    const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);
+    const [userRole, setUserRole] = useState(null);
 
     const fetchResults = async (page = 1) => {
         const code = location.state?.assessmentCode;
@@ -81,7 +85,19 @@ export default function StartedStudents() {
 
     useEffect(() => {
         fetchResults(1);
+        fetchUserRole();
     }, [assessmentId, location.state]);
+
+    const fetchUserRole = async () => {
+        try {
+            const response = await getMeApi();
+            if (response.success && response.admin) {
+                setUserRole(response.admin.role);
+            }
+        } catch (error) {
+            console.error("Failed to fetch user role:", error);
+        }
+    };
 
     const handleFilterChange = (e) => {
         const { name, value } = e.target;
@@ -202,18 +218,15 @@ export default function StartedStudents() {
                         </button>
                     </div>
 
-                    <button
-                        onClick={downloadExcel}
-                        disabled={exportLoading}
-                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors border-none disabled:opacity-50 h-[38px]"
-                    >
-                        {exportLoading ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
+                    {userRole === 'admin' && (
+                        <button
+                            onClick={() => setIsOtpModalOpen(true)}
+                            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors border-none h-[38px]"
+                        >
                             <Download className="h-4 w-4" />
-                        )}
-                        Excel
-                    </button>
+                            Excel
+                        </button>
+                    )}
 
                     <div className="relative w-full sm:w-60">
                         <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -346,6 +359,12 @@ export default function StartedStudents() {
                     </div>
                 </div>
             </div>
+
+            <OtpVerificationModal
+                isOpen={isOtpModalOpen}
+                onClose={() => setIsOtpModalOpen(false)}
+                onVerified={downloadExcel}
+            />
         </div>
     );
 }

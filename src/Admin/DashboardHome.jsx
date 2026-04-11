@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Clock, Users, Award, History, FileText, BookOpen } from 'lucide-react';
 import { getDashboardDataApi } from '../API/auth';
+import { getMeApi } from '../API/auth';
 
 export default function DashboardHome() {
     const navigate = useNavigate();
@@ -13,12 +14,22 @@ export default function DashboardHome() {
         activeTopics: 0,
         inactiveTopics: 0,
         questions: 0,
-        totalCertificates: 0
+        totalCertificates: 0,
+        totalUsers: 0
     });
     const [loading, setLoading] = useState(true);
+    const [role, setRole] = useState(null);
 
     const fetchDashboardData = async () => {
         try {
+            const meRes = await getMeApi();
+            if (meRes.success && meRes.admin) {
+                setRole(meRes.admin.role);
+                if (meRes.admin.role === 'user') {
+                    navigate('/admin/students');
+                    return;
+                }
+            }
             const response = await getDashboardDataApi();
             if (response.success) {
                 setDashboardData(response.data);
@@ -47,6 +58,7 @@ export default function DashboardHome() {
         { title: 'INACTIVE TOPICS', value: dashboardData.inactiveTopics, icon: BookOpen, link: '/admin/topics', filter: 'Inactive' },
         { title: 'TOTAL QUESTIONS', value: dashboardData.questions, icon: FileText, link: '/admin/topics' },
         { title: 'CERTIFICATES', value: dashboardData.totalCertificates, icon: Award, link: '/admin/certificate' },
+        { title: 'TOTAL USERS', value: dashboardData.totalUsers, icon: Users, link: '/admin/create-admin' },
     ];
 
     if (loading) {

@@ -4,7 +4,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { getResultsByAssessmentIdApi, downloadResultsByAssessmentIdApi } from '../API/result';
 import { getSingleStudentApi, uploadStudentCertificateApi, updateStudentApi } from '../API/student';
+import { getMeApi } from '../API/admin';
 import { getSingleCertificateApi } from '../API/certificate';
+import { OtpVerificationModal } from '../Comp/OtpVerificationModal';
 import html2canvas from 'html2canvas';
 
 const handleExportData = async () => {
@@ -64,6 +66,8 @@ export default function AssessmentResult() {
     const [editingStudent, setEditingStudent] = useState(null);
     const [submitting, setSubmitting] = useState(false);
     const [updatedStudents, setUpdatedStudents] = useState(new Set());
+    const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);
+    const [userRole, setUserRole] = useState(null);
 
     // Top Results states
     const [isTopResultsModalOpen, setIsTopResultsModalOpen] = useState(false);
@@ -170,10 +174,22 @@ export default function AssessmentResult() {
         const initialFetch = async () => {
             setLoading(true);
             await fetchResults(1);
+            await fetchUserRole();
             setLoading(false);
         };
         initialFetch();
     }, [id]);
+
+    const fetchUserRole = async () => {
+        try {
+            const response = await getMeApi();
+            if (response.success && response.admin) {
+                setUserRole(response.admin.role);
+            }
+        } catch (error) {
+            console.error("Failed to fetch user role:", error);
+        }
+    };
 
     const handleFilterChange = (e) => {
         const { name, value } = e.target;
@@ -601,18 +617,15 @@ export default function AssessmentResult() {
                 <div className="p-4 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 no-print border-b border-gray-200 flex-shrink-0">
                     {/* Left: Export & Top Results Actions */}
                     <div className="w-full xl:w-auto order-2 xl:order-1 flex gap-2">
-                        <button
-                            onClick={handleExportData}
-                            disabled={exportLoading}
-                            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg border border-transparent transition-colors text-sm font-bold shadow-sm justify-center disabled:opacity-50 h-[42px]"
-                        >
-                            {exportLoading ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
+                        {userRole === 'admin' && (
+                            <button
+                                onClick={() => setIsOtpModalOpen(true)}
+                                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg border border-transparent transition-colors text-sm font-bold shadow-sm justify-center h-[42px]"
+                            >
                                 <Download className="h-4 w-4" />
-                            )}
-                            Export Excel
-                        </button>
+                                Export Excel
+                            </button>
+                        )}
                         <button
                             onClick={() => setIsTopResultsModalOpen(true)}
                             className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg border border-transparent transition-colors text-sm font-bold shadow-sm justify-center h-[42px]"
@@ -1255,6 +1268,12 @@ export default function AssessmentResult() {
                     </div>
                 </div>
             )}
+
+            <OtpVerificationModal
+                isOpen={isOtpModalOpen}
+                onClose={() => setIsOtpModalOpen(false)}
+                onVerified={handleExportData}
+            />
         </div>
     );
 }

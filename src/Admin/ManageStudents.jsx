@@ -3,6 +3,8 @@ import { Search, Edit, X, Download, Loader2, RotateCcw, Phone, MessageCircle } f
 import { toast } from 'react-toastify';
 import { getAllStudentsApi, getStudentsByAssessmentApi, updateStudentApi, downloadStudentsByAssessmentApi, downloadStudentsPDFApi } from '../API/student';
 import { getAllAssessmentsApi } from '../API/assesment';
+import { getMeApi } from '../API/admin';
+import { OtpVerificationModal } from '../Comp/OtpVerificationModal';
 import * as XLSX from 'xlsx';
 
 export function ManageStudents() {
@@ -33,6 +35,7 @@ export function ManageStudents() {
 
     useEffect(() => {
         fetchInitialData();
+        fetchUserRole();
     }, []);
 
     const fetchInitialData = async () => {
@@ -49,6 +52,17 @@ export function ManageStudents() {
             console.error("Initial Fetch Error:", error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchUserRole = async () => {
+        try {
+            const response = await getMeApi();
+            if (response.success && response.admin) {
+                setUserRole(response.admin.role);
+            }
+        } catch (error) {
+            console.error("Failed to fetch user role:", error);
         }
     };
 
@@ -172,6 +186,13 @@ export function ManageStudents() {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingStudent, setEditingStudent] = useState(null);
 
+    // OTP Modal Logic
+    const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);
+    const [pendingDownload, setPendingDownload] = useState(null);
+
+    // User Role
+    const [userRole, setUserRole] = useState(null);
+
     const handleEditStudent = (student) => {
         setEditingStudent({ ...student });
         setIsEditModalOpen(true);
@@ -213,6 +234,22 @@ export function ManageStudents() {
 
     const handleDeleteStudent = (student) => {
         // Delete functionality removed
+    };
+
+    const requestDownloadWithOtp = (downloadType) => {
+        setPendingDownload(downloadType);
+        setIsOtpModalOpen(true);
+    };
+
+    const handleOtpVerified = async () => {
+        if (pendingDownload === 'excel') {
+            await downloadExcel();
+        } else if (pendingDownload === 'pdf') {
+            await downloadPDF();
+        } else if (pendingDownload === 'frontendExcel') {
+            downloadFrontendExcel();
+        }
+        setPendingDownload(null);
     };
 
     const downloadExcel = async () => {
@@ -433,40 +470,34 @@ export function ManageStudents() {
                     </div>
 
                     <div className="flex gap-2 items-end">
-                        <button
-                            onClick={downloadFrontendExcel}
-                            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
-                            title="Download current page data"
-                        >
-                            <Download className="h-4 w-4" />
-                            Excel
-                        </button>
-                        <button
-                            onClick={downloadExcel}
-                            disabled={exportLoading}
-                            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 shadow-sm"
-                            title="Download all filtered data from server"
-                        >
-                            {exportLoading ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                                <Download className="h-4 w-4" />
-                            )}
-                            All Data
-                        </button>
-                        <button
-                            onClick={downloadPDF}
-                            disabled={exportLoading}
-                            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 shadow-sm"
-                            title="Download PDF report"
-                        >
-                            {exportLoading ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                                <Download className="h-4 w-4" />
-                            )}
-                            PDF
-                        </button>
+                        {userRole === 'admin' && (
+                            <>
+                                <button
+                                    onClick={() => requestDownloadWithOtp('frontendExcel')}
+                                    className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
+                                    title="Download current page data"
+                                >
+                                    <Download className="h-4 w-4" />
+                                    Excel
+                                </button>
+                                <button
+                                    onClick={() => requestDownloadWithOtp('excel')}
+                                    className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
+                                    title="Download all filtered data from server"
+                                >
+                                    <Download className="h-4 w-4" />
+                                    All Data
+                                </button>
+                                <button
+                                    onClick={() => requestDownloadWithOtp('pdf')}
+                                    className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
+                                    title="Download PDF report"
+                                >
+                                    <Download className="h-4 w-4" />
+                                    PDF
+                                </button>
+                            </>
+                        )}
                     </div>
                 </div>
             </div>
@@ -594,6 +625,15 @@ export function ManageStudents() {
                     </div>
                 )
             }
+
+            <OtpVerificationModal
+                isOpen={isOtpModalOpen}
+                onClose={() => {
+                    setIsOtpModalOpen(false);
+                    setPendingDownload(null);
+                }}
+                onVerified={handleOtpVerified}
+            />
         </div >
     );
 }

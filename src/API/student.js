@@ -1,5 +1,17 @@
 import api from "./axios";
 
+// Send OTP for download
+export const sendDownloadOtpApi = async () => {
+  const res = await api.post("/admin/send-download-otp");
+  return res.data;
+};
+
+// Verify OTP for download
+export const verifyDownloadOtpApi = async (otp) => {
+  const res = await api.post("/admin/verify-download-otp", { otp });
+  return res.data;
+};
+
 // Student Register
 export const studentRegisterApi = async (payload) => {
   const res = await api.post("/registration/create", payload);
