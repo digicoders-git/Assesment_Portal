@@ -44,6 +44,12 @@ export default function Assessment() {
                 const response = await getAssessmentByCodeApi(code, studentCourse, studentYear);
 
                 if (response.success && response.data) {
+                    console.log('=== ASSESSMENT DEBUG ===');
+                    console.log('Student Course (localStorage):', studentCourse);
+                    console.log('Student Year (localStorage):', studentYear);
+                    console.log('Total questions received:', response.data.questionIds?.length);
+                    console.log('Questions:', response.data.questionIds?.map(q => q.question));
+                    console.log('=======================');
                     const mappedQuestions = response.data.questionIds.map((q, idx) => ({
                         id: idx + 1,
                         _id: q._id,
