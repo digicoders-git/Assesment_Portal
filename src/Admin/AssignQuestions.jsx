@@ -289,20 +289,20 @@ export default function AssignQuestions() {
 
     const handleSave = async () => {
         if (isExpired) return;
-        if (!selectedCourse || !selectedYear) {
-            toast.error("Please select Course and Year before assigning questions!");
-            return;
-        }
         if (selectedQuestions.length === 0) {
             toast.error("Please select at least one question!");
             return;
         }
 
         const payload = {
-            courseId: selectedCourse,
-            yearId: selectedYear,
             questionIds: selectedQuestions
         };
+
+        // Only add courseId+yearId if both are selected
+        if (selectedCourse && selectedYear) {
+            payload.courseId = selectedCourse;
+            payload.yearId = selectedYear;
+        }
 
         setSubmitting(true);
         try {
@@ -417,6 +417,12 @@ export default function AssignQuestions() {
                         </div>
                         <div>
                             <h1 className="text-xl font-bold text-gray-800">Pick Questions</h1>
+                            <p className="text-xs mt-1 font-semibold">
+                                {selectedCourse && selectedYear
+                                    ? <span className="text-teal-600">🎯 Specific: {courses.find(c => c._id === selectedCourse)?.course} — {years.find(y => y._id === selectedYear)?.academicYear}</span>
+                                    : <span className="text-orange-500">⚠️ No filter — questions will show to ALL students</span>
+                                }
+                            </p>
                         </div>
                     </div>
 
@@ -455,7 +461,7 @@ export default function AssignQuestions() {
                     onChange={e => { setSelectedCourse(e.target.value); setSelectedTopic(''); setSelectedQuestions([]); }}
                     className="bg-white border border-gray-200 rounded-lg px-4 py-3 text-sm font-bold text-gray-700 w-full md:w-48"
                 >
-                    <option value="">Select Course</option>
+                    <option value="">All Students (No Filter)</option>
                     {courses.map(c => <option key={c._id} value={c._id}>{c.course}</option>)}
                 </select>
                 <select
@@ -463,7 +469,7 @@ export default function AssignQuestions() {
                     onChange={e => { setSelectedYear(e.target.value); setSelectedTopic(''); setSelectedQuestions([]); }}
                     className="bg-white border border-gray-200 rounded-lg px-4 py-3 text-sm font-bold text-gray-700 w-full md:w-48"
                 >
-                    <option value="">Select Year</option>
+                    <option value="">All Students (No Filter)</option>
                     {years.map(y => <option key={y._id} value={y._id}>{y.academicYear}</option>)}
                 </select>
                 <div className="relative w-full md:w-72">
