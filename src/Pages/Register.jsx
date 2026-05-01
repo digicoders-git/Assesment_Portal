@@ -162,6 +162,8 @@ export default function Register() {
             const response = await studentRegisterApi({ ...formData, code: enteredCode });
             if (response.success) {
                 const studentData = response.newStudent;
+                localStorage.setItem('studentCourse', formData.course);
+                localStorage.setItem('studentYear', formData.year);
                 Swal.fire({ title: 'Registration Successful!', text: response.message || 'Starting Assessment...', icon: 'success', timer: 1500, showConfirmButton: false });
                 setTimeout(() => navigate(`/assessment/${studentData.code}/${studentData._id}`), 1500);
             } else {
