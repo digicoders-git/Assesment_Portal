@@ -31,13 +31,17 @@ export default function Assessment() {
     const navigate = useNavigate();
     const { code, studentId } = useParams();
 
+    // Get student info from localStorage (saved during registration)
+    const studentCourse = localStorage.getItem('studentCourse') || '';
+    const studentYear = localStorage.getItem('studentYear') || '';
+
     useEffect(() => {
         const fetchAssessment = async () => {
             try {
                 if (!code) {
                     throw new Error("Assessment code missing");
                 }
-                const response = await getAssessmentByCodeApi(code);
+                const response = await getAssessmentByCodeApi(code, studentCourse, studentYear);
 
                 if (response.success && response.data) {
                     const mappedQuestions = response.data.questionIds.map((q, idx) => ({

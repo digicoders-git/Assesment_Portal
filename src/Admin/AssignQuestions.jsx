@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { ChevronRight, Save, Search, CheckCircle2, Circle, BookOpen, Download, ArrowLeft, Trash2, Loader2 } from 'lucide-react';
+import { ChevronRight, Save, Search, CheckCircle2, Circle, BookOpen, Download, ArrowLeft, Trash2, Loader2, Plus, X } from 'lucide-react';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 import { getAllTopicsApi } from '../API/topic';
 import { getQuestionsByTopicApi } from '../API/question';
 import { addQuestionsToAssessmentApi, deleteQuestionFromAssessmentApi, getAssessmentByCodeApi } from '../API/assesmentQuestions';
+import { getCoursesApi } from '../API/course';
+import { getAcademicYearsApi } from '../API/year';
 
 export default function AssignQuestions() {
     const { id } = useParams();
@@ -29,6 +31,12 @@ export default function AssignQuestions() {
     const [junctionId, setJunctionId] = useState(null);
     const [isExpired, setIsExpired] = useState(false);
     const [totalQuestions, setTotalQuestions] = useState(null);
+
+    const [courses, setCourses] = useState([]);
+    const [years, setYears] = useState([]);
+    const [selectedCourse, setSelectedCourse] = useState('');
+    const [selectedYear, setSelectedYear] = useState('');
+    const [courseYearGroups, setCourseYearGroups] = useState([]);
 
     // Helper function to convert "DD/MM/YYYY, HH:MM:SS" to Date object
     const parseBackendDate = (dateStr) => {
@@ -78,7 +86,18 @@ export default function AssignQuestions() {
     useEffect(() => {
         fetchTopics();
         fetchAssignedQuestions();
+        fetchCoursesAndYears();
     }, [id]);
+
+    const fetchCoursesAndYears = async () => {
+        try {
+            const [cRes, yRes] = await Promise.all([getCoursesApi(), getAcademicYearsApi()]);
+            if (cRes.success) setCourses(cRes.courses || []);
+            if (yRes.success) setYears(yRes.years || []);
+        } catch (error) {
+            console.error('Failed to fetch courses/years:', error);
+        }
+    };
 
     const fetchTopics = async () => {
         try {
@@ -139,6 +158,7 @@ export default function AssignQuestions() {
 
                 setJunctionId(jId);
                 setAssignedQuestions(Array.isArray(list) ? list : []);
+                setCourseYearGroups(response.data?.courseYearGroups || []);
                 
                 // Set totalQuestions from assessment object in response
                 const total = response.assessment?.totalQuestions || 
@@ -162,7 +182,7 @@ export default function AssignQuestions() {
     const fetchQuestionsByTopic = async (topicId) => {
         setLoading(true);
         try {
-            const response = await getQuestionsByTopicApi(topicId);
+            const response = await getQuestionsByTopicApi(topicId, selectedCourse, selectedYear);
             if (response.success) {
                 setAvailableQuestions(response.questions || []);
             } else {
@@ -183,7 +203,7 @@ export default function AssignQuestions() {
         } else {
             setAvailableQuestions([]);
         }
-    }, [selectedTopic]);
+    }, [selectedTopic, selectedCourse, selectedYear]);
 
 
 
@@ -269,12 +289,18 @@ export default function AssignQuestions() {
 
     const handleSave = async () => {
         if (isExpired) return;
+        if (!selectedCourse || !selectedYear) {
+            toast.error("Please select Course and Year before assigning questions!");
+            return;
+        }
         if (selectedQuestions.length === 0) {
             toast.error("Please select at least one question!");
             return;
         }
 
         const payload = {
+            courseId: selectedCourse,
+            yearId: selectedYear,
             questionIds: selectedQuestions
         };
 
@@ -284,7 +310,7 @@ export default function AssignQuestions() {
             if (response.success) {
                 toast.success(`Questions successfully added!`);
                 setSelectedQuestions([]);
-                setSelectedTopic(''); // Clear selected topic
+                setSelectedTopic('');
                 fetchAssignedQuestions();
             } else {
                 toast.error(response.message || "Failed to assign questions");
@@ -423,6 +449,23 @@ export default function AssignQuestions() {
             </div>
 
             <div ref={topicDropdownRef} className="flex flex-col md:flex-row gap-4 items-center mb-6">
+                {/* Course & Year selectors */}
+                <select
+                    value={selectedCourse}
+                    onChange={e => { setSelectedCourse(e.target.value); setSelectedTopic(''); setSelectedQuestions([]); }}
+                    className="bg-white border border-gray-200 rounded-lg px-4 py-3 text-sm font-bold text-gray-700 w-full md:w-48"
+                >
+                    <option value="">Select Course</option>
+                    {courses.map(c => <option key={c._id} value={c._id}>{c.course}</option>)}
+                </select>
+                <select
+                    value={selectedYear}
+                    onChange={e => { setSelectedYear(e.target.value); setSelectedTopic(''); setSelectedQuestions([]); }}
+                    className="bg-white border border-gray-200 rounded-lg px-4 py-3 text-sm font-bold text-gray-700 w-full md:w-48"
+                >
+                    <option value="">Select Year</option>
+                    {years.map(y => <option key={y._id} value={y._id}>{y.academicYear}</option>)}
+                </select>
                 <div className="relative w-full md:w-72">
                     <button
                         onClick={() => setIsTopicDropdownOpen(!isTopicDropdownOpen)}
@@ -524,6 +567,15 @@ export default function AssignQuestions() {
 
             {assignedQuestions.length >= 0 && (
                 <div className="mt-8">
+                    {courseYearGroups.length > 0 && (
+                        <div className="mb-4 flex flex-wrap gap-2">
+                            {courseYearGroups.map((g, i) => (
+                                <span key={i} className="inline-flex items-center gap-1 px-3 py-1 bg-teal-100 text-teal-800 rounded-full text-xs font-semibold">
+                                    {g.course?.course || 'Course'} — {g.year?.academicYear || 'Year'}: {g.questionIds?.length || 0} Qs
+                                </span>
+                            ))}
+                        </div>
+                    )}
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-lg font-bold text-gray-800">Already Assigned Questions ({assignedQuestions.length}/{totalQuestions !== null ? totalQuestions : '...'})</h3>
                         {assignedQuestions.length > 0 && (

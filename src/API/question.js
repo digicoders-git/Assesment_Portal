@@ -6,9 +6,12 @@ export const createQuestionsApi = async (id, payload) => {
   return res.data;
 };
 
-// Get Questions by Topic
-export const getQuestionsByTopicApi = async (id) => {
-  const res = await api.get(`/admin/question/get/${id}`);
+// Get Questions by Topic (with optional course+year filter)
+export const getQuestionsByTopicApi = async (id, courseId, yearId) => {
+  const params = {};
+  if (courseId) params.courseId = courseId;
+  if (yearId) params.yearId = yearId;
+  const res = await api.get(`/admin/question/get/${id}`, { params });
   return res.data;
 };
 
@@ -25,32 +28,28 @@ export const deleteQuestionApi = async (id) => {
 };
 
 // Import Questions from Excel
-export const importQuestionsFromExcelApi = async (id, file) => {
+export const importQuestionsFromExcelApi = async (id, file, courseId, yearId) => {
   const formData = new FormData();
   formData.append("file", file);
+  formData.append("courseId", courseId);
+  formData.append("yearId", yearId);
 
   const res = await api.post(
     `/admin/question/excel/import/${id}`,
     formData,
-    {
-      headers: {
-        "Content-Type": "multipart/form-data"
-      }
-    }
+    { headers: { "Content-Type": "multipart/form-data" } }
   );
-
   return res.data;
 };
 
 // export excel
-export const exportQuestionsByTopicApi = async (topicId) => {
-  const res = await api.get(
-    `/admin/question/export/${topicId}`,
-    {
-      responseType: "blob",
-    }
-  );
-
+export const exportQuestionsByTopicApi = async (topicId, courseId, yearId) => {
+  const params = {};
+  if (courseId) params.courseId = courseId;
+  if (yearId) params.yearId = yearId;
+  const res = await api.get(`/admin/question/export/${topicId}`, {
+    params,
+    responseType: "blob",
+  });
   return res;
 };
-

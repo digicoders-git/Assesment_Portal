@@ -18,11 +18,15 @@ export const getAssessmentQuestionsApi = async (assesmentCode) => {
 };
 
 // Get assessment questions by assessment code (for student login)
-export const getAssessmentByCodeApi = async (code) => {
+// Pass course and year to get filtered questions for that student
+export const getAssessmentByCodeApi = async (code, course, year) => {
+  const params = {};
+  if (course) params.course = course;
+  if (year) params.year = year;
   const res = await api.get(
-    `/admin/assesment/get-question/${code}`
+    `/admin/assesment/get-question/${code}`,
+    { params }
   );
-
   return res.data;
 };
 

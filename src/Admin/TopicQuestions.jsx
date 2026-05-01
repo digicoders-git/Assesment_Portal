@@ -5,6 +5,8 @@ import { Plus, Trash2, Edit, X, FileSpreadsheet, ArrowLeft, Loader2 } from 'luci
 import { toast } from 'react-toastify';
 import { createQuestionsApi, getQuestionsByTopicApi, deleteQuestionApi, updateQuestionApi, importQuestionsFromExcelApi, exportQuestionsByTopicApi } from '../API/question';
 import { getAllTopicsApi } from '../API/topic';
+import { getCoursesApi } from '../API/course';
+import { getAcademicYearsApi } from '../API/year';
 
 export default function TopicQuestions() {
     const { topicId } = useParams();
@@ -22,6 +24,13 @@ export default function TopicQuestions() {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
 
+    const [courses, setCourses] = useState([]);
+    const [years, setYears] = useState([]);
+    const [filterCourse, setFilterCourse] = useState('');
+    const [filterYear, setFilterYear] = useState('');
+    const [selectedCourse, setSelectedCourse] = useState('');
+    const [selectedYear, setSelectedYear] = useState('');
+
     const formatTopicName = (name) => {
         if (!name) return '';
         return name.toLowerCase().split(' ').map(word =>
@@ -34,7 +43,18 @@ export default function TopicQuestions() {
         if (!location.state?.topicName) {
             fetchTopicName();
         }
+        fetchCoursesAndYears();
     }, [topicId]);
+
+    const fetchCoursesAndYears = async () => {
+        try {
+            const [cRes, yRes] = await Promise.all([getCoursesApi(), getAcademicYearsApi()]);
+            if (cRes.success) setCourses(cRes.courses || []);
+            if (yRes.success) setYears(yRes.years || []);
+        } catch (error) {
+            console.error('Failed to fetch courses/years:', error);
+        }
+    };
 
     const fetchTopicName = async () => {
         try {
@@ -51,12 +71,11 @@ export default function TopicQuestions() {
         }
     };
 
-    const fetchQuestions = async () => {
+    const fetchQuestions = async (courseId = filterCourse, yearId = filterYear) => {
         try {
             setLoading(true);
-            const response = await getQuestionsByTopicApi(topicId);
+            const response = await getQuestionsByTopicApi(topicId, courseId, yearId);
             setQuestions(response.questions || []);
-            // Some APIs might return topic details along with questions
             if (response.topicName && !location.state?.topicName) {
                 setTopicName(response.topicName);
             }
@@ -127,7 +146,7 @@ export default function TopicQuestions() {
     const handleExportExcel = async () => {
         setSubmitting(true);
         try {
-            const response = await exportQuestionsByTopicApi(topicId);
+            const response = await exportQuestionsByTopicApi(topicId, filterCourse, filterYear);
 
             // Create a blob from the response data
             const blob = new Blob([response.data], {
@@ -168,6 +187,10 @@ export default function TopicQuestions() {
     };
 
     const handleSave = async () => {
+        if (!editingQuestion && (!selectedCourse || !selectedYear)) {
+            toast.error('Please select Course and Year before adding questions!');
+            return;
+        }
         if (editingQuestion) {
             // Validate all fields for single edit
             if (!formData.question.trim() || !formData.optionA.trim() || !formData.optionB.trim() || !formData.optionC.trim() || !formData.optionD.trim() || !formData.correctOption) {
@@ -197,8 +220,7 @@ export default function TopicQuestions() {
                 setSubmitting(false);
             }
         } else {
-            const invalidIndices = [];
-            const validQuestions = multipleQuestions.filter((q, index) => {
+            const validQuestions = multipleQuestions.filter((q) => {
                 const isValid = q.question.trim() &&
                     q.optionA.trim() &&
                     q.optionB.trim() &&
@@ -231,7 +253,7 @@ export default function TopicQuestions() {
                     correctOption: q.answer
                 }));
 
-                const response = await createQuestionsApi(topicId, { questions: questionsData });
+                const response = await createQuestionsApi(topicId, { questions: questionsData, courseId: selectedCourse, yearId: selectedYear });
                 toast.success(response.message);
                 setIsAddModalOpen(false);
                 fetchQuestions();
@@ -287,6 +309,12 @@ export default function TopicQuestions() {
         const file = e.target.files[0];
         if (!file) return;
 
+        if (!selectedCourse || !selectedYear) {
+            toast.error('Please select Course and Year before importing!');
+            e.target.value = '';
+            return;
+        }
+
         const fileExtension = file.name.split('.').pop().toLowerCase();
         if (!['xlsx', 'xls'].includes(fileExtension)) {
             toast.error("Please upload only Excel files (.xlsx, .xls)!");
@@ -296,7 +324,7 @@ export default function TopicQuestions() {
 
         setSubmitting(true);
         try {
-            const response = await importQuestionsFromExcelApi(topicId, file);
+            const response = await importQuestionsFromExcelApi(topicId, file, selectedCourse, selectedYear);
             toast.success(`${response.message}. Imported: ${response.insertedCount}, Failed: ${response.failedCount}`);
             if (response.failedCount > 0 && response.failedRows.length > 0) {
                 console.log('Failed rows:', response.failedRows);
@@ -338,6 +366,22 @@ export default function TopicQuestions() {
                     </div>
                 </div>
                 <h1 className="text-xl sm:text-2xl font-bold text-gray-800">{formatTopicName(topicName)} Questions</h1>
+            </div>
+
+            {/* Controls */}
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-4">
+                <div className="flex flex-wrap gap-2">
+                    <select value={filterCourse} onChange={e => { setFilterCourse(e.target.value); fetchQuestions(e.target.value, filterYear); setCurrentPage(1); }}
+                        className="border border-gray-300 rounded px-3 py-2 text-sm bg-white">
+                        <option value="">All Courses</option>
+                        {courses.map(c => <option key={c._id} value={c._id}>{c.course}</option>)}
+                    </select>
+                    <select value={filterYear} onChange={e => { setFilterYear(e.target.value); fetchQuestions(filterCourse, e.target.value); setCurrentPage(1); }}
+                        className="border border-gray-300 rounded px-3 py-2 text-sm bg-white">
+                        <option value="">All Years</option>
+                        {years.map(y => <option key={y._id} value={y._id}>{y.academicYear}</option>)}
+                    </select>
+                </div>
             </div>
 
             {/* Controls */}
@@ -394,6 +438,8 @@ export default function TopicQuestions() {
                             <thead className="bg-gray-50 sticky top-0">
                                 <tr>
                                     <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 w-16">Sr.</th>
+                                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 min-w-[120px]">Course</th>
+                                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 min-w-[100px]">Year</th>
                                     <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 min-w-[250px]">Question</th>
                                     <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 min-w-[200px]">Option A</th>
                                     <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 min-w-[200px]">Option B</th>
@@ -407,6 +453,8 @@ export default function TopicQuestions() {
                                 {paginatedQuestions.map((q, index) => (
                                     <tr key={q._id} className="hover:bg-gray-50">
                                         <td className="px-4 py-4 text-sm text-gray-900">{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                                        <td className="px-4 py-4 text-sm text-gray-600">{q.course?.course || 'N/A'}</td>
+                                        <td className="px-4 py-4 text-sm text-gray-600">{q.year?.academicYear || 'N/A'}</td>
                                         <td className="px-4 py-4 text-sm text-gray-900">{q.question}</td>
                                         <td className="px-4 py-4 text-sm text-gray-600">{q.options?.A}</td>
                                         <td className="px-4 py-4 text-sm text-gray-600">{q.options?.B}</td>
@@ -525,6 +573,26 @@ export default function TopicQuestions() {
                                 </h3>
                             </div>
                             <div className="p-4 sm:p-6">
+                                {!editingQuestion && (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                        <div>
+                                            <label className="block text-sm font-semibold text-blue-800 mb-1">Course <span className="text-red-500">*</span></label>
+                                            <select value={selectedCourse} onChange={e => setSelectedCourse(e.target.value)}
+                                                className="w-full border border-gray-300 rounded px-3 py-2 text-sm">
+                                                <option value="">Select Course</option>
+                                                {courses.map(c => <option key={c._id} value={c._id}>{c.course}</option>)}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-semibold text-blue-800 mb-1">Year <span className="text-red-500">*</span></label>
+                                            <select value={selectedYear} onChange={e => setSelectedYear(e.target.value)}
+                                                className="w-full border border-gray-300 rounded px-3 py-2 text-sm">
+                                                <option value="">Select Year</option>
+                                                {years.map(y => <option key={y._id} value={y._id}>{y.academicYear}</option>)}
+                                            </select>
+                                        </div>
+                                    </div>
+                                )}
                                 {editingQuestion ? (
                                     // Single question edit form
                                     <div className="space-y-4">
@@ -740,6 +808,24 @@ export default function TopicQuestions() {
                                     <h4 className="font-medium text-blue-900 mb-2">Required Format:</h4>
                                     <div className="text-sm text-blue-800 space-y-1">
                                         <p>• Excel file (.xlsx, .xls)</p>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                                    <div>
+                                        <label className="block text-sm font-semibold text-yellow-800 mb-1">Course <span className="text-red-500">*</span></label>
+                                        <select value={selectedCourse} onChange={e => setSelectedCourse(e.target.value)}
+                                            className="w-full border border-gray-300 rounded px-3 py-2 text-sm">
+                                            <option value="">Select Course</option>
+                                            {courses.map(c => <option key={c._id} value={c._id}>{c.course}</option>)}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-semibold text-yellow-800 mb-1">Year <span className="text-red-500">*</span></label>
+                                        <select value={selectedYear} onChange={e => setSelectedYear(e.target.value)}
+                                            className="w-full border border-gray-300 rounded px-3 py-2 text-sm">
+                                            <option value="">Select Year</option>
+                                            {years.map(y => <option key={y._id} value={y._id}>{y.academicYear}</option>)}
+                                        </select>
                                     </div>
                                 </div>
                                 <div className="flex gap-3">
