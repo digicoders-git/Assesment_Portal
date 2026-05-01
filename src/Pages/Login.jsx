@@ -613,6 +613,12 @@ export default function DigiCodersPortal() {
                     isLoggedIn: true
                 };
 
+                // Save course and year for question filtering
+                const courseObj = academicData.courses.find(c => c.course === formData.course);
+                const yearObj = academicData.years.find(y => y.academicYear === formData.year);
+                localStorage.setItem('studentCourse', courseObj?._id || formData.course);
+                localStorage.setItem('studentYear', yearObj?._id || formData.year);
+
                 Swal.fire({
                     title: 'Registration Successful!',
                     text: response.message || 'Starting Assessment...',
