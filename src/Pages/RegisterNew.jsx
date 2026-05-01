@@ -84,7 +84,7 @@ export default function RegisterNew() {
     );
     const filteredCourses = academicData.courses.filter(item =>
         item.course?.toLowerCase().includes(courseSearch.toLowerCase())
-    );
+    ).sort((a, b) => a.course.localeCompare(b.course));
 
     const handleSubmit = async () => {
         const alertAndFocus = (message, fieldName) => {

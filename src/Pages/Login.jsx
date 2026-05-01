@@ -242,7 +242,7 @@ export default function DigiCodersPortal() {
 
     const filteredCourses = (academicData.courses || []).filter(item =>
         item.course?.toLowerCase().includes(courseSearch.toLowerCase())
-    );
+    ).sort((a, b) => a.course.localeCompare(b.course));
 
     const handleSubmit = async () => {
         // Helper function for alerting and focusing
