@@ -516,17 +516,33 @@ export default function DigiCodersPortal() {
             const assessmentData = startCheckResponse.data.assesmentId || startCheckResponse.data;
 
             if (!assessmentData) {
-                Swal.fire({
-                    title: 'Error!',
-                    text: 'Assessment data is missing or malformed.',
-                    icon: 'error',
-                    confirmButtonColor: '#0D9488',
-                });
+                Swal.fire({ title: 'Error!', text: 'Assessment data is missing or malformed.', icon: 'error', confirmButtonColor: '#0D9488' });
                 setSubmitting(false);
                 return;
             }
 
             const { startDateTime, endDateTime, status } = assessmentData;
+
+            // Check allowed years
+            const allowedYears = assessmentData?.allowedYears || [];
+            if (allowedYears.length > 0) {
+                const studentYearName = formData.year;
+                const isAllowed = allowedYears.some(y =>
+                    (y.academicYear || y) === studentYearName
+                );
+                if (!isAllowed) {
+                    const allowedNames = allowedYears.map(y => y.academicYear || y).join(', ');
+                    Swal.fire({
+                        title: '\uD83D\uDEAB This Test is Not For You!',
+                        html: `<p>This assessment is only for: <b>${allowedNames}</b></p><p>Your year: <b>${studentYearName}</b></p>`,
+                        icon: 'error',
+                        confirmButtonColor: '#0D9488',
+                        confirmButtonText: 'OK'
+                    });
+                    setSubmitting(false);
+                    return;
+                }
+            }
             const now = new Date();
 
             // Helper to parse "DD/MM/YYYY, HH:mm:ss"

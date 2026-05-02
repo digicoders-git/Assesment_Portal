@@ -5,6 +5,7 @@ import { Plus, Search, Edit, Trash2, X, Copy, Link, Loader2 } from 'lucide-react
 import { toast } from 'react-toastify';
 import { getAssessmentByStatusApi, toggleAssessmentStatusApi, createAssessmentApi, updateAssessmentApi, deleteAssessmentApi } from '../API/assesment';
 import { getAllCertificatesApi } from '../API/certificate';
+import { getAcademicYearsApi } from '../API/year';
 
 
 
@@ -110,6 +111,7 @@ export function ActiveAssessment() {
 
     const [certificateOptions, setCertificateOptions] = useState([]);
     const [certificateLoading, setCertificateLoading] = useState(false);
+    const [allYears, setAllYears] = useState([]);
 
     const fetchCertificates = async () => {
         setCertificateLoading(true);
@@ -122,6 +124,15 @@ export function ActiveAssessment() {
             console.error('Failed to fetch certificates:', error);
         } finally {
             setCertificateLoading(false);
+        }
+    };
+
+    const fetchYears = async () => {
+        try {
+            const res = await getAcademicYearsApi();
+            if (res.success) setAllYears(res.years || []);
+        } catch (e) {
+            console.error('Failed to fetch years:', e);
         }
     };
 
@@ -242,7 +253,8 @@ export function ActiveAssessment() {
         includeAssessmentName: 'Yes',
         includeAssessmentCode: 'Yes',
         includeStudentName: 'Yes',
-        certificateOnly: 'No'
+        certificateOnly: 'No',
+        allowedYears: []
     });
 
 
@@ -269,11 +281,13 @@ export function ActiveAssessment() {
             includeAssessmentName: assessment.includeAssessmentName ? 'Yes' : 'No',
             includeAssessmentCode: assessment.includeAssessmentCode ? 'Yes' : 'No',
             includeStudentName: assessment.includeStudentName ? 'Yes' : 'No',
-            certificateOnly: assessment.certificateOnly ? 'Yes' : 'No'
+            certificateOnly: assessment.certificateOnly ? 'Yes' : 'No',
+            allowedYears: (assessment.allowedYears || []).map(y => y._id || y)
         });
         setCertificateSearch(assessment.certificateName?.certificateName || '');
         setShowCertificateDropdown(false);
         fetchCertificates();
+        fetchYears();
         setIsModalOpen(true);
     };
 
@@ -323,11 +337,13 @@ export function ActiveAssessment() {
             includeAssessmentName: 'Yes',
             includeAssessmentCode: 'Yes',
             includeStudentName: 'Yes',
-            certificateOnly: 'No'
+            certificateOnly: 'No',
+            allowedYears: []
         });
         setCertificateSearch('');
         setShowCertificateDropdown(false);
         fetchCertificates();
+        fetchYears();
         setIsModalOpen(true);
     };
 
@@ -381,8 +397,9 @@ export function ActiveAssessment() {
             generateCertificate: formData.hasCertificate === 'Yes' || formData.certificateOnly === 'Yes',
             certificateName: selectedCertificateId,
             remark: formData.remark,
-            status: true, // Active assessments are usually true
-            certificateOnly: formData.certificateOnly === 'Yes'
+            status: true,
+            certificateOnly: formData.certificateOnly === 'Yes',
+            allowedYears: formData.allowedYears
         };
 
         setSubmitting(true);
@@ -893,6 +910,27 @@ export function ActiveAssessment() {
                                         onChange={(e) => setFormData({ ...formData, remark: e.target.value })}
                                         className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#319795]"
                                     />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Allowed Years <span className="text-gray-400 font-normal">(leave empty = all years allowed)</span></label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {allYears.map(y => (
+                                            <label key={y._id} className="flex items-center gap-1.5 cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={formData.allowedYears.includes(y._id)}
+                                                    onChange={(e) => {
+                                                        const updated = e.target.checked
+                                                            ? [...formData.allowedYears, y._id]
+                                                            : formData.allowedYears.filter(id => id !== y._id);
+                                                        setFormData({ ...formData, allowedYears: updated });
+                                                    }}
+                                                    className="text-[#319795]"
+                                                />
+                                                <span className="text-sm text-gray-700">{y.academicYear}</span>
+                                            </label>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
 
