@@ -29,6 +29,7 @@ export default function AssessmentResult() {
     const [tableLoading, setTableLoading] = useState(false);
     const [firstSubmissions, setFirstSubmissions] = useState([]);
     const [secondSubmissions, setSecondSubmissions] = useState([]);
+    const [reattemptTotal, setReattemptTotal] = useState(0);
     const [activeTab, setActiveTab] = useState('first');
     const [assessmentName, setAssessmentName] = useState('');
     const [certificateId, setCertificateId] = useState(null);
@@ -125,6 +126,7 @@ export default function AssessmentResult() {
 
                 setFirstSubmissions(formatData(response.firstSubmission || [], 1));
                 setSecondSubmissions(formatData(response.reattempt || [], 2));
+                setReattemptTotal(response.reattemptTotal ?? (response.reattempt?.length || 0));
 
                 setPagination({
                     total: response.pagination?.total || 0,
@@ -682,7 +684,7 @@ export default function AssessmentResult() {
                                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-100'
                                 }`}
                         >
-                            Re-Attempt ({secondSubmissions.length})
+                            Re-Attempt ({reattemptTotal})
                         </button>
                     </div>
                 </div>
