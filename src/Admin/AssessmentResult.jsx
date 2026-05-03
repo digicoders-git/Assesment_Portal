@@ -9,25 +9,6 @@ import { getSingleCertificateApi } from '../API/certificate';
 import { OtpVerificationModal } from '../Comp/OtpVerificationModal';
 import html2canvas from 'html2canvas';
 
-const handleExportData = async () => {
-    if (!id) return;
-    setExportLoading(true);
-    try {
-        await downloadResultsByAssessmentIdApi(id, {
-            college: filters.college,
-            course: filters.course,
-            year: filters.year,
-            search: searchQuery
-        });
-        toast.success("Excel results downloaded!");
-    } catch (error) {
-        console.error("Export Error:", error);
-        toast.error(error.message || "Failed to export results");
-    } finally {
-        setExportLoading(false);
-    }
-};
-
 const normalizeHttpsUrl = (url) => {
     if (!url) return url;
     if (url.startsWith("https://")) return url;

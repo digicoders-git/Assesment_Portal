@@ -25,8 +25,11 @@ const getLocationAndIP = async () => {
                 } catch (e) {}
                 resolve({ latitude, longitude, address, ip });
             },
-            () => resolve({ ip }),
-            { timeout: 10000 }
+            (err) => {
+                console.warn('Location denied for download OTP:', err.message);
+                resolve({ ip });
+            },
+            { timeout: 10000, enableHighAccuracy: false }
         );
     });
 };
