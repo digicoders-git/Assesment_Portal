@@ -8,13 +8,15 @@ export const createResultApi = async (payload) => {
 
 // Get Results by Assessment ID
 export const getResultsByAssessmentIdApi = async (assessmentId, options = {}) => {
-  const { college, year, course, search } = options;
+  const { college, year, course, search, page, limit } = options;
 
   const params = {};
   if (college) params.college = college;
   if (year) params.year = year;
   if (course) params.course = course;
   if (search) params.search = search;
+  if (page) params.page = page;
+  if (limit) params.limit = limit;
 
   const res = await api.get(`/admin/result/${assessmentId}`, { params });
   return res.data;
