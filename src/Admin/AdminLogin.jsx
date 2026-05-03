@@ -44,11 +44,12 @@ export default function AdminLogin() {
                     let address = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
                     try {
                         const geoRes = await fetch(
-                            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`
+                            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
+                            { headers: { 'Accept-Language': 'en' } }
                         );
                         const geoData = await geoRes.json();
-                        if (geoData.results?.[0]) {
-                            address = geoData.results[0].formatted_address;
+                        if (geoData.display_name) {
+                            address = geoData.display_name;
                         }
                     } catch (e) {}
                     resolve({ latitude, longitude, address, ip });
