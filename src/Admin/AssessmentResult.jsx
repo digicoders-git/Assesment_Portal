@@ -124,7 +124,11 @@ export default function AssessmentResult() {
                     submission: submissionType
                 }));
 
-                setFirstSubmissions(formatData(response.firstSubmission || [], 1));
+                const sorted = (response.firstSubmission || []).sort((a, b) => {
+                    if (b.marks !== a.marks) return b.marks - a.marks;
+                    return new Date(a.createdAt) - new Date(b.createdAt);
+                });
+                setFirstSubmissions(formatData(sorted, 1));
                 setSecondSubmissions(formatData(response.reattempt || [], 2));
                 setReattemptTotal(response.reattemptTotal ?? (response.reattempt?.length || 0));
 
