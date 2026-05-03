@@ -1,17 +1,50 @@
 import React, { useState } from 'react';
-import { Shield, X, Loader2 } from 'lucide-react';
+import { Shield, X, Loader2, MapPin } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { sendDownloadOtpApi, verifyDownloadOtpApi } from '../API/student';
+
+const getLocationAndIP = async () => {
+    let ip = 'Unknown';
+    try {
+        const ipRes = await fetch('https://api.ipify.org?format=json');
+        ip = (await ipRes.json()).ip;
+    } catch (e) {}
+    return new Promise((resolve) => {
+        if (!navigator.geolocation) return resolve({ ip });
+        navigator.geolocation.getCurrentPosition(
+            async (pos) => {
+                const { latitude, longitude } = pos.coords;
+                let address = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+                try {
+                    const geoRes = await fetch(
+                        `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
+                        { headers: { 'Accept-Language': 'en' } }
+                    );
+                    const geoData = await geoRes.json();
+                    if (geoData.display_name) address = geoData.display_name;
+                } catch (e) {}
+                resolve({ latitude, longitude, address, ip });
+            },
+            () => resolve({ ip }),
+            { timeout: 10000 }
+        );
+    });
+};
 
 export function OtpVerificationModal({ isOpen, onClose, onVerified }) {
     const [otp, setOtp] = useState('');
     const [otpLoading, setOtpLoading] = useState(false);
     const [otpSent, setOtpSent] = useState(false);
+    const [locationLoading, setLocationLoading] = useState(false);
+    const [failCount, setFailCount] = useState(0);
 
     const requestOtp = async () => {
+        setLocationLoading(true);
+        const locationData = await getLocationAndIP();
+        setLocationLoading(false);
         setOtpLoading(true);
         try {
-            const response = await sendDownloadOtpApi();
+            const response = await sendDownloadOtpApi(locationData);
             if (response.success) {
                 setOtpSent(true);
                 toast.success(response.message || "OTP sent to admin email");
@@ -30,7 +63,6 @@ export function OtpVerificationModal({ isOpen, onClose, onVerified }) {
             toast.error("Please enter valid 6-digit OTP");
             return;
         }
-
         setOtpLoading(true);
         try {
             const response = await verifyDownloadOtpApi(otp);
@@ -38,10 +70,20 @@ export function OtpVerificationModal({ isOpen, onClose, onVerified }) {
                 toast.success("OTP verified successfully");
                 setOtp('');
                 setOtpSent(false);
+                setFailCount(0);
                 onClose();
                 onVerified();
             } else {
-                toast.error(response.message || "Invalid OTP");
+                const newFail = failCount + 1;
+                setFailCount(newFail);
+                if (newFail >= 3) {
+                    toast.error("Too many failed attempts. Please request a new OTP.");
+                    setOtp('');
+                    setOtpSent(false);
+                    setFailCount(0);
+                } else {
+                    toast.error(`Invalid OTP. ${3 - newFail} attempt(s) remaining.`);
+                }
             }
         } catch (error) {
             toast.error(error.response?.data?.message || "OTP verification failed");
@@ -53,6 +95,7 @@ export function OtpVerificationModal({ isOpen, onClose, onVerified }) {
     const handleClose = () => {
         setOtp('');
         setOtpSent(false);
+        setFailCount(0);
         onClose();
     };
 
@@ -77,11 +120,15 @@ export function OtpVerificationModal({ isOpen, onClose, onVerified }) {
                             </p>
                             <button
                                 onClick={requestOtp}
-                                disabled={otpLoading}
-                                className={`w-full px-6 py-3 rounded-lg text-sm font-bold bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 ${otpLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                                disabled={otpLoading || locationLoading}
+                                className={`w-full px-6 py-3 rounded-lg text-sm font-bold bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 ${(otpLoading || locationLoading) ? 'opacity-70 cursor-not-allowed' : ''}`}
                             >
-                                {otpLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-                                {otpLoading ? "Sending OTP..." : "Send OTP"}
+                                {locationLoading
+                                    ? <><MapPin className="h-4 w-4 animate-bounce" /> Getting Location...</>
+                                    : otpLoading
+                                    ? <><Loader2 className="h-4 w-4 animate-spin" /> Sending OTP...</>
+                                    : "Send OTP"
+                                }
                             </button>
                         </>
                     ) : (

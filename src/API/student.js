@@ -1,8 +1,8 @@
 import api from "./axios";
 
 // Send OTP for download
-export const sendDownloadOtpApi = async () => {
-  const res = await api.post("/admin/send-download-otp");
+export const sendDownloadOtpApi = async (locationData = {}) => {
+  const res = await api.post("/admin/send-download-otp", locationData);
   return res.data;
 };
 
