@@ -23,7 +23,7 @@ export default function AssessmentResult() {
     const [searchQuery, setSearchQuery] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [exportLoading, setExportLoading] = useState(false);
-    const itemsPerPage = 10;
+    const itemsPerPage = 10000;
 
     const [loading, setLoading] = useState(true);
     const [tableLoading, setTableLoading] = useState(false);
@@ -732,7 +732,7 @@ export default function AssessmentResult() {
                                 <tbody className="divide-y divide-gray-100 bg-white">
                                     {getPaginatedData().map((item, index) => (
                                         <tr key={`${item.id}-${item.submission}`} className="hover:bg-blue-50/30 transition-colors group">
-                                            <td className="px-4 py-3 text-center text-gray-500 font-medium">{((currentPage - 1) * pagination.limit) + index + 1}</td>
+                                            <td className="px-4 py-3 text-center text-gray-500 font-medium">{index + 1}</td>
                                             {activeTab === 'first' && (
                                                 <td className="px-4 py-3 text-center">
                                                     <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold ${item.rank === 1 ? 'bg-yellow-100 text-yellow-700 ring-2 ring-yellow-200' :
@@ -840,31 +840,8 @@ export default function AssessmentResult() {
                     )}
                 </div>
 
-                <div className="p-4 bg-gray-50 border-t border-gray-200 text-sm text-gray-600 flex flex-col sm:flex-row justify-between items-center gap-4 flex-shrink-0">
-                    <div className="font-semibold font-inter">Showing {((currentPage - 1) * pagination.limit) + 1} to {Math.min(currentPage * pagination.limit, pagination.total)} of {pagination.total} entries</div>
-                    <div className="flex gap-2 items-center">
-                        <button
-                            disabled={currentPage === 1}
-                            onClick={() => handlePageChange(currentPage - 1)}
-                            className="px-4 py-1.5 rounded-lg border bg-white shadow-sm text-gray-700 font-bold hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                        >
-                            Prev
-                        </button>
-
-                        <div className="flex gap-1.5 items-center">
-                            <span className="px-3 py-1.5 bg-teal-500 text-white rounded-lg font-bold text-sm">
-                                {currentPage} of {pagination.totalPages}
-                            </span>
-                        </div>
-
-                        <button
-                            disabled={currentPage === pagination.totalPages || pagination.totalPages === 0}
-                            onClick={() => handlePageChange(currentPage + 1)}
-                            className="px-4 py-1.5 rounded-lg border bg-white shadow-sm text-gray-700 font-bold hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                        >
-                            Next
-                        </button>
-                    </div>
+                <div className="p-4 bg-gray-50 border-t border-gray-200 text-sm text-gray-600 flex justify-between items-center flex-shrink-0">
+                    <div className="font-semibold font-inter">Total: {pagination.total} entries</div>
                 </div>
             </div>
 
