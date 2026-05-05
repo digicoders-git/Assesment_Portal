@@ -544,7 +544,8 @@ export default function AssessmentResult() {
             toast.success("Excel results downloaded successfully!");
         } catch (error) {
             console.error("Export Error:", error);
-            toast.error("Failed to export results");
+            const msg = error?.response?.data?.message || error?.message || "Failed to export results";
+            toast.error(msg);
         } finally {
             setExportLoading(false);
         }

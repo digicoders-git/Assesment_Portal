@@ -75,7 +75,7 @@ export function OtpVerificationModal({ isOpen, onClose, onVerified }) {
                 setOtpSent(false);
                 setFailCount(0);
                 onClose();
-                onVerified();
+                await onVerified();
             } else {
                 const newFail = failCount + 1;
                 setFailCount(newFail);

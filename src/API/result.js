@@ -44,13 +44,18 @@ export const downloadResultsByAssessmentIdApi = async (assessmentId, options = {
     if (course) params.course = course;
     if (search) params.search = search;
 
-    // Call backend endpoint that returns Excel file as blob
     const res = await api.get(`/admin/result-excel/${assessmentId}`, {
       params,
       responseType: "blob"
     });
 
-    // Create downloadable link
+    // Check if response is actually an error JSON
+    if (res.data.type === "application/json") {
+      const text = await res.data.text();
+      const json = JSON.parse(text);
+      throw new Error(json.message || "Download failed");
+    }
+
     const blob = new Blob([res.data], {
       type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     });
