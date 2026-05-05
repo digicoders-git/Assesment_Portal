@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Download, Search, FileText, FileSpreadsheet, ChevronDown, ArrowLeft, Eye, Loader2, RotateCcw, Edit, X, Trophy, Phone, MessageCircle } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { getResultsByAssessmentIdApi } from '../API/result';
+import { getResultsByAssessmentIdApi, downloadResultsByAssessmentIdApi } from '../API/result';
 import { getSingleStudentApi, uploadStudentCertificateApi, updateStudentApi } from '../API/student';
 import { getMeApi } from '../API/admin';
 import { getSingleCertificateApi } from '../API/certificate';
@@ -535,54 +535,13 @@ export default function AssessmentResult() {
         if (!id) return;
         setExportLoading(true);
         try {
-            // Fetch ALL results (no pagination) for export
-            const response = await getResultsByAssessmentIdApi(id, {
-                page: 1,
-                limit: 100000,
+            await downloadResultsByAssessmentIdApi(id, {
                 college: filters.college,
                 course: filters.course,
                 year: filters.year,
                 search: searchQuery
             });
-
-            if (!response.success) throw new Error(response.message || 'Failed to fetch data');
-
-            const rows = (response.firstSubmission || []).sort((a, b) => {
-                if (b.marks !== a.marks) return b.marks - a.marks;
-                return new Date(a.createdAt) - new Date(b.createdAt);
-            });
-
-            // Build CSV content
-            const headers = ['Rank', 'Name', 'Code', 'Course', 'Year', 'College', 'Phone', 'Score', 'Duration', 'Date'];
-            const csvRows = [headers.join(',')];
-            rows.forEach((item, index) => {
-                const row = [
-                    index + 1,
-                    `"${item.student?.name || ''}"`,
-                    item.student?.code || '',
-                    `"${item.student?.course || ''}"`,
-                    `"${item.student?.year || ''}"`,
-                    `"${item.student?.college || ''}"`,
-                    item.student?.mobile || '',
-                    `${item.marks}/${item.total}`,
-                    item.duration || '',
-                    new Date(item.createdAt).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })
-                ];
-                csvRows.push(row.join(','));
-            });
-
-            const csvContent = csvRows.join('\n');
-            const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${assessmentName || 'assessment'}-results.csv`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-
-            toast.success(`Downloaded ${rows.length} records successfully!`);
+            toast.success('Excel downloaded successfully!');
         } catch (error) {
             console.error('Export Error:', error);
             toast.error(error?.message || 'Failed to export results');
