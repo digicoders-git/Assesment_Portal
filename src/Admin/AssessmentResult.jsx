@@ -593,11 +593,12 @@ export default function AssessmentResult() {
                     <div className="w-full xl:w-auto order-2 xl:order-1 flex gap-2">
                         {userRole === 'admin' && (
                             <button
-                                onClick={() => setIsOtpModalOpen(true)}
-                                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg border border-transparent transition-colors text-sm font-bold shadow-sm justify-center h-[42px]"
+                                onClick={handleExportData}
+                                disabled={exportLoading}
+                                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg border border-transparent transition-colors text-sm font-bold shadow-sm justify-center h-[42px] disabled:opacity-70 disabled:cursor-not-allowed"
                             >
-                                <Download className="h-4 w-4" />
-                                Export Excel
+                                {exportLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                                {exportLoading ? 'Exporting...' : 'Export Excel'}
                             </button>
                         )}
                         <button
