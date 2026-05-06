@@ -124,10 +124,10 @@ export default function AssessmentResult() {
                     submission: submissionType
                 }));
 
-                const sorted = (response.firstSubmission || []).sort((a, b) => {
-                    if (b.marks !== a.marks) return b.marks - a.marks;
-                    return new Date(a.createdAt) - new Date(b.createdAt);
-                });
+                const durSec = (d) => { if (!d) return 99999; const p = d.split(':').map(Number); return p.length === 2 ? p[0]*60+p[1] : p[0]*3600+p[1]*60+(p[2]||0); };
+                const sorted = (response.firstSubmission || []).sort((a, b) =>
+                    b.marks !== a.marks ? b.marks - a.marks : durSec(a.duration) - durSec(b.duration)
+                );
                 setFirstSubmissions(formatData(sorted, 1));
                 setSecondSubmissions(formatData(response.reattempt || [], 2));
                 setReattemptTotal(response.reattemptTotal ?? (response.reattempt?.length || 0));
