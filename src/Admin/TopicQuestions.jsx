@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import Swal from 'sweetalert2';
-import { Plus, Trash2, Edit, X, FileSpreadsheet, ArrowLeft, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Edit, X, FileSpreadsheet, ArrowLeft, Loader2, RefreshCw } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { createQuestionsApi, getQuestionsByTopicApi, deleteQuestionApi, updateQuestionApi, importQuestionsFromExcelApi, exportQuestionsByTopicApi } from '../API/question';
+import { createQuestionsApi, getQuestionsByTopicApi, deleteQuestionApi, updateQuestionApi, importQuestionsFromExcelApi, exportQuestionsByTopicApi, bulkUpdateQuestionsCourseYearApi } from '../API/question';
 import { getAllTopicsApi } from '../API/topic';
 import { getCoursesApi } from '../API/course';
 import { getAcademicYearsApi } from '../API/year';
@@ -16,6 +16,10 @@ export default function TopicQuestions() {
     const [searchQuery, setSearchQuery] = useState('');
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isGuidanceOpen, setIsGuidanceOpen] = useState(false);
+    const [isBulkEditOpen, setIsBulkEditOpen] = useState(false);
+    const [bulkCourse, setBulkCourse] = useState('');
+    const [bulkYear, setBulkYear] = useState('');
+    const [bulkSubmitting, setBulkSubmitting] = useState(false);
     const [editingQuestion, setEditingQuestion] = useState(null);
 
     const [questions, setQuestions] = useState([]);
@@ -96,6 +100,8 @@ export default function TopicQuestions() {
         answer: ''
     };
     const [formData, setFormData] = useState(initialFormState);
+    const [editCourse, setEditCourse] = useState('');
+    const [editYear, setEditYear] = useState('');
     const [multipleQuestions, setMultipleQuestions] = useState([{ ...initialFormState, id: Date.now() }]);
 
     const handleDownloadSample = () => {
@@ -134,6 +140,44 @@ export default function TopicQuestions() {
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
         toast.success("Sample Excel template downloaded!");
+    };
+
+    const handleBulkUpdate = async () => {
+        if (!bulkCourse || !bulkYear) {
+            toast.error('Please select both Course and Year');
+            return;
+        }
+        const count = questions.length;
+        Swal.fire({
+            title: 'Are you sure?',
+            text: `This will update Course & Year for all ${count} questions of this topic (based on current filter).`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#319795',
+            cancelButtonColor: '#f56565',
+            confirmButtonText: 'Yes, update all!'
+        }).then(async (result) => {
+            if (!result.isConfirmed) return;
+            setBulkSubmitting(true);
+            try {
+                const response = await bulkUpdateQuestionsCourseYearApi({
+                    topicId,
+                    courseId: bulkCourse,
+                    yearId: bulkYear,
+                    filterCourseId: filterCourse || undefined,
+                    filterYearId: filterYear || undefined
+                });
+                toast.success(response.message);
+                setIsBulkEditOpen(false);
+                setBulkCourse('');
+                setBulkYear('');
+                fetchQuestions();
+            } catch (error) {
+                toast.error(error.response?.data?.message || 'Bulk update failed');
+            } finally {
+                setBulkSubmitting(false);
+            }
+        });
     };
 
     const handleOpenAdd = () => {
@@ -183,6 +227,8 @@ export default function TopicQuestions() {
             optionD: q.options?.D || '',
             correctOption: q.correctOption
         });
+        setEditCourse(q.course?._id || '');
+        setEditYear(q.year?._id || '');
         setIsAddModalOpen(true);
     };
 
@@ -207,7 +253,9 @@ export default function TopicQuestions() {
                         C: formData.optionC,
                         D: formData.optionD
                     },
-                    correctOption: formData.correctOption
+                    correctOption: formData.correctOption,
+                    ...(editCourse && { course: editCourse }),
+                    ...(editYear && { year: editYear })
                 };
                 const response = await updateQuestionApi(editingQuestion._id, payload);
                 toast.success(response.message);
@@ -387,6 +435,14 @@ export default function TopicQuestions() {
             {/* Controls */}
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
                 <div className="flex flex-wrap gap-2 sm:gap-3">
+                    <button
+                        onClick={() => setIsBulkEditOpen(true)}
+                        className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-3 sm:px-4 py-2 rounded text-xs sm:text-sm"
+                    >
+                        <RefreshCw className="h-4 w-4" />
+                        <span className="hidden sm:inline">Bulk Edit Course</span>
+                        <span className="sm:hidden">Bulk</span>
+                    </button>
                     <button
                         onClick={() => setIsGuidanceOpen(true)}
                         className="flex items-center gap-2 bg-white border border-gray-300 hover:bg-gray-50 px-3 sm:px-4 py-2 rounded text-xs sm:text-sm"
@@ -596,6 +652,24 @@ export default function TopicQuestions() {
                                 {editingQuestion ? (
                                     // Single question edit form
                                     <div className="space-y-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <div>
+                                                <label className="block text-sm font-semibold text-blue-800 mb-1">Course</label>
+                                                <select value={editCourse} onChange={e => setEditCourse(e.target.value)}
+                                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm">
+                                                    <option value="">Select Course</option>
+                                                    {courses.map(c => <option key={c._id} value={c._id}>{c.course}</option>)}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-semibold text-blue-800 mb-1">Year</label>
+                                                <select value={editYear} onChange={e => setEditYear(e.target.value)}
+                                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm">
+                                                    <option value="">Select Year</option>
+                                                    {years.map(y => <option key={y._id} value={y._id}>{y.academicYear}</option>)}
+                                                </select>
+                                            </div>
+                                        </div>
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-1">Question</label>
                                             <textarea
@@ -862,6 +936,50 @@ export default function TopicQuestions() {
                     </div>
                 )
             }
+
+            {/* Bulk Edit Modal */}
+            {isBulkEditOpen && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg w-full max-w-md">
+                        <div className="p-4 border-b flex justify-between items-center">
+                            <h3 className="text-lg font-semibold">Bulk Edit Course & Year</h3>
+                            <button onClick={() => setIsBulkEditOpen(false)}><X className="h-5 w-5 text-gray-500" /></button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <p className="text-sm text-gray-600 bg-orange-50 border border-orange-200 rounded p-3">
+                                ⚠️ Ye action current filter ke saare <strong>{questions.length} questions</strong> ka Course & Year update karega.
+                            </p>
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">New Course <span className="text-red-500">*</span></label>
+                                <select value={bulkCourse} onChange={e => setBulkCourse(e.target.value)}
+                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm">
+                                    <option value="">Select Course</option>
+                                    {courses.map(c => <option key={c._id} value={c._id}>{c.course}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">New Year <span className="text-red-500">*</span></label>
+                                <select value={bulkYear} onChange={e => setBulkYear(e.target.value)}
+                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm">
+                                    <option value="">Select Year</option>
+                                    {years.map(y => <option key={y._id} value={y._id}>{y.academicYear}</option>)}
+                                </select>
+                            </div>
+                        </div>
+                        <div className="p-4 border-t flex justify-end gap-3">
+                            <button onClick={() => setIsBulkEditOpen(false)} className="px-4 py-2 text-gray-600 hover:text-gray-800">Cancel</button>
+                            <button
+                                onClick={handleBulkUpdate}
+                                disabled={bulkSubmitting}
+                                className={`flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded text-sm ${bulkSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
+                            >
+                                {bulkSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                                {bulkSubmitting ? 'Updating...' : 'Update All'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div >
     );
 }

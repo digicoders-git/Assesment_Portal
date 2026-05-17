@@ -42,7 +42,11 @@ export const importQuestionsFromExcelApi = async (id, file, courseId, yearId) =>
   return res.data;
 };
 
-// export excel
+// Bulk update course/year for all questions of a topic
+export const bulkUpdateQuestionsCourseYearApi = async (payload) => {
+  const res = await api.put(`/admin/question/bulk-update`, payload);
+  return res.data;
+};
 export const exportQuestionsByTopicApi = async (topicId, courseId, yearId) => {
   const params = {};
   if (courseId) params.courseId = courseId;
