@@ -608,6 +608,22 @@ export default function DigiCodersPortal() {
                 return;
             }
 
+            // Check if questions are assigned for this course+year BEFORE registering
+            const courseId = academicData.courses.find(c => c.course === formData.course)?._id || formData.course;
+            const yearId = academicData.years.find(y => y.academicYear === formData.year)?._id || formData.year;
+            try {
+                const questionCheck = await getAssessmentByCodeApi(enteredCode, courseId, yearId);
+                if (!questionCheck.success || !questionCheck.data?.questionIds?.length) {
+                    Swal.fire({ title: '\uD83D\uDEAB No Questions Found!', text: 'No questions assigned for your course and year. Please contact admin.', icon: 'warning', confirmButtonColor: '#0D9488' });
+                    setSubmitting(false);
+                    return;
+                }
+            } catch (qErr) {
+                Swal.fire({ title: '\uD83D\uDEAB Not Eligible!', text: qErr.response?.data?.message || 'No questions assigned for your course and year.', icon: 'warning', confirmButtonColor: '#0D9488' });
+                setSubmitting(false);
+                return;
+            }
+
             // Ensure assessment code is uppercase when sent to backend
             const payload = {
                 ...formData,
@@ -632,8 +648,8 @@ export default function DigiCodersPortal() {
                 // Save course and year for question filtering
                 const courseObj = academicData.courses.find(c => c.course === formData.course);
                 const yearObj = academicData.years.find(y => y.academicYear === formData.year);
-                localStorage.setItem('studentCourse', courseObj?._id || formData.course);
-                localStorage.setItem('studentYear', yearObj?._id || formData.year);
+                localStorage.setItem('studentCourse', courseId);
+                localStorage.setItem('studentYear', yearId);
                 localStorage.setItem('studentYearName', formData.year);
 
                 Swal.fire({
