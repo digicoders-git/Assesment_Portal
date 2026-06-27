@@ -49,3 +49,11 @@ export const toggleCertificateStatusApi = async (certificateId) => {
   );
   return res.data;
 };
+
+export const duplicateCertificateApi = async (certificateId, data) => {
+  const res = await api.post(
+    `/admin/certificate/duplicate/${certificateId}`,
+    data
+  );
+  return res.data;
+};

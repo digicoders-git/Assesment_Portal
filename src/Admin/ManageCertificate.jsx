@@ -4,7 +4,7 @@ import Swal from 'sweetalert2';
 import { Plus, Search, Edit, Trash2, X, Eye, ArrowLeft, Save, Image as ImageIcon, Type, Layout, Grid, Loader2, Copy } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useUser } from '../context/UserContext';
-import { getAllCertificatesApi, toggleCertificateStatusApi, deleteCertificateApi, getSingleCertificateApi, createCertificateApi, updateCertificateApi } from '../API/certificate';
+import { getAllCertificatesApi, toggleCertificateStatusApi, deleteCertificateApi, getSingleCertificateApi, createCertificateApi, updateCertificateApi, duplicateCertificateApi } from '../API/certificate';
 
 export function ManageCertificate() {
     const navigate = useNavigate();
@@ -246,6 +246,101 @@ export function ManageCertificate() {
         });
     };
 
+    const handleDuplicate = (cert) => {
+        Swal.fire({
+            title: "Duplicate Certificate",
+            text: `Enter name for the copied certificate:`,
+            input: "text",
+            inputValue: `${cert.certificateName} (Copy)`,
+            showCancelButton: true,
+            confirmButtonColor: "#319795",
+            cancelButtonColor: "#718096",
+            confirmButtonText: "Duplicate",
+            inputValidator: (value) => {
+                if (!value || !value.trim()) {
+                    return "Certificate name is required!";
+                }
+            }
+        }).then(async (result) => {
+            if (result.isConfirmed && result.value) {
+                const toastId = toast.loading("Duplicating certificate...");
+                try {
+                    const response = await duplicateCertificateApi(cert._id, { certificateName: result.value.trim() });
+                    if (response.success) {
+                        toast.update(toastId, {
+                            render: "Certificate duplicated successfully!",
+                            type: "success",
+                            isLoading: false,
+                            autoClose: 3000
+                        });
+                        fetchCertificates();
+                        window.dispatchEvent(new Event('dashboardUpdated'));
+                    }
+                } catch (error) {
+                    toast.update(toastId, {
+                        render: error.response?.data?.message || "Failed to duplicate certificate",
+                        type: "error",
+                        isLoading: false,
+                        autoClose: 3000
+                    });
+                }
+            }
+        });
+    };
+
+    const handleCopyConfig = () => {
+        const configToCopy = {
+            studentName: formData.studentName,
+            assessmentName: formData.assessmentName,
+            assessmentCode: formData.assessmentCode,
+            collegeName: formData.collegeName,
+            date: formData.date,
+        };
+        navigator.clipboard.writeText(JSON.stringify(configToCopy, null, 2)).then(() => {
+            toast.success("Layout configuration copied to clipboard!");
+        }).catch(() => {
+            localStorage.setItem('copied_certificate_config', JSON.stringify(configToCopy));
+            toast.success("Layout configuration saved to temporary storage!");
+        });
+    };
+
+    const handlePasteConfig = async () => {
+        try {
+            let configStr = '';
+            try {
+                configStr = await navigator.clipboard.readText();
+            } catch (clipboardErr) {
+                configStr = localStorage.getItem('copied_certificate_config');
+            }
+
+            if (!configStr) {
+                toast.error("No configuration found to paste!");
+                return;
+            }
+
+            const parsed = JSON.parse(configStr);
+            const layers = ['studentName', 'assessmentName', 'assessmentCode', 'collegeName', 'date'];
+            
+            if (!parsed.studentName) {
+                toast.error("Invalid configuration format!");
+                return;
+            }
+
+            setFormData(prev => {
+                const updated = { ...prev };
+                layers.forEach(layer => {
+                    if (parsed[layer]) {
+                        updated[layer] = { ...parsed[layer] };
+                    }
+                });
+                return updated;
+            });
+            toast.success("Layout configuration pasted successfully!");
+        } catch (err) {
+            toast.error("Failed to parse clipboard/stored configuration!");
+        }
+    };
+
     const fontFamilies = [
         { name: 'Inter', value: 'Inter, sans-serif' },
         { name: 'Roboto', value: 'Roboto, sans-serif' },
@@ -377,6 +472,31 @@ export function ManageCertificate() {
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                     {/* Left Column: Properties */}
                     <div className="lg:col-span-5 space-y-6 overflow-y-auto max-h-[calc(100vh-180px)] pr-2 custom-scrollbar">
+                        {/* Copy / Paste Layout Settings */}
+                        <div className="bg-white rounded-xl border border-gray-200 p-4">
+                            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Layout Styles Transfer</h3>
+                            <div className="flex gap-3">
+                                <button
+                                    type="button"
+                                    onClick={handleCopyConfig}
+                                    className="flex-1 flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 px-3 rounded-lg text-xs font-semibold transition-colors border border-gray-200"
+                                    title="Copy font colors, sizes, and coordinates"
+                                >
+                                    <Copy className="h-3.5 w-3.5 text-purple-600" />
+                                    Copy Layout
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handlePasteConfig}
+                                    className="flex-1 flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 px-3 rounded-lg text-xs font-semibold transition-colors border border-gray-200"
+                                    title="Paste copied configuration"
+                                >
+                                    <Layout className="h-3.5 w-3.5 text-teal-600" />
+                                    Paste Layout
+                                </button>
+                            </div>
+                        </div>
+
                         {/* Basic Details */}
                         <div className="bg-white rounded-xl border border-gray-200 p-6">
                             <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4 flex items-center gap-2">
@@ -712,12 +832,19 @@ export function ManageCertificate() {
                                                             >
                                                                 <Eye className="h-4 w-4" />
                                                             </button>
-                                                            <button
+                                                             <button
                                                                 onClick={() => handleEdit(cert)}
                                                                 className="text-slate-400 hover:text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition-all"
                                                                 title="Edit Template"
                                                             >
                                                                 <Edit className="h-4 w-4" />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleDuplicate(cert)}
+                                                                className="text-slate-400 hover:text-purple-600 hover:bg-purple-50 p-2 rounded-lg transition-all"
+                                                                title="Duplicate Template"
+                                                            >
+                                                                <Copy className="h-4 w-4" />
                                                             </button>
                                                             <button
                                                                 onClick={() => handleDelete(cert._id)}
