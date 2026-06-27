@@ -5,7 +5,7 @@ import { UserProvider } from "./context/UserContext";
 import AppRoutes from "./AppRoutes";
 
 function App() {
-  return (
+  return ( 
     <UserProvider>
       <Router>
         <AppRoutes />
